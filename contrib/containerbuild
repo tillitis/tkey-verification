@@ -1,0 +1,19 @@
+#!/bin/sh -eu
+
+tag="${1?pass a tag/branch to build from}"
+
+if [ ! -e /.dockerenv ] && [ "${container:-}" != "podman" ]; then
+  printf "expected to be run in container\n"
+  exit 1
+fi
+
+set -x
+
+cd /
+
+git clone https://github.com/tillitis/tillitis-key1-apps
+cd tillitis-key1-apps
+
+git checkout "$tag"
+
+make -j$(nproc --ignore=2) -C apps signer/app.bin
