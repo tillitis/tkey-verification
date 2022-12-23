@@ -6,6 +6,7 @@ package main
 import (
 	"crypto/ed25519"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -16,7 +17,7 @@ func sign(devPath string, verbose bool, appBin []byte) {
 	if !ok {
 		os.Exit(1)
 	}
-	fmt.Printf("TKey raw UDI: %x\n", udi)
+	le.Printf("TKey raw UDI: %s\n", hex.EncodeToString(udi))
 
 	// The vendor's private key for signing the hash H
 	signingPrivKey, err := getSigningPrivKey()
@@ -36,12 +37,12 @@ func sign(devPath string, verbose bool, appBin []byte) {
 
 	// File named after the hash H (in hex) will contain the signature
 	// S (in hex)
-	fn := fmt.Sprintf("%s/%x", outDir, h[:])
+	fn := fmt.Sprintf("%s/%s", outDir, hex.EncodeToString(h[:]))
 	if _, err := os.Stat(fn); err == nil || !errors.Is(err, os.ErrNotExist) {
 		le.Printf("%s already exists?", fn)
 		os.Exit(1)
 	}
-	if err := os.WriteFile(fn, []byte(fmt.Sprintf("%x\n", s)), 0o644); err != nil { //nolint:gosec
+	if err := os.WriteFile(fn, []byte(hex.EncodeToString(s)+"\n"), 0o644); err != nil { //nolint:gosec
 		fmt.Printf("WriteFile: %s\n", err)
 		os.Exit(1)
 	}

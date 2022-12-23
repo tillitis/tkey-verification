@@ -45,7 +45,9 @@ currently we just build the signer-app from main.
 
 We want to be compatible with sigsum. Same kind of hash and signature:
 SHA256 and Ed25519.
-https://git.glasklar.is/sigsum/project/documentation/-/blob/main/api.md#21-cryptography
+https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md#21-cryptography
+
+We use base16 (hex) to encode binary data.
 
 The repository contains a test-signing ed25519 keypair that is used
 for sign/verify, as well as a tool `gen-signing-keypair` for

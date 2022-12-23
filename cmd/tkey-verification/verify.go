@@ -9,7 +9,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
-	"strings"
 )
 
 func verify(devPath string, verbose bool, appBin []byte) {
@@ -17,7 +16,7 @@ func verify(devPath string, verbose bool, appBin []byte) {
 	if !ok {
 		os.Exit(1)
 	}
-	fmt.Printf("TKey raw UDI: %x\n", udi)
+	le.Printf("TKey raw UDI: %s\n", hex.EncodeToString(udi))
 
 	// The vendor's public key, for verifying the signature
 	signingPubKey, err := getSigningPubKey()
@@ -29,17 +28,10 @@ func verify(devPath string, verbose bool, appBin []byte) {
 	h := sha256.Sum256(append(udi, pubKey...))
 
 	// Get the signature S by the hash H
-	fn := fmt.Sprintf("%s/%x", signaturesDir, h)
-	b, err := os.ReadFile(fn)
+	fn := fmt.Sprintf("%s/%s", signaturesDir, hex.EncodeToString(h[:]))
+	s, err := readHexLine(fn)
 	if err != nil {
-		le.Printf("%s not found?", fn)
-		os.Exit(1)
-	}
-
-	lines := strings.Split(string(b), "\n")
-	s, err := hex.DecodeString(lines[0])
-	if err != nil {
-		le.Printf("Failed to decode hex '%s': %s\n", lines[0], err)
+		le.Printf("%s", err)
 		os.Exit(1)
 	}
 

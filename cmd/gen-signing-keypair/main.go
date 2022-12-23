@@ -5,6 +5,7 @@ package main
 
 import (
 	"crypto/ed25519"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -34,14 +35,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = os.WriteFile(fnPub, []byte(fmt.Sprintf("%x\n", pub[:])), 0o600)
+	err = os.WriteFile(fnPub, []byte(hex.EncodeToString(pub)+"\n"), 0o600)
 	if err != nil {
 		fmt.Printf("WriteFile: %s\n", err)
 		os.Exit(1)
 	}
 	fmt.Printf("Wrote %s\n", fnPub)
 
-	err = os.WriteFile(fnPriv, []byte(fmt.Sprintf("%x\n", privSeed)), 0o600)
+	err = os.WriteFile(fnPriv, []byte(hex.EncodeToString(privSeed)+"\n"), 0o600)
 	if err != nil {
 		fmt.Printf("WriteFile: %s\n", err)
 		os.Exit(1)
