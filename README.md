@@ -58,7 +58,7 @@ generating such keypair.
 Currently, you have to build the signer-app binary yourself, and place
 it in `cmd/tkey-verification/app.bin` before building the tool.
 
-1. Clone https://github.com/tillitis-key1-apps. Alternatively, if you
+1. Clone [https://github.com/tillitis-key1-apps](https://github.com/tillitis/tillitis-key1-apps). Alternatively, if you
    have a working Docker setup, you can try running
    `./contrib/build-in-container main`. Skip to 6) if that works out.
 2. Just stay on the `main` branch.
