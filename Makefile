@@ -18,5 +18,16 @@ clean:
 
 .PHONY: lint
 lint:
-	$(MAKE) -C gotools
+	$(MAKE) -C gotools golangci-lint
 	./gotools/golangci-lint run
+
+.PHONY: certs
+certs:
+	$(MAKE) -C gotools certstrap
+	./gotools/certstrap --depot-path certs init --passphrase="" --common-name=tillitis
+
+	./gotools/certstrap --depot-path certs request-cert --passphrase="" --domain=localhost
+	./gotools/certstrap --depot-path certs sign --CA=tillitis localhost
+
+	./gotools/certstrap --depot-path certs request-cert --passphrase="" --domain=client
+	./gotools/certstrap --depot-path certs sign --CA=tillitis client

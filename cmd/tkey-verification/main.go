@@ -1,4 +1,4 @@
-// Copyright (C) 2022 - Tillitis AB
+// Copyright (C) 2022, 2023 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
 package main
@@ -13,17 +13,27 @@ import (
 	"github.com/spf13/pflag"
 )
 
+const (
+	caCertFile     = "certs/tillitis.crt"
+	serverCertFile = "certs/localhost.crt"
+	serverKeyFile  = "certs/localhost.key"
+	clientCertFile = "certs/client.crt"
+	clientKeyFile  = "certs/client.key"
+	listenAddr     = "localhost:1337"
+	serverAddr     = "localhost:1337"
+)
+
 // TODO we should build and provide the signer-app binary from a known
 // tag T in the tillitis-key1-apps repo. This T is synchronized with a
 // tag for this verification program?
 const signerAppTag = "main"
 
-const signaturesDir = "signatures"
-
 // nolint:typecheck // Avoid lint error when the embedding file is missing.
 //
 //go:embed app.bin
-var appBin []byte
+var signerAppBin []byte
+
+const signaturesDir = "signatures"
 
 // Use when printing err/diag msgs
 var le = log.New(os.Stderr, "", 0)
@@ -41,8 +51,8 @@ func main() {
 		desc := fmt.Sprintf(`Usage: tkey-verification command [flags...]
 
 Commands:
-  sign    Create the verification hash for a TKey and sign it with the vendor's
-          signing private-key.
+  serve-signer  TODO...
+  remote-sign   TODO...
   verify  Verify that a TKey is genuine by recreating the hash, fetching the
           signature, and verifying it using the vendor's signing public-key.`)
 		le.Printf("%s\n\n%s", desc,
@@ -54,7 +64,7 @@ Commands:
 		if pflag.NArg() > 1 {
 			le.Printf("Unexpected argument: %s\n\n", strings.Join(pflag.Args()[1:], " "))
 		} else {
-			le.Printf("Please pass a command: sign or verify\n\n")
+			le.Printf("Please pass a command: serve-signer, remote-sign, or verify\n\n")
 		}
 		pflag.Usage()
 		os.Exit(2)
@@ -62,10 +72,12 @@ Commands:
 
 	// Command funcs exit to OS themselves for now
 	switch cmd := pflag.Args()[0]; cmd {
-	case "sign":
-		sign(devPath, verbose, appBin)
+	case "serve-signer":
+		serveSigner(devPath, verbose, signerAppBin)
+	case "remote-sign":
+		remoteSign(devPath, verbose, signerAppBin)
 	case "verify":
-		verify(devPath, verbose, appBin)
+		verify(devPath, verbose, signerAppBin)
 	default:
 		le.Printf("%s is not a valid command.\n", cmd)
 		pflag.Usage()

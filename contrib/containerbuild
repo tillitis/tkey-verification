@@ -16,4 +16,4 @@ cd tillitis-key1-apps
 
 git checkout "$tag"
 
-make -j$(nproc --ignore=2) -C apps signer/app.bin
+make -j$(nproc --ignore=2) TKEY_SIGNER_APP_NO_TOUCH=yes -C apps signer/app.bin

@@ -18,3 +18,4 @@ $crun cp "$cname":/tillitis-key1-apps/apps/signer/app.bin ../cmd/tkey-verificati
 $crun rm "$cname"
 
 ls -l ../cmd/tkey-verification/app.bin
+sha256sum ../cmd/tkey-verification/app.bin

@@ -1,4 +1,6 @@
 
+TODO: this description is not revised according to `take2`.
+
 NOTE: This is work in progress. We're not yet publishing signatures
 for verification.
 
@@ -58,19 +60,61 @@ generating such keypair.
 Currently, you have to build the signer-app binary yourself, and place
 it in `cmd/tkey-verification/app.bin` before building the tool.
 
-1. Clone [https://github.com/tillitis-key1-apps](https://github.com/tillitis/tillitis-key1-apps). Alternatively, if you
-   have a working Docker setup, you can try running
-   `./contrib/build-in-container main`. Skip to 6) if that works out.
+1. Clone [https://github.com/tillitis-key1-apps](https://github.com/tillitis/tillitis-key1-apps).
+   Alternatively, if you have a working Docker setup, you can try
+   running:
+   ```
+   ./contrib/build-in-container main
+   ```
+
+   Skip to 6) if that works out.
+
 2. Just stay on the `main` branch.
+
 3. Setup the build environment according to instructions in the README.
-4. You can build just the app with: `make -C apps signer/app.bin`
+
+4. The signer-app needs to be built with the touch requirement
+   removed. Run:
+   ```
+   make TKEY_SIGNER_APP_NO_TOUCH=yes -C apps signer/app.bin
+   ```
+
 5. Assuming the apps repository was cloned as a sibling to this repo, you
    can move back to this repo and copy the binary like:
    ```
    cp ../tillitis-key1-apps/apps/signer/app.bin ./cmd/tkey-verification/app.bin
    ```
-6. Build the `tkey-verification` tool with `make`.
-7. Plug in a TKey.
-8. Create the signed verification file: `./tkey-verification sign`
-9. Re-plug the TKey (the tool *must* load the app itself!)
-10. Run the verification: `./tkey-verification verify`.
+
+6. Build the `tkey-verification` tool, and also CA, server, and client certs:
+   ```
+   make
+   make certs
+   ```
+
+7. You now need 1 TKey and 1 QEMU machine running to try this out (or
+   2 TKeys, or 2 QEMU machines, if you manage to get that working).
+   One is Tillitis' (vendor's) signing TKey, and the other is a TKey
+   that you want to sign and then verify as genuine. You need to know
+   the serial port device paths for these.
+
+8. Run the signing endpoint (here a physical USB stick):
+   ```
+   ./tkey-verification serve-signing --port /dev/ttyACM0
+   ```
+
+9. Get the signing endpoint to sign for a TKey (here the QEMU
+   machine):
+   ```
+   ./tkey-verification remote-sign --port /dev/pts/40
+   ```
+
+10. The signing endpoint should now have been, signing and saved out a
+    verification file.
+
+11. Before trying to verify you need to restart the QEMU machine (or
+    re-plug a physical TKey) to get it back to firmware-mode.
+    `tkey-verification` always requires to load the signer-app itself.
+    Then try to verify:
+    ```
+    ./tkey-verification verify --port /dev/pts/40
+    ```

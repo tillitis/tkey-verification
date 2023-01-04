@@ -1,10 +1,13 @@
-// Copyright (C) 2022 - Tillitis AB
+// Copyright (C) 2022, 2023 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
 package main
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"os/signal"
@@ -22,7 +25,7 @@ const (
 )
 
 // RunSignerApp gets the UDI of a TKey that must be in firmware-mode.
-// It then loads the passed signer app onto the TKey (with no USS),
+// It then loads the passed signer-app onto the TKey (with no USS),
 // starts it, and gets the public key from it. Erors are printed to
 // the common logger `le`. Returns the raw UDI, public key, and a true
 // bool if successful.
@@ -63,11 +66,9 @@ func runSignerApp(devPath string, verbose bool, appBin []byte) ([]byte, []byte, 
 	var nameVer *tk1.NameVersion
 	nameVer, err = tk.GetNameVersion()
 	if err != nil {
-		le.Printf("GetNameVersion failed: %v\n", err)
-		le.Printf("If the serial port is correct, then the TKey might not be in firmware-\n" +
-			"mode, and have an app running already. For verification (sign/verify), we\n" +
-			"*must* load the signer app ourselves. Please unplug the TKey and plug\n" +
-			"it in again.\n")
+		le.Printf("If the serial port is correct, then the TKey might not be in firmware-mode, and have an app running already.\n" +
+			"For verification (remote-sign and verify), we *must* load the signer-app ourselves.\n" +
+			"Please unplug the TKey and plug it in again.\n")
 		return nil, nil, false
 	}
 	le.Printf("Firmware name0:'%s' name1:'%s' version:%d\n",
@@ -111,6 +112,63 @@ func runSignerApp(devPath string, verbose bool, appBin []byte) ([]byte, []byte, 
 	signal.Stop(signalCh)
 
 	return udi.RawBytes(), pubKey, true
+}
+
+func signWithApp(devPath string, expectedPubKey []byte, message [sha256.Size]byte) ([]byte, error) {
+	var err error
+	if devPath == "" {
+		devPath, err = util.DetectSerialPort(true)
+		if err != nil {
+			return nil, fmt.Errorf("DetectSerialPort: %w", err)
+		}
+	}
+
+	tk := tk1.New()
+	le.Printf("Connecting to device on serial port %s ...\n", devPath)
+	if err = tk.Connect(devPath, tk1.WithSpeed(tk1.SerialSpeed)); err != nil {
+		return nil, fmt.Errorf("Could not open %s: %w", devPath, err)
+	}
+
+	tkSigner := tk1sign.New(tk)
+
+	cleanup := func() {
+		if err = tkSigner.Close(); err != nil {
+			le.Printf("Close: %v\n", err)
+		}
+	}
+	defer cleanup()
+
+	signalCh := handleSignals(func() {
+		cleanup()
+		os.Exit(1)
+	}, os.Interrupt, syscall.SIGTERM)
+
+	nameVer, err := tkSigner.GetAppNameVersion()
+	if err != nil {
+		return nil, fmt.Errorf("GetAppNameVersion: %w", err)
+	}
+	// not caring about nameVer.Version
+	if wantAppName0 != nameVer.Name0 || wantAppName1 != nameVer.Name1 {
+		return nil, fmt.Errorf("App name is not what we expect")
+	}
+
+	pubKey, err := tkSigner.GetPubkey()
+	if err != nil {
+		return nil, fmt.Errorf("GetPubKey failed: %w", err)
+	}
+
+	if bytes.Compare(pubKey, expectedPubKey) != 0 {
+		return nil, fmt.Errorf("Signing TKey does not have expected pubkey")
+	}
+
+	signature, err := tkSigner.Sign(message[:])
+	if err != nil {
+		return nil, fmt.Errorf("Sign failed: %w", err)
+	}
+
+	signal.Stop(signalCh)
+
+	return signature, nil
 }
 
 func handleSignals(action func(), sig ...os.Signal) chan<- os.Signal {
