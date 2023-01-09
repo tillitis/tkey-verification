@@ -28,7 +28,7 @@ func remoteSign(devPath string, verbose bool, appBin []byte) {
 			loadCert(clientCertFile, clientKeyFile),
 		},
 		RootCAs:    loadCA(caCertFile),
-		MinVersion: tls.VersionTLS12,
+		MinVersion: tls.VersionTLS13,
 	}
 
 	conn, err := tls.Dial("tcp", serverAddr, &tlsConfig)

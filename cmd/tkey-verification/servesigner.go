@@ -73,7 +73,7 @@ func serve(devPath string, signingPubKey []byte) {
 		},
 		ClientCAs:  loadCA(caCertFile),
 		ClientAuth: tls.RequireAndVerifyClientCert,
-		MinVersion: tls.VersionTLS12,
+		MinVersion: tls.VersionTLS13,
 	}
 
 	listener, err := tls.Listen("tcp", listenAddr, &tlsConfig)
