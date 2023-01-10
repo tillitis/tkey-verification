@@ -1,6 +1,6 @@
 
 .PHONY: all
-all: tkey-verification gen-signing-keypair
+all: tkey-verification
 
 # .PHONY to let go-build handle deps and rebuilds
 .PHONY: tkey-verification
@@ -9,14 +9,9 @@ tkey-verification:
 	cp -a ./tillitis-signing-tkey.pub ./cmd/tkey-verification/signing-tkey.pub
 	go build ./cmd/tkey-verification
 
-# .PHONY to let go-build handle deps and rebuilds
-.PHONY: gen-signing-keypair
-gen-signing-keypair:
-	go build ./cmd/gen-signing-keypair
-
 .PHONY: clean
 clean:
-	rm -f tkey-verification gen-signing-keypair
+	rm -f tkey-verification
 
 .PHONY: lint
 lint:

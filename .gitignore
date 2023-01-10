@@ -1,4 +1,3 @@
 /gotools/golangci-lint
 /gotools/certstrap
-/gen-signing-keypair
 /tkey-verification
