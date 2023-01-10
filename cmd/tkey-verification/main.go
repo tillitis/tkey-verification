@@ -74,10 +74,11 @@ func main() {
 Commands:
   serve-signer  TODO...
   remote-sign   TODO...
-  verify  Verify that a TKey is genuine by recreating the hash, fetching the
-          signature, and verifying it using the vendor's signing public-key.`)
-		le.Printf("%s\n\n%s", desc,
-			pflag.CommandLine.FlagUsagesWrapped(86))
+  verify        Verify that a TKey is genuine by recreating the hash, fetching
+                the signature, and verifying it using the vendor's signing
+                public-key.
+  show-pubkey   Output the public key of a TKey.`)
+		le.Printf("%s\n\n%s", desc, pflag.CommandLine.FlagUsagesWrapped(86))
 	}
 	pflag.Parse()
 
@@ -85,7 +86,7 @@ Commands:
 		if pflag.NArg() > 1 {
 			le.Printf("Unexpected argument: %s\n\n", strings.Join(pflag.Args()[1:], " "))
 		} else {
-			le.Printf("Please pass a command: serve-signer, remote-sign, or verify\n\n")
+			le.Printf("Please pass a command: serve-signer, remote-sign, verify, or show-pubkey\n\n")
 		}
 		pflag.Usage()
 		os.Exit(2)
@@ -99,6 +100,8 @@ Commands:
 		remoteSign(devPath, verbose)
 	case "verify":
 		verify(devPath, verbose)
+	case "show-pubkey":
+		showPubKey(devPath, verbose)
 	default:
 		le.Printf("%s is not a valid command.\n", cmd)
 		pflag.Usage()
