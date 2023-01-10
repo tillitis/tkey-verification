@@ -45,7 +45,7 @@ func (a *API) Sign(args *Args, _ *struct{}) error {
 		return fmt.Errorf("%s", msg)
 	}
 
-	signature, err := signWithApp(a.devPath, args.Hash)
+	signature, err := signWithApp(a.devPath, signingPubKey, args.Hash)
 	if err != nil {
 		le.Printf("signWithApp failed: %s\n", err)
 		return fmt.Errorf("signWithApp failed: %w", err)

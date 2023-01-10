@@ -18,11 +18,6 @@ func remoteSign(devPath string, verbose bool) {
 	}
 	le.Printf("TKey raw UDI: %s\n", hex.EncodeToString(udi))
 
-	if len(udi) != 8 {
-		le.Printf("Expected UDI length 8, got %d\n", len(udi))
-		os.Exit(1)
-	}
-
 	tlsConfig := tls.Config{
 		Certificates: []tls.Certificate{
 			loadCert(clientCertFile, clientKeyFile),

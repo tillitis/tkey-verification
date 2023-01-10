@@ -24,9 +24,9 @@ const (
 	wantAppName1 = "sign"
 )
 
-// RunSignerApp gets the UDI of a TKey that must be in firmware-mode.
+// runSignerApp gets the UDI of a TKey that must be in firmware-mode.
 // It then loads the passed signer-app onto the TKey (with no USS),
-// starts it, and gets the public key from it. Erors are printed to
+// starts it, and gets the public key from it. Errors are printed to
 // the common logger `le`. Returns the raw UDI, public key, and a true
 // bool if successful.
 func runSignerApp(devPath string, verbose bool, appBin []byte) ([]byte, []byte, bool) {
@@ -114,7 +114,10 @@ func runSignerApp(devPath string, verbose bool, appBin []byte) ([]byte, []byte, 
 	return udi.RawBytes(), pubKey, true
 }
 
-func signWithApp(devPath string, message [sha256.Size]byte) ([]byte, error) {
+// signWithApp connects to a TKey and asks an already running
+// signer-app to sign a message. The public key of signer-app must be
+// expectedPubKey.
+func signWithApp(devPath string, expectedPubKey []byte, message [sha256.Size]byte) ([]byte, error) {
 	var err error
 	if devPath == "" {
 		devPath, err = util.DetectSerialPort(true)
@@ -157,7 +160,7 @@ func signWithApp(devPath string, message [sha256.Size]byte) ([]byte, error) {
 		return nil, fmt.Errorf("GetPubKey failed: %w", err)
 	}
 
-	if bytes.Compare(pubKey, signingPubKey) != 0 {
+	if bytes.Compare(pubKey, expectedPubKey) != 0 {
 		return nil, fmt.Errorf("TKey does not have the expected pubkey")
 	}
 
