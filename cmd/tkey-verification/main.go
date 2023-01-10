@@ -94,11 +94,11 @@ Commands:
 	// Command funcs exit to OS themselves for now
 	switch cmd := pflag.Args()[0]; cmd {
 	case "serve-signer":
-		serveSigner(devPath, verbose, signerAppBin)
+		serveSigner(devPath, verbose)
 	case "remote-sign":
-		remoteSign(devPath, verbose, signerAppBin)
+		remoteSign(devPath, verbose)
 	case "verify":
-		verify(devPath, verbose, signerAppBin)
+		verify(devPath, verbose)
 	default:
 		le.Printf("%s is not a valid command.\n", cmd)
 		pflag.Usage()

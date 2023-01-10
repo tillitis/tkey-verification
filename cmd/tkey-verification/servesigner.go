@@ -20,8 +20,8 @@ type Verification struct {
 	Signature string `json:"signature"`
 }
 
-func serveSigner(devPath string, verbose bool, appBin []byte) {
-	foundUDI, foundPubKey, ok := runSignerApp(devPath, verbose, appBin)
+func serveSigner(devPath string, verbose bool) {
+	foundUDI, foundPubKey, ok := runSignerApp(devPath, verbose, signerAppBin)
 	if !ok {
 		os.Exit(1)
 	}

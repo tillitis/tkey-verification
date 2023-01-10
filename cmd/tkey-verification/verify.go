@@ -13,8 +13,8 @@ import (
 	"os"
 )
 
-func verify(devPath string, verbose bool, appBin []byte) {
-	udi, pubKey, ok := runSignerApp(devPath, verbose, appBin)
+func verify(devPath string, verbose bool) {
+	udi, pubKey, ok := runSignerApp(devPath, verbose, signerAppBin)
 	if !ok {
 		os.Exit(1)
 	}
