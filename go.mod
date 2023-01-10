@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/spf13/pflag v1.0.5
 	github.com/tillitis/tillitis-key1-apps v0.0.2-0.20221221161440-2c493c00d745
-	go.bug.st/serial v1.4.0
+	go.bug.st/serial v1.5.0
 )
 
 require (
