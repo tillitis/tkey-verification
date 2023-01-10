@@ -2,6 +2,10 @@
 .PHONY: all
 all: tkey-verification
 
+.PHONY:
+install:
+	install -Dm755 tkey-verification /usr/local/bin/tkey-verification
+
 # .PHONY to let go-build handle deps and rebuilds
 .PHONY: tkey-verification
 tkey-verification:
