@@ -114,7 +114,7 @@ func runSignerApp(devPath string, verbose bool, appBin []byte) ([]byte, []byte, 
 	return udi.RawBytes(), pubKey, true
 }
 
-func signWithApp(devPath string, expectedPubKey []byte, message [sha256.Size]byte) ([]byte, error) {
+func signWithApp(devPath string, message [sha256.Size]byte) ([]byte, error) {
 	var err error
 	if devPath == "" {
 		devPath, err = util.DetectSerialPort(true)
@@ -157,8 +157,8 @@ func signWithApp(devPath string, expectedPubKey []byte, message [sha256.Size]byt
 		return nil, fmt.Errorf("GetPubKey failed: %w", err)
 	}
 
-	if bytes.Compare(pubKey, expectedPubKey) != 0 {
-		return nil, fmt.Errorf("Signing TKey does not have expected pubkey")
+	if bytes.Compare(pubKey, signingPubKey) != 0 {
+		return nil, fmt.Errorf("TKey does not have the expected pubkey")
 	}
 
 	signature, err := tkSigner.Sign(message[:])

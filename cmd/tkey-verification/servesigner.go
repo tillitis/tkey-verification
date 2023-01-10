@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/hex"
 	"net/rpc"
@@ -19,38 +20,25 @@ type Verification struct {
 	Signature string `json:"signature"`
 }
 
-// TODO? we don't keep a connection to our signing TKey, but verify on
-// every signing that pubkey is the one we found on startup!
-
 func serveSigner(devPath string, verbose bool, appBin []byte) {
-	udi, signingPubKey, ok := runSignerApp(devPath, verbose, appBin)
+	foundUDI, foundPubKey, ok := runSignerApp(devPath, verbose, appBin)
 	if !ok {
 		os.Exit(1)
 	}
-	le.Printf("Signing TKey raw UDI: %s\n", hex.EncodeToString(udi))
-	le.Printf("Signing TKey pubkey: %s\n", hex.EncodeToString(signingPubKey))
+	le.Printf("Found TKey with pubkey: %s (raw UDI: %s)\n", hex.EncodeToString(foundPubKey), hex.EncodeToString(foundUDI))
 
-	// // le.Printf("The signing TKey should be flashing
-	// _, err := signWithApp(devPath, signingPubKey, [32]byte{})
-	// if err != nil {
-	// 	le.Printf("signWithApp failed: %s\n", err)
-	// 	os.Exit(1)
-	// }
-
-	// TODO dropping the signing pubkey here for now
-	fn := "signing.pub"
-	if err := os.WriteFile(fn, []byte(hex.EncodeToString(signingPubKey)+"\n"), 0o644); err != nil { //nolint:gosec
-		le.Printf("WriteFile %s failed: %s\n", fn, err)
+	if bytes.Compare(foundPubKey, signingPubKey) != 0 {
+		le.Printf("Found TKey pubkey does not match our embedded signing pubkey: %s\n", hex.EncodeToString(foundPubKey))
 		os.Exit(1)
 	}
-	le.Printf("Wrote %s\n", fn)
+	le.Printf("Found TKey pubkey matches our embedded signing pubkey.\n")
 
 	if err := os.MkdirAll(signaturesDir, 0o755); err != nil {
 		le.Printf("MkdirAll failed: %s\n", err)
 		os.Exit(1)
 	}
 
-	go serve(devPath, signingPubKey)
+	go serve(devPath)
 
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
@@ -61,8 +49,8 @@ func serveSigner(devPath string, verbose bool, appBin []byte) {
 	os.Exit(0)
 }
 
-func serve(devPath string, signingPubKey []byte) {
-	if err := rpc.Register(NewAPI(devPath, signingPubKey)); err != nil {
+func serve(devPath string) {
+	if err := rpc.Register(NewAPI(devPath)); err != nil {
 		le.Printf("Register failed: %s\n", err)
 		os.Exit(1)
 	}

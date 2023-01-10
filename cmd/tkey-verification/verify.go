@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 )
 
 func verify(devPath string, verbose bool, appBin []byte) {
@@ -20,13 +19,6 @@ func verify(devPath string, verbose bool, appBin []byte) {
 		os.Exit(1)
 	}
 	fmt.Printf("TKey raw UDI: %s\n", hex.EncodeToString(udi))
-
-	// TODO picking up signing pubkey here for now
-	signingPubKey, err := readHexLine("signing.pub")
-	if err != nil {
-		le.Printf("readHexLine failed: %s", err)
-		os.Exit(1)
-	}
 
 	// Get verification JSON by UDI
 	fn := fmt.Sprintf("%s/%s", signaturesDir, hex.EncodeToString(udi))
@@ -71,17 +63,4 @@ func verify(devPath string, verbose bool, appBin []byte) {
 	fmt.Printf("Verified signature over matching hash, TKey is genuine!\n")
 
 	os.Exit(0)
-}
-
-func readHexLine(fn string) ([]byte, error) {
-	data, err := os.ReadFile(fn)
-	if err != nil {
-		return nil, fmt.Errorf("ReadFile: %w", err)
-	}
-	lines := strings.Split(string(data), "\n")
-	bytes, err := hex.DecodeString(lines[0])
-	if err != nil {
-		return nil, fmt.Errorf("Failed to decode hex '%s': %w", lines[0], err)
-	}
-	return bytes, nil
 }

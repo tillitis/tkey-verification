@@ -16,16 +16,14 @@ import (
 )
 
 type API struct {
-	mu            sync.Mutex
-	devPath       string
-	signingPubKey []byte
+	mu      sync.Mutex
+	devPath string
 }
 
-func NewAPI(devPath string, signingPubKey []byte) *API {
+func NewAPI(devPath string) *API {
 	return &API{
-		mu:            sync.Mutex{},
-		devPath:       devPath,
-		signingPubKey: signingPubKey,
+		mu:      sync.Mutex{},
+		devPath: devPath,
 	}
 }
 
@@ -47,13 +45,13 @@ func (a *API) Sign(args *Args, _ *struct{}) error {
 		return fmt.Errorf("%s", msg)
 	}
 
-	signature, err := signWithApp(a.devPath, a.signingPubKey, args.Hash)
+	signature, err := signWithApp(a.devPath, args.Hash)
 	if err != nil {
 		le.Printf("signWithApp failed: %s\n", err)
 		return fmt.Errorf("signWithApp failed: %w", err)
 	}
 
-	if !ed25519.Verify(a.signingPubKey, args.Hash[:], signature) {
+	if !ed25519.Verify(signingPubKey, args.Hash[:], signature) {
 		msg := "Signature failed verification"
 		le.Printf("%s\n", msg)
 		return fmt.Errorf("%s", msg)

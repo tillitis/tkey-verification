@@ -5,6 +5,8 @@ all: tkey-verification gen-signing-keypair
 # .PHONY to let go-build handle deps and rebuilds
 .PHONY: tkey-verification
 tkey-verification:
+	# TODO we should keep our signing pubkey committed here
+	cp -a ./tillitis-signing-tkey.pub ./cmd/tkey-verification/signing-tkey.pub
 	go build ./cmd/tkey-verification
 
 # .PHONY to let go-build handle deps and rebuilds

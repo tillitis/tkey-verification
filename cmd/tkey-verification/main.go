@@ -4,7 +4,9 @@
 package main
 
 import (
+	"crypto/ed25519"
 	_ "embed"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -30,6 +32,12 @@ const signerAppTag = "main"
 
 // nolint:typecheck // Avoid lint error when the embedding file is missing.
 //
+//go:embed signing-tkey.pub
+var signingPubKeyHex string
+var signingPubKey []byte
+
+// nolint:typecheck // Avoid lint error when the embedding file is missing.
+//
 //go:embed app.bin
 var signerAppBin []byte
 
@@ -41,6 +49,19 @@ var le = log.New(os.Stderr, "", 0)
 func main() {
 	var devPath string
 	var verbose bool
+	var err error
+
+	signingPubKey, err = hex.DecodeString(strings.Trim(signingPubKeyHex, "\r\n "))
+	if err != nil {
+		le.Printf("Failed to decode embedded signing pubkey: %s\n", err)
+		os.Exit(1)
+	}
+	if len(signingPubKey) != ed25519.PublicKeySize {
+		le.Printf("Embedded signing pubkey binary is %d bytes, expected %d\n",
+			len(signingPubKey), ed25519.PublicKeySize)
+		os.Exit(1)
+	}
+
 	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.CommandLine.SortFlags = false
 	pflag.StringVar(&devPath, "port", "",
