@@ -67,7 +67,7 @@ func runSignerApp(devPath string, verbose bool, appBin []byte) ([]byte, []byte, 
 	nameVer, err = tk.GetNameVersion()
 	if err != nil {
 		le.Printf("If the serial port is correct, then the TKey might not be in firmware-mode, and have an app running already.\n" +
-			"For verification (remote-sign and verify), we *must* load the signer-app ourselves.\n" +
+			"The tkey-verification tool must load the signer-app itself.\n" +
 			"Please unplug the TKey and plug it in again.\n")
 		return nil, nil, false
 	}
