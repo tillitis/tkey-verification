@@ -17,8 +17,8 @@ on a computer on the provisioning network with its own TKey.
 The TKey is inserted into the provisioning workstation.
 
 `tkey-verification remote-sign` is run on the provisioning workstation
-to create a unique hash for a specific TKey and sign it with our
-vendor key by calling the signing service above.
+to create a unique hash for a specific TKey (hash = sha256(udi,pubkey)
+and sign it with our vendor key by calling the signing service above.
 
 `tkey-verification remote-sign` currently outputs a file in a
 directory `signatures/` which is named after the Unique Device
@@ -29,7 +29,6 @@ and contains something like:
 {
   "timestamp": 1673366672,
   "tag": "main",
-  "hash": "ede59095fa42fcb214477982ac37526f1f0678de9237362fb727465aff8571d9",
   "signature": "8256ec5fdf7b497fd8430e9e4217e2733080af93061b7dc13976fffadfad42724881db52e12e1dae32f85a13732a78a808ec15cd21d9a5cf195d10237c695601"
 }
 ```
@@ -39,9 +38,8 @@ Where the fields are:
 - timestamp: seconds since the Unix epoch when the signature was done.
 - tag: The Git tag of the ed25519 signer oracle used on the device
   under verification, `apps/signer/app.bin` in the apps repo.
-- hash: A SHA256 hash in base16 (hex) of the Unique Device Identifier
-  and the public key of the TKey.
-- signature: Vendor's ed25519 signature of the hash in base16 (hex).
+- signature: Vendor's ed25519 signature of the TKey's hash in base16
+  (hex).
 
 These files will later be published somewhere public, for example on a
 web server.
@@ -49,8 +47,9 @@ web server.
 ### Verification
 
 To verify a device, the user runs `tkey-verification verify`. It first
-creates the SHA256 hash of the TKey's Unique Device Identifier and the
-ed25519 public key
+retrieves the Unique Device Identifier (UDI), then runs the signer on
+the TKey and retrieves the public key and produces a unique hash, hash
+= sha256(udi, pubkey).
 
 `tkey-verification verify` then looks for a file under the
 `signatures/` directory named after its UDI, for example

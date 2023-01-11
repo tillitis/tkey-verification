@@ -69,7 +69,6 @@ func (a *API) Sign(args *Args, _ *struct{}) error {
 	json, err := json.Marshal(Verification{
 		time.Now().UTC().Unix(),
 		args.Tag,
-		hex.EncodeToString(args.Hash[:]),
 		hex.EncodeToString(signature),
 	})
 	if err != nil {

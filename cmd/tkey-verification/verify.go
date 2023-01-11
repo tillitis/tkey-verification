@@ -4,7 +4,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/hex"
@@ -19,6 +18,8 @@ func verify(devPath string, verbose bool) {
 		os.Exit(1)
 	}
 	fmt.Printf("TKey raw UDI: %s\n", hex.EncodeToString(udi))
+
+	hash := sha256.Sum256(append(udi, pubKey...))
 
 	// Get verification JSON by UDI
 	fn := fmt.Sprintf("%s/%s", signaturesDir, hex.EncodeToString(udi))
@@ -39,28 +40,17 @@ func verify(devPath string, verbose bool) {
 		os.Exit(1)
 	}
 
-	vHash, err := hex.DecodeString(verification.Hash)
-	if err != nil {
-		le.Printf("hex.DecodeString failed: %s", err)
-		os.Exit(1)
-	}
 	vSignature, err := hex.DecodeString(verification.Signature)
 	if err != nil {
 		le.Printf("hex.DecodeString failed: %s", err)
 		os.Exit(1)
 	}
 
-	hash := sha256.Sum256(append(udi, pubKey...))
-	if bytes.Compare(hash[:], vHash) != 0 {
-		fmt.Printf("Hashes do not match!\n")
-		os.Exit(1)
-	}
-
-	if !ed25519.Verify(signingPubKey, vHash, vSignature) {
+	if !ed25519.Verify(signingPubKey, hash[:], vSignature) {
 		fmt.Printf("Signature failed verification!\n")
 		os.Exit(1)
 	}
-	fmt.Printf("Verified signature over matching hash, TKey is genuine!\n")
+	fmt.Printf("Verified signature over computed hash, TKey is genuine!\n")
 
 	os.Exit(0)
 }
