@@ -27,7 +27,7 @@ func NewAPI(devPath string) *API {
 }
 
 type Args struct {
-	UDI       [8]byte
+	UDI       [8]byte // BE
 	Tag       string
 	Challenge []byte
 	Message   []byte
@@ -37,7 +37,7 @@ func (a *API) Sign(args *Args, _ *struct{}) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	le.Printf("Going to sign public key from TKey with raw UDI: %s (tag: %s)\n", hex.EncodeToString(args.UDI[:]), args.Tag)
+	le.Printf("Going to sign public key from TKey with UDI (BE): %s (tag: %s)\n", hex.EncodeToString(args.UDI[:]), args.Tag)
 
 	if args.Tag == "" {
 		err := fmt.Errorf("Empty tag")
@@ -58,7 +58,7 @@ func (a *API) Sign(args *Args, _ *struct{}) error {
 		return err
 	}
 
-	// File named after the raw UDI (in hex)
+	// File named after the UDI (BE, in hex)
 	fn := fmt.Sprintf("%s/%s", signaturesDir, hex.EncodeToString(args.UDI[:]))
 	if _, err = os.Stat(fn); err == nil || !errors.Is(err, os.ErrNotExist) {
 		err = fmt.Errorf("%s already exists?", fn)

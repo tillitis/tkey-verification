@@ -12,11 +12,11 @@ import (
 )
 
 func remoteSign(devPath string, verbose bool) {
-	udi, pubKey, ok := runSignerApp(devPath, verbose, signerAppBin)
+	udiBE, pubKey, ok := runSignerApp(devPath, verbose, signerAppBin)
 	if !ok {
 		os.Exit(1)
 	}
-	le.Printf("TKey raw UDI: %s\n", hex.EncodeToString(udi))
+	le.Printf("TKey UDI (BE): %s\n", hex.EncodeToString(udiBE[:]))
 
 	// Locally generate a challenge and sign it
 	challenge := make([]byte, 32)
@@ -48,7 +48,7 @@ func remoteSign(devPath string, verbose bool) {
 	}
 
 	args := Args{
-		UDI:       *(*[8]byte)(udi),
+		UDI:       udiBE,
 		Tag:       signerAppTag,
 		Challenge: challenge,
 		Message:   message,

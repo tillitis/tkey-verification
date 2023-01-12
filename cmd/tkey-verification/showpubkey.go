@@ -10,11 +10,11 @@ import (
 )
 
 func showPubKey(devPath string, verbose bool) {
-	udi, pubKey, ok := runSignerApp(devPath, verbose, signerAppBin)
+	udiBE, pubKey, ok := runSignerApp(devPath, verbose, signerAppBin)
 	if !ok {
 		os.Exit(1)
 	}
-	le.Printf("TKey raw UDI: %s\n", hex.EncodeToString(udi))
+	le.Printf("TKey UDI (BE): %s\n", hex.EncodeToString(udiBE[:]))
 
 	fmt.Printf("%s\n", hex.EncodeToString(pubKey))
 	os.Exit(0)

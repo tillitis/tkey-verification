@@ -174,7 +174,7 @@ it in `cmd/tkey-verification/app.bin` before building the tool.
     Loading app...
     App loaded.
     App name0:'tk1 ' name1:'sign' version:1
-    TKey raw UDI: 0133704100000015
+    TKey UDI (BE): 0133704100000015
     Verified the vendor signature over a device signature over the challenge, TKey is genuine!
     ```
 

@@ -12,14 +12,14 @@ import (
 )
 
 func verify(devPath string, verbose bool) {
-	udi, pubKey, ok := runSignerApp(devPath, verbose, signerAppBin)
+	udiBE, pubKey, ok := runSignerApp(devPath, verbose, signerAppBin)
 	if !ok {
 		os.Exit(1)
 	}
-	fmt.Printf("TKey raw UDI: %s\n", hex.EncodeToString(udi))
+	fmt.Printf("TKey UDI (BE): %s\n", hex.EncodeToString(udiBE[:]))
 
 	// Get verification JSON by UDI
-	fn := fmt.Sprintf("%s/%s", signaturesDir, hex.EncodeToString(udi))
+	fn := fmt.Sprintf("%s/%s", signaturesDir, hex.EncodeToString(udiBE[:]))
 	verificationJSON, err := os.ReadFile(fn)
 	if err != nil {
 		le.Printf("ReadFile %s failed: %s", fn, err)

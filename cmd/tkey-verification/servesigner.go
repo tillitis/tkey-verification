@@ -21,11 +21,11 @@ type Verification struct {
 }
 
 func serveSigner(devPath string, verbose bool) {
-	foundUDI, foundPubKey, ok := runSignerApp(devPath, verbose, signerAppBin)
+	foundUDIBE, foundPubKey, ok := runSignerApp(devPath, verbose, signerAppBin)
 	if !ok {
 		os.Exit(1)
 	}
-	le.Printf("Found TKey with pubkey: %s (raw UDI: %s)\n", hex.EncodeToString(foundPubKey), hex.EncodeToString(foundUDI))
+	le.Printf("Found TKey with pubkey: %s (UDI (BE): %s)\n", hex.EncodeToString(foundPubKey), hex.EncodeToString(foundUDIBE[:]))
 
 	if bytes.Compare(foundPubKey, signingPubKey) != 0 {
 		le.Printf("Found TKey pubkey does not match our embedded signing pubkey: %s\n", hex.EncodeToString(foundPubKey))
