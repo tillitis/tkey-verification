@@ -18,13 +18,13 @@ The TKey is inserted into the provisioning workstation.
 
 `tkey-verification remote-sign` is run on the provisioning workstation
 to retrieve the Unique Device Identifier (UDI), load the signer, and
-retrieve the public key. It sends it to the signing service above for
-a signature.
+retrieve the public key from the TKey. It sends the UDI and public key
+to the signing service above for a signature.
 
-`tkey-verification remote-sign` currently outputs a file in a
-directory `signatures/` which is named after the Unique Device
-Identifier (in hex), so something like `signatures/0133704100000015`
-and contains something like:
+The remote signing server outputs a file in a directory `signatures/`
+which is named after the Unique Device Identifier (in hex), so
+something like `signatures/0133704100000015` and contains something
+like:
 
 ```
 {
