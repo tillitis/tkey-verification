@@ -4,6 +4,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"crypto/tls"
 	"encoding/hex"
 	"net/rpc"
@@ -17,8 +18,15 @@ func remoteSign(devPath string, verbose bool) {
 	}
 	le.Printf("TKey raw UDI: %s\n", hex.EncodeToString(udi))
 
-	// Sign the UDI
-	message, err := signWithApp(devPath, pubKey, udi)
+	// Locally generate a challenge and sign it
+	challenge := make([]byte, 32)
+	if _, err := rand.Read(challenge); err != nil {
+		le.Printf("rand.Read failed: %s\n", err)
+		os.Exit(1)
+	}
+
+	// The message we want vendor to sign is the result of signing the challenge
+	message, err := signWithApp(devPath, pubKey, challenge)
 	if err != nil {
 		le.Printf("local sign failed: %s", err)
 		os.Exit(1)
@@ -39,9 +47,10 @@ func remoteSign(devPath string, verbose bool) {
 	}
 
 	args := Args{
-		UDI:     *(*[8]byte)(udi),
-		Tag:     signerAppTag,
-		Message: message,
+		UDI:       *(*[8]byte)(udi),
+		Tag:       signerAppTag,
+		Challenge: challenge,
+		Message:   message,
 	}
 
 	client := rpc.NewClient(conn)
