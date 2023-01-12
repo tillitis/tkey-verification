@@ -5,7 +5,6 @@ package main
 
 import (
 	"crypto/ed25519"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -18,8 +17,6 @@ func verify(devPath string, verbose bool) {
 		os.Exit(1)
 	}
 	fmt.Printf("TKey raw UDI: %s\n", hex.EncodeToString(udi))
-
-	hash := sha256.Sum256(append(udi, pubKey...))
 
 	// Get verification JSON by UDI
 	fn := fmt.Sprintf("%s/%s", signaturesDir, hex.EncodeToString(udi))
@@ -46,11 +43,11 @@ func verify(devPath string, verbose bool) {
 		os.Exit(1)
 	}
 
-	if !ed25519.Verify(signingPubKey, hash[:], vSignature) {
+	if !ed25519.Verify(signingPubKey, pubKey, vSignature) {
 		fmt.Printf("Signature failed verification!\n")
 		os.Exit(1)
 	}
-	fmt.Printf("Verified signature over computed hash, TKey is genuine!\n")
+	fmt.Printf("Verified signature over device public key, TKey is genuine!\n")
 
 	os.Exit(0)
 }

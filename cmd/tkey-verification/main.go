@@ -74,7 +74,7 @@ func main() {
 Commands:
   serve-signer  TODO...
   remote-sign   TODO...
-  verify        Verify that a TKey is genuine by recreating the hash, fetching
+  verify        Verify that a TKey is genuine by extracting public key, fetching
                 the signature, and verifying it using the vendor's signing
                 public-key.
   show-pubkey   Output the public key of a TKey.`)

@@ -5,7 +5,6 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -117,7 +116,7 @@ func runSignerApp(devPath string, verbose bool, appBin []byte) ([]byte, []byte, 
 // signWithApp connects to a TKey and asks an already running
 // signer-app to sign a message. The public key of signer-app must be
 // expectedPubKey.
-func signWithApp(devPath string, expectedPubKey []byte, message [sha256.Size]byte) ([]byte, error) {
+func signWithApp(devPath string, expectedPubKey []byte, message []byte) ([]byte, error) {
 	var err error
 	if devPath == "" {
 		devPath, err = util.DetectSerialPort(true)

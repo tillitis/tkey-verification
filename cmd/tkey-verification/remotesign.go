@@ -4,7 +4,6 @@
 package main
 
 import (
-	"crypto/sha256"
 	"crypto/tls"
 	"encoding/hex"
 	"net/rpc"
@@ -33,9 +32,9 @@ func remoteSign(devPath string, verbose bool) {
 	}
 
 	args := Args{
-		UDI:  *(*[8]byte)(udi),
-		Tag:  signerAppTag,
-		Hash: sha256.Sum256(append(udi, pubKey...)),
+		UDI:    *(*[8]byte)(udi),
+		Tag:    signerAppTag,
+		PubKey: pubKey,
 	}
 
 	client := rpc.NewClient(conn)
