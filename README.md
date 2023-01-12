@@ -12,19 +12,21 @@ and not tampered with.
 ### Signing
 
 `tkey-verification serve-signer` is run to provide a signing service
-on a computer on the provisioning network with its own TKey.
+on a computer on the provisioning network with its own TKey, the
+vendor key.
 
 The TKey is inserted into the provisioning workstation.
 
 `tkey-verification remote-sign` is run on the provisioning workstation
 to retrieve the Unique Device Identifier (UDI), load the signer, and
-retrieve the public key from the TKey. It sends the UDI and public key
-to the signing service above for a signature.
+ask the signer to sign a message (its own UDI). It then sends the UDI
+and the device signature to the signing service above for a vendor
+signature.
 
-The remote signing server outputs a file in a directory `signatures/`
-which is named after the Unique Device Identifier (in hex), so
-something like `signatures/0133704100000015` and contains something
-like:
+The remote signing server signs the message (the device signature) and
+outputs a file in a directory `signatures/` which is named after the
+Unique Device Identifier (in hex), so something like
+`signatures/0133704100000015` and contains something like:
 
 ```
 {
@@ -39,8 +41,8 @@ Where the fields are:
 - timestamp: RFC3339 UTC timestamp when the signature was done.
 - tag: The Git tag of the ed25519 signer oracle used on the device
   under verification, `apps/signer/app.bin` in the apps repo.
-- signature: Vendor's ed25519 signature of the TKey's public key, in
-  base16 (hex).
+- signature: Vendor's ed25519 signature of the device signature of the
+  device's own UDI. Stored in base16 (hex).
 
 These files will later be published somewhere public, for example on a
 web server.
@@ -48,21 +50,21 @@ web server.
 ### Verification
 
 To verify a device, the user runs `tkey-verification verify`. It first
-retrieves the Unique Device Identifier (UDI), loads the signer on
-the TKey and retrieves the public key.
+retrieves the Unique Device Identifier (UDI), loads the signer on the
+TKey, and asks it so sign its own UDI, resulting in a device
+signature.
 
 `tkey-verification verify` then looks for a file under the
 `signatures/` directory named after its UDI, for example
-`signatures/0133704100000015`. If the signature over the public key of
-the device under verification can be verified using Tillitis' (the
-vendor's) signing public key, then the TKey is genuine.
+`signatures/0133704100000015`. If the vendor signature over the device
+signature can be verified using Tillitis' (the vendor's) signing
+public key, then the TKey is genuine.
 
 *Nota bene*: The same signer binary that was used for producing the
 public key during signing *must* be used when verifying it. If a
-different signer is used then the public keys will not match even if
-the TKey is the same. A verifier must check the "tag" field and
-complain if its own version of the signer doesn't come from the same
-tag.
+different signer is used then the signature will not match even if the
+TKey is the same. A verifier must check the "tag" field and complain
+if its own version of the signer doesn't come from the same tag.
 
 We're currently thinking that we could provide binary releases of the
 `tkey-verification` host program. The version number of this program
@@ -72,9 +74,9 @@ differs in the `signature` file and can complain that you need to run
 another version. This is still TODO, and currently we just build the
 signer from main.
 
-We want to be compatible with the sigsum transparencly and might later
-post something on the log, perhaps just sha256(signature file content)
-and our ed25519 signature.
+We want to be compatible with the sigsum transparency log and might
+later post something on the log, perhaps just sha256(signature file
+content) and our ed25519 signature.
 
 https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md#21-cryptography
 
@@ -158,7 +160,7 @@ it in `cmd/tkey-verification/app.bin` before building the tool.
     App loaded.
     App name0:'tk1 ' name1:'sign' version:1
     TKey raw UDI: 0133704100000015
-    Verified signature over device public key, TKey is genuine!
+    Verified the vendor signature over a device signature over the UDI, TKey is genuine!
     ```
 
 ## Running qemu
