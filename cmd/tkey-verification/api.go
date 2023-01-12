@@ -5,7 +5,6 @@ package main
 
 import (
 	"crypto/ed25519"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -28,16 +27,16 @@ func NewAPI(devPath string) *API {
 }
 
 type Args struct {
-	UDI  [8]byte
-	Tag  string
-	Hash [sha256.Size]byte
+	UDI    [8]byte
+	Tag    string
+	PubKey []byte
 }
 
 func (a *API) Sign(args *Args, _ *struct{}) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	le.Printf("Going to sign hash from TKey with raw UDI: %s (tag: %s)\n", hex.EncodeToString(args.UDI[:]), args.Tag)
+	le.Printf("Going to sign public key from TKey with raw UDI: %s (tag: %s)\n", hex.EncodeToString(args.UDI[:]), args.Tag)
 
 	if args.Tag == "" {
 		err := fmt.Errorf("Empty tag")
@@ -45,14 +44,14 @@ func (a *API) Sign(args *Args, _ *struct{}) error {
 		return err
 	}
 
-	signature, err := signWithApp(a.devPath, signingPubKey, args.Hash)
+	signature, err := signWithApp(a.devPath, signingPubKey, args.PubKey)
 	if err != nil {
 		err = fmt.Errorf("signWithApp failed: %w", err)
 		le.Printf("%s\n", err)
 		return err
 	}
 
-	if !ed25519.Verify(signingPubKey, args.Hash[:], signature) {
+	if !ed25519.Verify(signingPubKey, args.PubKey, signature) {
 		err = fmt.Errorf("Signature failed verification")
 		le.Printf("%s\n", err)
 		return err

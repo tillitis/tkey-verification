@@ -17,8 +17,9 @@ on a computer on the provisioning network with its own TKey.
 The TKey is inserted into the provisioning workstation.
 
 `tkey-verification remote-sign` is run on the provisioning workstation
-to create a unique hash for a specific TKey (hash = sha256(udi,pubkey)
-and sign it with our vendor key by calling the signing service above.
+to retrieve the Unique Device Identifier (UDI), load the signer, and
+retrieve the public key. It sends it to the signing service above for
+a signature.
 
 `tkey-verification remote-sign` currently outputs a file in a
 directory `signatures/` which is named after the Unique Device
@@ -29,7 +30,7 @@ and contains something like:
 {
   "timestamp": 1673366672,
   "tag": "main",
-  "signature": "8256ec5fdf7b497fd8430e9e4217e2733080af93061b7dc13976fffadfad42724881db52e12e1dae32f85a13732a78a808ec15cd21d9a5cf195d10237c695601"
+  "signature":"140dee49fb16aa3c540c0cab59e17b3958af892668ee9cdfef69ac14714052bdd92a6fd3aecbf927d6fb51ccb6d2876cb5c65877dc3fb8e54c667176f369f008"}
 }
 ```
 
@@ -38,8 +39,8 @@ Where the fields are:
 - timestamp: seconds since the Unix epoch when the signature was done.
 - tag: The Git tag of the ed25519 signer oracle used on the device
   under verification, `apps/signer/app.bin` in the apps repo.
-- signature: Vendor's ed25519 signature of the TKey's hash in base16
-  (hex).
+- signature: Vendor's ed25519 signature of the TKey's public key, in
+  base16 (hex).
 
 These files will later be published somewhere public, for example on a
 web server.
@@ -47,20 +48,21 @@ web server.
 ### Verification
 
 To verify a device, the user runs `tkey-verification verify`. It first
-retrieves the Unique Device Identifier (UDI), then runs the signer on
-the TKey and retrieves the public key and produces a unique hash, hash
-= sha256(udi, pubkey).
+retrieves the Unique Device Identifier (UDI), loads the signer on
+the TKey and retrieves the public key.
 
 `tkey-verification verify` then looks for a file under the
 `signatures/` directory named after its UDI, for example
-`signatures/0133704100000015`. If the signature can be verified using
-Tillitis' (the vendor's) signing public key, then the TKey is genuine.
+`signatures/0133704100000015`. If the signature over the public key of
+the device under verification can be verified using Tillitis' (the
+vendor's) signing public key, then the TKey is genuine.
 
 *Nota bene*: The same signer binary that was used for producing the
 public key during signing *must* be used when verifying it. If a
-different signer is used then the hashes will not match even if the
-TKey is the same. A verifier must check the "tag" field and complain
-if its own version of the signer doesn't come from the same tag.
+different signer is used then the public keys will not match even if
+the TKey is the same. A verifier must check the "tag" field and
+complain if its own version of the signer doesn't come from the same
+tag.
 
 We're currently thinking that we could provide binary releases of the
 `tkey-verification` host program. The version number of this program
@@ -70,8 +72,10 @@ differs in the `signature` file and can complain that you need to run
 another version. This is still TODO, and currently we just build the
 signer from main.
 
-We want to be compatible with sigsum. Same kind of hash and signature:
-SHA256 and Ed25519.
+We want to be compatible with the sigsum transparencly and might later
+post something on the log, perhaps just sha256(signature file content)
+and our ed25519 signature.
+
 https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md#21-cryptography
 
 ## Building and running
@@ -154,7 +158,7 @@ it in `cmd/tkey-verification/app.bin` before building the tool.
     App loaded.
     App name0:'tk1 ' name1:'sign' version:1
     TKey raw UDI: 0133704100000015
-    Verified signature over matching hash, TKey is genuine!
+    Verified signature over device public key, TKey is genuine!
     ```
 
 ## Running qemu
