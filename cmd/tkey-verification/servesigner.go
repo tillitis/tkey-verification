@@ -14,7 +14,7 @@ import (
 )
 
 type Verification struct {
-	Timestamp int64  `json:"timestamp"`
+	Timestamp string `json:"timestamp"`
 	Tag       string `json:"tag"`
 	Signature string `json:"signature"`
 }

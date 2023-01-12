@@ -28,7 +28,7 @@ and contains something like:
 
 ```
 {
-  "timestamp": 1673366672,
+  "timestamp": "2023-01-10T16:04:32Z",
   "tag": "main",
   "signature":"140dee49fb16aa3c540c0cab59e17b3958af892668ee9cdfef69ac14714052bdd92a6fd3aecbf927d6fb51ccb6d2876cb5c65877dc3fb8e54c667176f369f008"}
 }
@@ -36,7 +36,7 @@ and contains something like:
 
 Where the fields are:
 
-- timestamp: seconds since the Unix epoch when the signature was done.
+- timestamp: RFC3339 UTC timestamp when the signature was done.
 - tag: The Git tag of the ed25519 signer oracle used on the device
   under verification, `apps/signer/app.bin` in the apps repo.
 - signature: Vendor's ed25519 signature of the TKey's public key, in

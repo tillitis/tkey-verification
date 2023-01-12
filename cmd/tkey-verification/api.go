@@ -66,7 +66,7 @@ func (a *API) Sign(args *Args, _ *struct{}) error {
 	}
 
 	json, err := json.Marshal(Verification{
-		time.Now().UTC().Unix(),
+		time.Now().UTC().Format(time.RFC3339),
 		args.Tag,
 		hex.EncodeToString(signature),
 	})
