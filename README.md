@@ -9,30 +9,42 @@ and not tampered with.
 
 ## Procedure
 
+### Terminology
+
+- "signing server": An HSM-like machine providing signatures over
+  messages and producing files to be uploaded later.
+- "device under verification": The device we are provisioning or the
+  user is verifiying.
+- "vendor signature": A signature made by the signing server.
+- "device signature": A signature made on the device under
+  verification.
+
 ### Signing
 
-`tkey-verification serve-signer` is run to provide a signing service
-on a computer on the provisioning network with its own TKey, the
-vendor key.
+`tkey-verification serve-signer` is run to provide a signing server on
+a computer on the provisioning network with its own TKey, the vendor
+key.
 
-The TKey is inserted into the provisioning workstation.
+The device under verification is inserted into the provisioning
+workstation.
 
 `tkey-verification remote-sign` is run on the provisioning workstation
 to retrieve the Unique Device Identifier (UDI), load the signer, and
-ask the signer to sign a message (its own UDI). It then sends the UDI
-and the device signature to the signing service above for a vendor
-signature.
+ask the signer to sign a random challenge. It then sends the UDI, the
+challenge, and the device signature to the signing server above for a
+vendor signature.
 
-The remote signing server signs the message (the device signature) and
+The signing server signs the message (the device signature) and
 outputs a file in a directory `signatures/` which is named after the
 Unique Device Identifier (in hex), so something like
 `signatures/0133704100000015` and contains something like:
 
 ```
 {
-  "timestamp": "2023-01-10T16:04:32Z",
+  "timestamp": "2023-01-12T12:04:24Z",
   "tag": "main",
-  "signature":"140dee49fb16aa3c540c0cab59e17b3958af892668ee9cdfef69ac14714052bdd92a6fd3aecbf927d6fb51ccb6d2876cb5c65877dc3fb8e54c667176f369f008"}
+  "challenge": "30904704d875d506bbd1eef4b458e73b69cdca043bfaf504015d3d59e20fb403",
+  "signature": "a720d532e78c7f5aeb2ac61d9c112f6323cd9db1ce45d6ff6d727b05a38dabafab0087d2a9be770e1ce8e889178ea111a67bf366bb4af9d11e68a2dc229ffa0a"
 }
 ```
 
@@ -41,8 +53,10 @@ Where the fields are:
 - timestamp: RFC3339 UTC timestamp when the signature was done.
 - tag: The Git tag of the ed25519 signer oracle used on the device
   under verification, `apps/signer/app.bin` in the apps repo.
-- signature: Vendor's ed25519 signature of the device signature of the
-  device's own UDI. Stored in base16 (hex).
+- challenge: A random challenge to be signed by the device. Stored in
+  base16 (hex).
+- signature: Vendor signature of the device signature of the challenge
+  above. Stored in base16 (hex).
 
 These files will later be published somewhere public, for example on a
 web server.
@@ -50,18 +64,19 @@ web server.
 ### Verification
 
 To verify a device, the user runs `tkey-verification verify`. It first
-retrieves the Unique Device Identifier (UDI), loads the signer on the
-TKey, and asks it so sign its own UDI, resulting in a device
-signature.
+retrieves the Unique Device Identifier (UDI), then looks for a file
+under the `signatures/` directory named after its UDI, for example
+`signatures/0133704100000015`.
 
-`tkey-verification verify` then looks for a file under the
-`signatures/` directory named after its UDI, for example
-`signatures/0133704100000015`. If the vendor signature over the device
-signature can be verified using Tillitis' (the vendor's) signing
-public key, then the TKey is genuine.
+Then it loads the signer on the TKey, and asks it to sign the
+challenge from the file, resulting in a device signature.
+
+If the vendor signature in the file over the device signature can be
+verified using Tillitis' (the vendor's) signing public key, then the
+TKey is genuine.
 
 *Nota bene*: The same signer binary that was used for producing the
-public key during signing *must* be used when verifying it. If a
+device signature during signing *must* be used when verifying it. If a
 different signer is used then the signature will not match even if the
 TKey is the same. A verifier must check the "tag" field and complain
 if its own version of the signer doesn't come from the same tag.
@@ -76,7 +91,7 @@ signer from main.
 
 We want to be compatible with the sigsum transparency log and might
 later post something on the log, perhaps just sha256(signature file
-content) and our ed25519 signature.
+content).
 
 https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md#21-cryptography
 
@@ -126,28 +141,28 @@ it in `cmd/tkey-verification/app.bin` before building the tool.
    that you want to sign and then verify as genuine. You need to know
    the serial port device paths for these.
 
-8. Run the signing endpoint on qemu (see below for details on how
-   start, notice what device qemu said when starting):
+8. Run the signing server on qemu (see below for details on how start,
+   notice what device qemu said when starting):
 
    ```
    ./tkey-verification serve-signer --port /dev/pts/12
    ```
 
-9. Insert the TKey to be signed and verified.
+9. Insert the device under verification, the TKey to be signed and verified.
 
-9. Get the signing endpoint to sign for a TKey (here a hardware TKey)
+9. Get the signing server to sign for a device under verification
+   (here a hardware TKey)
 
    ```
    % ./tkey-verification remote-sign
    ```
 
-10. The signing endpoint should now have signed and saved a
-    verification file under `signatures` with a filename generated
-    from the Unique Device Identifier, typically something like
-    `0133704100000015`
+10. The signing server should now have signed and saved a verification
+    file under `signatures` with a filename generated from the Unique
+    Device Identifier, typically something like `0133704100000015`
 
-11. Before trying to verify you need to remove and re-insert the TKey
-    under verification to get it back to firmware mode.
+11. Before trying to verify you need to remove and re-insert the
+    device under verification to get it back to firmware mode.
     `tkey-verification` always requires to load the signer itself.
     Then try to verify:
 
@@ -184,16 +199,15 @@ A test public key is in `test-signing-tkey.pub`.
 If you want to use some other key this is how you get it:
 
 If you're just testing start a qemu as a signing endpoint. See above.
-   
 
-Get the public key from the signing endpoint, for instance by running
+Get the public key from the signing server, for instance by running
 `tkey-runapp` and `tkey-sign` from the
 [tillitis-key1-apps](https://github.com/tillitis/tillitis-key1-apps)
 repo.
    
 ```
 % ./tkey-runapp --port /dev/pts/12 apps/signer/app.bin 
- 
+... 
 % ./tkey-sign --port /dev/pts/12 apps/app.lds
 Connecting to TKey on serial port /dev/pts/12 ...
 Public Key from TKey:  67b1464aa24f6593fe671ec100f30e858cdf7fbb0b4686bdf9ca47b5c648ba0f 

@@ -27,9 +27,10 @@ func NewAPI(devPath string) *API {
 }
 
 type Args struct {
-	UDI     [8]byte
-	Tag     string
-	Message []byte
+	UDI       [8]byte
+	Tag       string
+	Challenge []byte
+	Message   []byte
 }
 
 func (a *API) Sign(args *Args, _ *struct{}) error {
@@ -68,6 +69,7 @@ func (a *API) Sign(args *Args, _ *struct{}) error {
 	json, err := json.Marshal(Verification{
 		time.Now().UTC().Format(time.RFC3339),
 		args.Tag,
+		hex.EncodeToString(args.Challenge),
 		hex.EncodeToString(signature),
 	})
 	if err != nil {

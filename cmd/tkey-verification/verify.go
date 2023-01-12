@@ -18,13 +18,6 @@ func verify(devPath string, verbose bool) {
 	}
 	fmt.Printf("TKey raw UDI: %s\n", hex.EncodeToString(udi))
 
-	// Get a signature over the UDI as the message to be verified
-	message, err := signWithApp(devPath, pubKey, udi)
-	if err != nil {
-		le.Printf("sign failed: %s", err)
-		os.Exit(1)
-	}
-
 	// Get verification JSON by UDI
 	fn := fmt.Sprintf("%s/%s", signaturesDir, hex.EncodeToString(udi))
 	verificationJSON, err := os.ReadFile(fn)
@@ -44,6 +37,19 @@ func verify(devPath string, verbose bool) {
 		os.Exit(1)
 	}
 
+	// Get a signature over the challenge as the message to be verified
+	challenge, err := hex.DecodeString(verification.Challenge)
+	if err != nil {
+		le.Printf("Couldn't decode challenge: %s", err)
+		os.Exit(1)
+	}
+
+	message, err := signWithApp(devPath, pubKey, challenge)
+	if err != nil {
+		le.Printf("sign failed: %s", err)
+		os.Exit(1)
+	}
+
 	vSignature, err := hex.DecodeString(verification.Signature)
 	if err != nil {
 		le.Printf("hex.DecodeString failed: %s", err)
@@ -54,7 +60,7 @@ func verify(devPath string, verbose bool) {
 		fmt.Printf("Signature failed verification!\n")
 		os.Exit(1)
 	}
-	fmt.Printf("Verified the vendor signature over a local signature over the UDI, TKey is genuine!\n")
+	fmt.Printf("Verified the vendor signature over a device signature over the challenge, TKey is genuine!\n")
 
 	os.Exit(0)
 }

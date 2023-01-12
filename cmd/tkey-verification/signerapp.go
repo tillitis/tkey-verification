@@ -163,7 +163,7 @@ func signWithApp(devPath string, expectedPubKey []byte, message []byte) ([]byte,
 		return nil, fmt.Errorf("TKey does not have the expected pubkey")
 	}
 
-	signature, err := tkSigner.Sign(message[:])
+	signature, err := tkSigner.Sign(message)
 	if err != nil {
 		return nil, fmt.Errorf("Sign failed: %w", err)
 	}
