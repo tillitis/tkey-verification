@@ -25,7 +25,8 @@ func remoteSign(devPath string, verbose bool) {
 		os.Exit(1)
 	}
 
-	// The message we want vendor to sign is the result of signing the challenge
+	// The message we want vendor to sign is our signature over the
+	// challenge
 	message, err := signWithApp(devPath, pubKey, challenge)
 	if err != nil {
 		le.Printf("local sign failed: %s", err)

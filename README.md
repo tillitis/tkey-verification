@@ -31,8 +31,8 @@ workstation.
 `tkey-verification remote-sign` is run on the provisioning workstation
 to retrieve the Unique Device Identifier (UDI), load the signer, and
 ask the signer to sign a random challenge. It then sends the UDI, the
-challenge, and the device signature to the signing server above for a
-vendor signature.
+challenge, and the device signature to the signing server, which will
+make the vendor signature.
 
 The signing server signs the message (the device signature) and
 outputs a file in a directory `signatures/` which is named after the
@@ -175,7 +175,7 @@ it in `cmd/tkey-verification/app.bin` before building the tool.
     App loaded.
     App name0:'tk1 ' name1:'sign' version:1
     TKey raw UDI: 0133704100000015
-    Verified the vendor signature over a device signature over the UDI, TKey is genuine!
+    Verified the vendor signature over a device signature over the challenge, TKey is genuine!
     ```
 
 ## Running qemu
