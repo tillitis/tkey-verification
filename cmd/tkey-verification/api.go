@@ -27,9 +27,9 @@ func NewAPI(devPath string) *API {
 }
 
 type Args struct {
-	UDI    [8]byte
-	Tag    string
-	PubKey []byte
+	UDI     [8]byte
+	Tag     string
+	Message []byte
 }
 
 func (a *API) Sign(args *Args, _ *struct{}) error {
@@ -44,14 +44,14 @@ func (a *API) Sign(args *Args, _ *struct{}) error {
 		return err
 	}
 
-	signature, err := signWithApp(a.devPath, signingPubKey, args.PubKey)
+	signature, err := signWithApp(a.devPath, signingPubKey, args.Message)
 	if err != nil {
 		err = fmt.Errorf("signWithApp failed: %w", err)
 		le.Printf("%s\n", err)
 		return err
 	}
 
-	if !ed25519.Verify(signingPubKey, args.PubKey, signature) {
+	if !ed25519.Verify(signingPubKey, args.Message, signature) {
 		err = fmt.Errorf("Signature failed verification")
 		le.Printf("%s\n", err)
 		return err

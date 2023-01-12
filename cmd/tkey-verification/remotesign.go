@@ -17,6 +17,13 @@ func remoteSign(devPath string, verbose bool) {
 	}
 	le.Printf("TKey raw UDI: %s\n", hex.EncodeToString(udi))
 
+	// Sign the UDI
+	message, err := signWithApp(devPath, pubKey, udi)
+	if err != nil {
+		le.Printf("local sign failed: %s", err)
+		os.Exit(1)
+	}
+
 	tlsConfig := tls.Config{
 		Certificates: []tls.Certificate{
 			loadCert(clientCertFile, clientKeyFile),
@@ -32,9 +39,9 @@ func remoteSign(devPath string, verbose bool) {
 	}
 
 	args := Args{
-		UDI:    *(*[8]byte)(udi),
-		Tag:    signerAppTag,
-		PubKey: pubKey,
+		UDI:     *(*[8]byte)(udi),
+		Tag:     signerAppTag,
+		Message: message,
 	}
 
 	client := rpc.NewClient(conn)
