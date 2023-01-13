@@ -26,6 +26,11 @@ func NewAPI(devPath string) *API {
 	}
 }
 
+func (a *API) Ping(_ *struct{}, _ *struct{}) error {
+	le.Printf("Got Ping\n")
+	return nil
+}
+
 type Args struct {
 	UDI       [8]byte // BE
 	Tag       string
