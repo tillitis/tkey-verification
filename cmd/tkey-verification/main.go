@@ -48,7 +48,7 @@ var le = log.New(os.Stderr, "", 0)
 
 func main() {
 	var devPath string
-	var verbose bool
+	var checkConfigOnly, verbose bool
 	var err error
 
 	signingPubKey, err = hex.DecodeString(strings.Trim(signingPubKeyHex, "\r\n "))
@@ -64,6 +64,8 @@ func main() {
 
 	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.CommandLine.SortFlags = false
+	pflag.BoolVar(&checkConfigOnly, "check-config", false,
+		"Only check that the certificates/configuration can be loaded, then exit. For serve-signer and remote-sign commands.")
 	pflag.StringVar(&devPath, "port", "",
 		"Set serial port device `PATH`. If this is not passed, auto-detection will be attempted.")
 	pflag.BoolVar(&verbose, "verbose", false,
@@ -95,12 +97,22 @@ Commands:
 	// Command funcs exit to OS themselves for now
 	switch cmd := pflag.Args()[0]; cmd {
 	case "serve-signer":
-		serveSigner(devPath, verbose)
+		serveSigner(devPath, verbose, checkConfigOnly)
 	case "remote-sign":
-		remoteSign(devPath, verbose)
+		remoteSign(devPath, verbose, checkConfigOnly)
 	case "verify":
+		if checkConfigOnly {
+			le.Printf("Cannot check-config for this command.\n\n")
+			pflag.Usage()
+			os.Exit(2)
+		}
 		verify(devPath, verbose)
 	case "show-pubkey":
+		if checkConfigOnly {
+			le.Printf("Cannot check-config for this command.\n\n")
+			pflag.Usage()
+			os.Exit(2)
+		}
 		showPubKey(devPath, verbose)
 	default:
 		le.Printf("%s is not a valid command.\n", cmd)

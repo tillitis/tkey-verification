@@ -20,7 +20,20 @@ type Verification struct {
 	Signature string `json:"signature"`
 }
 
-func serveSigner(devPath string, verbose bool) {
+func serveSigner(devPath string, verbose bool, checkConfigOnly bool) {
+	tlsConfig := tls.Config{
+		Certificates: []tls.Certificate{
+			loadCert(serverCertFile, serverKeyFile),
+		},
+		ClientCAs:  loadCA(caCertFile),
+		ClientAuth: tls.RequireAndVerifyClientCert,
+		MinVersion: tls.VersionTLS13,
+	}
+
+	if checkConfigOnly {
+		os.Exit(0)
+	}
+
 	foundUDIBE, foundPubKey, ok := runSignerApp(devPath, verbose, signerAppBin)
 	if !ok {
 		os.Exit(1)
@@ -38,7 +51,7 @@ func serveSigner(devPath string, verbose bool) {
 		os.Exit(1)
 	}
 
-	go serve(devPath)
+	go serve(devPath, &tlsConfig)
 
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
@@ -49,22 +62,13 @@ func serveSigner(devPath string, verbose bool) {
 	os.Exit(0)
 }
 
-func serve(devPath string) {
+func serve(devPath string, tlsConfig *tls.Config) {
 	if err := rpc.Register(NewAPI(devPath)); err != nil {
 		le.Printf("Register failed: %s\n", err)
 		os.Exit(1)
 	}
 
-	tlsConfig := tls.Config{
-		Certificates: []tls.Certificate{
-			loadCert(serverCertFile, serverKeyFile),
-		},
-		ClientCAs:  loadCA(caCertFile),
-		ClientAuth: tls.RequireAndVerifyClientCert,
-		MinVersion: tls.VersionTLS13,
-	}
-
-	listener, err := tls.Listen("tcp", listenAddr, &tlsConfig)
+	listener, err := tls.Listen("tcp", listenAddr, tlsConfig)
 	if err != nil {
 		le.Printf("Listen failed: %s\n", err)
 		os.Exit(1)

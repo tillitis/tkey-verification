@@ -11,7 +11,19 @@ import (
 	"os"
 )
 
-func remoteSign(devPath string, verbose bool) {
+func remoteSign(devPath string, verbose bool, checkConfigOnly bool) {
+	tlsConfig := tls.Config{
+		Certificates: []tls.Certificate{
+			loadCert(clientCertFile, clientKeyFile),
+		},
+		RootCAs:    loadCA(caCertFile),
+		MinVersion: tls.VersionTLS13,
+	}
+
+	if checkConfigOnly {
+		os.Exit(0)
+	}
+
 	udiBE, pubKey, ok := runSignerApp(devPath, verbose, signerAppBin)
 	if !ok {
 		os.Exit(1)
@@ -31,14 +43,6 @@ func remoteSign(devPath string, verbose bool) {
 	if err != nil {
 		le.Printf("local sign failed: %s", err)
 		os.Exit(1)
-	}
-
-	tlsConfig := tls.Config{
-		Certificates: []tls.Certificate{
-			loadCert(clientCertFile, clientKeyFile),
-		},
-		RootCAs:    loadCA(caCertFile),
-		MinVersion: tls.VersionTLS13,
 	}
 
 	conn, err := tls.Dial("tcp", serverAddr, &tlsConfig)
