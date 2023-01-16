@@ -12,36 +12,40 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
 type API struct {
-	mu      sync.Mutex
-	devPath string
+	mu           sync.Mutex
+	vendorPubKey []byte
+	devPath      string
 }
 
-func NewAPI(devPath string) *API {
+func NewAPI(vendorPubKey []byte, devPath string) *API {
 	return &API{
-		mu:      sync.Mutex{},
-		devPath: devPath,
+		mu:           sync.Mutex{},
+		vendorPubKey: vendorPubKey,
+		devPath:      devPath,
 	}
 }
 
-func (a *API) Ping(_ *struct{}, _ *struct{}) error {
+func (*API) Ping(_ *struct{}, _ *struct{}) error {
 	le.Printf("Got Ping\n")
 	return nil
 }
 
 type Args struct {
-	UDI     [8]byte // BE
+	UDI     []byte // BE
 	Tag     string
 	Message []byte
 }
 
-func (a *API) Sign(args *Args, _ *struct{}) error {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+func (api *API) Sign(args *Args, _ *struct{}) error {
+	api.mu.Lock()
+	defer api.mu.Unlock()
 
-	le.Printf("Going to sign public key from TKey with UDI (BE): %s (tag: %s)\n", hex.EncodeToString(args.UDI[:]), args.Tag)
+	le.Printf("Going to sign for TKey with UDI(BE):%s tag:%s\n", hex.EncodeToString(args.UDI), args.Tag)
 
 	if args.Tag == "" {
 		err := fmt.Errorf("Empty tag")
@@ -49,21 +53,21 @@ func (a *API) Sign(args *Args, _ *struct{}) error {
 		return err
 	}
 
-	signature, err := signWithApp(a.devPath, signingPubKey, args.Message)
+	signature, err := tkey.Sign(api.devPath, api.vendorPubKey, args.Message)
 	if err != nil {
-		err = fmt.Errorf("signWithApp failed: %w", err)
+		err = fmt.Errorf("tkey.Sign failed: %w", err)
 		le.Printf("%s\n", err)
 		return err
 	}
 
-	if !ed25519.Verify(signingPubKey, args.Message, signature) {
-		err = fmt.Errorf("Signature failed verification")
+	if !ed25519.Verify(api.vendorPubKey, args.Message, signature) {
+		err = fmt.Errorf("Vendor signature failed verification")
 		le.Printf("%s\n", err)
 		return err
 	}
 
 	// File named after the UDI (BE, in hex)
-	fn := fmt.Sprintf("%s/%s", signaturesDir, hex.EncodeToString(args.UDI[:]))
+	fn := fmt.Sprintf("%s/%s", signaturesDir, hex.EncodeToString(args.UDI))
 	if _, err = os.Stat(fn); err == nil || !errors.Is(err, os.ErrNotExist) {
 		err = fmt.Errorf("%s already exists?", fn)
 		le.Printf("%s\n", err)
@@ -71,9 +75,9 @@ func (a *API) Sign(args *Args, _ *struct{}) error {
 	}
 
 	json, err := json.Marshal(Verification{
-		time.Now().UTC().Format(time.RFC3339),
-		args.Tag,
-		hex.EncodeToString(signature),
+		Timestamp: time.Now().UTC().Format(time.RFC3339),
+		Tag:       args.Tag,
+		Signature: hex.EncodeToString(signature),
 	})
 	if err != nil {
 		err = fmt.Errorf("Marshal failed: %w", err)

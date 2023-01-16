@@ -14,7 +14,7 @@ and not tampered with.
 - "signing server": An HSM-like machine providing signatures over
   messages and producing files to be uploaded later.
 - "device under verification": The device the vendor is provisioning
-  or the user is verifiying.
+  or the user is verifying.
 - "device public key": The public key of the device under verification
   when running the signer application.
 - "vendor signature": A signature made by the signing server.
@@ -89,16 +89,12 @@ already verified public key, thus proving that the TKey is genuine.
 device signature during signing *must* be used when verifying it. If a
 different signer is used then the device public key will not match
 even if the TKey is the same. A verifier must check the "tag" field
-and complain if its own version of the signer doesn't come from the
-same tag.
+and complain if it does not have a signer binary built from this tag.
 
 We're currently thinking that we could provide binary releases of the
-`tkey-verification` host program. The version number of this program
-will be the same as the tag of the signer binary that it embeds. This
-way the `tkey-verification` program itself will know if the tags
-differs in the `signature` file and can complain that you need to run
-another version. This is still TODO, and currently we just build the
-signer from main.
+`tkey-verification` host program. The release will embed pre-built
+signer binaries for all tags we ever used for verifications, as well
+as the tag name to use for new verifications.
 
 We want to be compatible with the sigsum transparency log and might
 later post something on the log, perhaps just sha256(signature file
@@ -109,13 +105,13 @@ https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md#21-crypt
 ## Building and running
 
 Currently, you have to build the signer-app binary yourself, and place
-it in `cmd/tkey-verification/app.bin` before building the tool.
+it in `internal/appbins/bins/TAG.bin` before building the tool.
 
 1. Clone [https://github.com/tillitis-key1-apps](https://github.com/tillitis/tillitis-key1-apps).
    Alternatively, if you have a working Docker setup, you can try
    running:
    ```
-   ./contrib/build-in-container main
+   ./contrib/build-in-container.sh main
    ```
 
    Skip to 6) if that works out.
@@ -133,14 +129,16 @@ it in `cmd/tkey-verification/app.bin` before building the tool.
 5. Assuming the apps repository was cloned as a sibling to this repo, you
    can copy the binary of the ed25519 signer like:
    ```
-   cp ../tillitis-key1-apps/apps/signer/app.bin ./cmd/tkey-verification/app.bin
+   cp ../tillitis-key1-apps/apps/signer/app.bin ./internal/appbins/bins/main.bin
    ```
 
-6. Build the `tkey-verification` tool with the test public key, and
-   also CA, server, and client certs:
-   
+6. Build the `tkey-verification` tool with the signer-app tag to use
+   when provisioning a verification using `remote-sign`, and the test
+   file which contains public key(s) for vendor signing/verify. Also
+   build CA, server, and client certs:
+
    ```
-   % make SIGNING_PUBKEY=test-signing-tkey.pub
+   % make DEVICE_SIGNERAPP_TAG=main SIGNING_PUBKEYS_FILE=test-vendor-signing-pubkeys.txt
    % make certs
    ```
 
@@ -197,39 +195,52 @@ repo](https://github.com/tillitis/tillitis-key1). Build the firmware
 with: `cd hw/application_fpga;make firmware.elf`
 
 Standing in the `hw/application_fpga` directory you can now start qemu:
-   
+
 ```
 % /path/to/qemu/build/qemu-system-riscv32 -nographic -M tk1,fifo=chrid -bios firmware.elf -chardev pty,id=chrid
 ```
 
-## Getting the vendor public key
+## Creating the vendor public keys file
 
-The vendor public key is built into the tkey-verification binary.
-A test public key is in `test-signing-tkey.pub`.
+The vendor's public key is built into the tkey-verification binary
+from a text file. Note that only 1 single public key is supported
+currently.
 
-If you want to use some other key this is how you get it:
+For each public key, the tag of the signer-app binary used when
+extracting the public key is also provided. The signing server needs
+this so that its TKey can have the correct private key when signing.
+Note that these tags per public key are independent and can differ
+from the tag used for device signing.
+
+A test file is provided in `test-vendor-signing-pubkeys.txt`. It
+contains the default public key of our qemu machine.
+
+If you want to use some other key(s) this is how:
 
 If you're just testing start a qemu as a signing endpoint. See above.
 
-Get the public key from the signing server, for instance by running
-`tkey-runapp` and `tkey-sign` from the
-[tillitis-key1-apps](https://github.com/tillitis/tillitis-key1-apps)
-repo.
-   
-```
-% ./tkey-runapp --port /dev/pts/12 apps/signer/app.bin 
-... 
-% ./tkey-sign --port /dev/pts/12 apps/app.lds
-Connecting to TKey on serial port /dev/pts/12 ...
-Public Key from TKey:  67b1464aa24f6593fe671ec100f30e858cdf7fbb0b4686bdf9ca47b5c648ba0f 
-```
+Get the public key from the TKey in the signing server. We provide a
+`show-pubkey` tool for that. The tag of the signer-app binary to use
+must be given as an argument. The tool embeds signer-app binaries in
+the same way as the `tkey-verification` tool.
 
-Copy
-"67b1464aa24f6593fe671ec100f30e858cdf7fbb0b4686bdf9ca47b5c648ba0f"
-to a file, for instance `other-signing-tkey.pub`.
-
-Then build everything with this public key:
+An example using the tag "main" for this vendor public key, example
+output:
 
 ```
-make SIGNING_PUBKEY=other-signing-tkey.pub
+% make show-pubkey
+% ./show-pubkey --port /dev/pts/12 main
+...
+67b1464aa24f6593fe671ec100f30e858cdf7fbb0b4686bdf9ca47b5c648ba0f
+```
+
+Then enter the following in a file, for instance `other-pubkeys.txt`:
+```
+67b1464aa24f6593fe671ec100f30e858cdf7fbb0b4686bdf9ca47b5c648ba0f main
+```
+
+Then build everything with this file:
+
+```
+% make DEVICE_SIGNERAPP_TAG=main SIGNING_PUBKEYS_FILE=other-signing-pubkeys.txt
 ```

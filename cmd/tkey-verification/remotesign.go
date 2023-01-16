@@ -10,9 +10,12 @@ import (
 	"encoding/hex"
 	"net/rpc"
 	"os"
+
+	"github.com/tillitis/tkey-verification/internal/appbins"
+	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-func remoteSign(devPath string, verbose bool, checkConfigOnly bool) {
+func remoteSign(appBin *appbins.AppBin, devPath string, verbose bool, checkConfigOnly bool) {
 	tlsConfig := tls.Config{
 		Certificates: []tls.Certificate{
 			loadCert(clientCertFile, clientKeyFile),
@@ -43,11 +46,11 @@ func remoteSign(devPath string, verbose bool, checkConfigOnly bool) {
 		exit(0)
 	}
 
-	udiBE, pubKey, ok := runSignerApp(devPath, verbose, signerAppBin)
+	udiBE, pubKey, ok := tkey.Load(appBin, devPath, verbose)
 	if !ok {
 		exit(1)
 	}
-	le.Printf("TKey UDI (BE): %s\n", hex.EncodeToString(udiBE[:]))
+	le.Printf("TKey UDI (BE): %s\n", hex.EncodeToString(udiBE))
 
 	// Locally generate a challenge and sign it
 	challenge := make([]byte, 32)
@@ -56,9 +59,9 @@ func remoteSign(devPath string, verbose bool, checkConfigOnly bool) {
 		exit(1)
 	}
 
-	signature, err := signWithApp(devPath, pubKey, challenge)
+	signature, err := tkey.Sign(devPath, pubKey, challenge)
 	if err != nil {
-		le.Printf("local sign failed: %s", err)
+		le.Printf("tkey.Sign failed: %s", err)
 		exit(1)
 	}
 
@@ -71,7 +74,7 @@ func remoteSign(devPath string, verbose bool, checkConfigOnly bool) {
 	// The message we want vendor to sign is the signer's public key
 	args := Args{
 		UDI:     udiBE,
-		Tag:     signerAppTag,
+		Tag:     appBin.Tag,
 		Message: pubKey,
 	}
 

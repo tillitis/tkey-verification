@@ -12,10 +12,11 @@ $crun run -it --name "$cname" \
       ghcr.io/tillitis/tkey-builder \
       /bin/bash /containerbuild "$tag"
 
-# Copy to expected locations
-$crun cp "$cname":/tillitis-key1-apps/apps/signer/app.bin ../cmd/tkey-verification/app.bin
+dest="../internal/appbins/bins/"$tag".bin"
+
+$crun cp "$cname":/tillitis-key1-apps/apps/signer/app.bin "$dest"
 
 $crun rm "$cname"
 
-ls -l ../cmd/tkey-verification/app.bin
-sha256sum ../cmd/tkey-verification/app.bin
+ls -l "$dest"
+sha256sum "$dest"

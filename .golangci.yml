@@ -15,6 +15,7 @@ linters:
     - test
     - unused
   disable:
+    - prealloc  # it's just a performance optimization
     - cyclop
     - funlen
     - gocognit

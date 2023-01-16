@@ -11,6 +11,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/tillitis/tkey-verification/internal/tkey"
+	"github.com/tillitis/tkey-verification/internal/vendorsigning"
 )
 
 type Verification struct {
@@ -19,7 +22,7 @@ type Verification struct {
 	Signature string `json:"signature"`
 }
 
-func serveSigner(devPath string, verbose bool, checkConfigOnly bool) {
+func serveSigner(vendorPubKey *vendorsigning.PubKey, devPath string, verbose bool, checkConfigOnly bool) {
 	tlsConfig := tls.Config{
 		Certificates: []tls.Certificate{
 			loadCert(serverCertFile, serverKeyFile),
@@ -33,24 +36,24 @@ func serveSigner(devPath string, verbose bool, checkConfigOnly bool) {
 		os.Exit(0)
 	}
 
-	foundUDIBE, foundPubKey, ok := runSignerApp(devPath, verbose, signerAppBin)
+	le.Printf("%s\n", vendorPubKey.String())
+
+	foundUDIBE, foundPubKey, ok := tkey.Load(vendorPubKey.AppBin, devPath, verbose)
 	if !ok {
 		os.Exit(1)
 	}
-	le.Printf("Found TKey with pubkey: %s (UDI (BE): %s)\n", hex.EncodeToString(foundPubKey), hex.EncodeToString(foundUDIBE[:]))
-
-	if bytes.Compare(foundPubKey, signingPubKey) != 0 {
-		le.Printf("Found TKey pubkey does not match our embedded signing pubkey: %s\n", hex.EncodeToString(foundPubKey))
+	if bytes.Compare(vendorPubKey.PubKey[:], foundPubKey) != 0 {
+		le.Printf("Found TKey pubkey \"%s\" does not match the embedded vendor signing pubkey in use\n", hex.EncodeToString(foundPubKey))
 		os.Exit(1)
 	}
-	le.Printf("Found TKey pubkey matches our embedded signing pubkey.\n")
+	le.Printf("Found TKey with matching pubkey (UDI (BE): %s)\n", hex.EncodeToString(foundUDIBE))
 
 	if err := os.MkdirAll(signaturesDir, 0o755); err != nil {
 		le.Printf("MkdirAll failed: %s\n", err)
 		os.Exit(1)
 	}
 
-	go serve(devPath, &tlsConfig)
+	go serve(vendorPubKey.PubKey[:], devPath, &tlsConfig)
 
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
@@ -61,8 +64,8 @@ func serveSigner(devPath string, verbose bool, checkConfigOnly bool) {
 	os.Exit(0)
 }
 
-func serve(devPath string, tlsConfig *tls.Config) {
-	if err := rpc.Register(NewAPI(devPath)); err != nil {
+func serve(vendorPubKey []byte, devPath string, tlsConfig *tls.Config) {
+	if err := rpc.Register(NewAPI(vendorPubKey, devPath)); err != nil {
 		le.Printf("Register failed: %s\n", err)
 		os.Exit(1)
 	}
