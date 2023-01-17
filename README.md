@@ -13,11 +13,13 @@ and not tampered with.
 
 - "signing server": An HSM-like machine providing signatures over
   messages and producing files to be uploaded later.
-- "device under verification": The device we are provisioning or the
-  user is verifiying.
+- "device under verification": The device the vendor is provisioning
+  or the user is verifiying.
+- "device public key": The public key of the device under verification
+  when running the signer application.
 - "vendor signature": A signature made by the signing server.
 - "device signature": A signature made on the device under
-  verification.
+  verification with the signer application.
 
 ### Signing
 
@@ -29,21 +31,23 @@ The device under verification is inserted into the provisioning
 workstation.
 
 `tkey-verification remote-sign` is run on the provisioning workstation
-to retrieve the Unique Device Identifier (UDI), load the signer, and
-ask the signer to sign a random challenge. It then sends the UDI, the
-challenge, and the device signature to the signing server, which will
-make the vendor signature.
+to retrieve the Unique Device Identifier (UDI), load the signer, ask
+it for the device public key, and ask the signer to sign a random
+challenge. We then verify the signature against the device public key
+before proceeding.
 
-The signing server signs the message (the device signature) and
-outputs a file in a directory `signatures/` which is named after the
-Unique Device Identifier (in hex), so something like
-`signatures/0133704100000015` and contains something like:
+After verifying we send the UDI and the public key to the signing
+server, which will make the vendor signature.
+
+The signing server signs the the device public key and outputs a file
+in a directory `signatures/` which is named after the Unique Device
+Identifier (in hex), for example `signatures/0133704100000015`, which
+contains for example:
 
 ```
 {
   "timestamp": "2023-01-12T12:04:24Z",
   "tag": "main",
-  "challenge": "30904704d875d506bbd1eef4b458e73b69cdca043bfaf504015d3d59e20fb403",
   "signature": "a720d532e78c7f5aeb2ac61d9c112f6323cd9db1ce45d6ff6d727b05a38dabafab0087d2a9be770e1ce8e889178ea111a67bf366bb4af9d11e68a2dc229ffa0a"
 }
 ```
@@ -52,34 +56,41 @@ Where the fields are:
 
 - timestamp: RFC3339 UTC timestamp when the signature was done.
 - tag: The Git tag of the ed25519 signer oracle used on the device
-  under verification, `apps/signer/app.bin` in the apps repo.
-- challenge: A random challenge to be signed by the device. Stored in
+  under verification, `apps/signer/app.bin` compiled from [the apps
+  repo](https://github.com/tillitis/tillitis-key1-apps/).
+- signature: Vendor signature of the device public key. Stored in
   base16 (hex).
-- signature: Vendor signature of the device signature of the challenge
-  above. Stored in base16 (hex).
 
 These files will later be published somewhere public, for example on a
-web server.
+web server. Note that the device public key isn't published but is
+retrievable by anyone with access to the TKey.
 
 ### Verification
 
-To verify a device, the user runs `tkey-verification verify`. It first
-retrieves the Unique Device Identifier (UDI), then looks for a file
+To verify a device, the user runs `tkey-verification verify`. We first
+retrieves the Unique Device Identifier (UDI), then look for a file
 under the `signatures/` directory named after its UDI, for example
 `signatures/0133704100000015`.
 
-Then it loads the signer on the TKey, and asks it to sign the
-challenge from the file, resulting in a device signature.
+Then we load the signer on the TKey and extract the device public key.
+We verify the vendor signature over the public key. This proves that
+the vendor has signed the same device public key.
 
-If the vendor signature in the file over the device signature can be
-verified using Tillitis' (the vendor's) signing public key, then the
-TKey is genuine.
+To check that the device under verification has the right private key
+we now ask the signer to sign a random challenge, resulting in a
+device signature. This signature should be able to be verified with
+the already extracted device public key.
+
+If the signature over the random message is verified this proves that
+the TKey is in possession of the private key corresponding to the
+already verified public key, thus proving that the TKey is genuine.
 
 *Nota bene*: The same signer binary that was used for producing the
 device signature during signing *must* be used when verifying it. If a
-different signer is used then the signature will not match even if the
-TKey is the same. A verifier must check the "tag" field and complain
-if its own version of the signer doesn't come from the same tag.
+different signer is used then the device public key will not match
+even if the TKey is the same. A verifier must check the "tag" field
+and complain if its own version of the signer doesn't come from the
+same tag.
 
 We're currently thinking that we could provide binary releases of the
 `tkey-verification` host program. The version number of this program
@@ -175,7 +186,7 @@ it in `cmd/tkey-verification/app.bin` before building the tool.
     App loaded.
     App name0:'tk1 ' name1:'sign' version:1
     TKey UDI (BE): 0133704100000015
-    Verified the vendor signature over a device signature over the challenge, TKey is genuine!
+    TKey is genuine!
     ```
 
 ## Running qemu

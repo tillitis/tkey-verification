@@ -4,6 +4,7 @@
 package main
 
 import (
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/tls"
 	"encoding/hex"
@@ -55,19 +56,23 @@ func remoteSign(devPath string, verbose bool, checkConfigOnly bool) {
 		exit(1)
 	}
 
-	// The message we want vendor to sign is our signature over the
-	// challenge
-	message, err := signWithApp(devPath, pubKey, challenge)
+	signature, err := signWithApp(devPath, pubKey, challenge)
 	if err != nil {
 		le.Printf("local sign failed: %s", err)
 		exit(1)
 	}
 
+	// Verify the signature against the extracted public key
+	if !ed25519.Verify(pubKey, challenge, signature) {
+		le.Printf("device signature failed verification!")
+		os.Exit(1)
+	}
+
+	// The message we want vendor to sign is the signer's public key
 	args := Args{
-		UDI:       udiBE,
-		Tag:       signerAppTag,
-		Challenge: challenge,
-		Message:   message,
+		UDI:     udiBE,
+		Tag:     signerAppTag,
+		Message: pubKey,
 	}
 
 	err = client.Call("API.Sign", &args, nil)
