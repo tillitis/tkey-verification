@@ -239,7 +239,7 @@ func Sign(devPath string, expectedPubKey []byte, message []byte) ([]byte, error)
 	}
 
 	if bytes.Compare(pubKey, expectedPubKey) != 0 {
-		return nil, fmt.Errorf("TKey does not have the expected pubkey")
+		return nil, fmt.Errorf("The TKey to use for signing does not have the expected public key")
 	}
 
 	signature, err := tkSigner.Sign(message)

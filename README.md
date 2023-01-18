@@ -67,14 +67,18 @@ retrievable by anyone with access to the TKey.
 
 ### Verification
 
-To verify a device, the user runs `tkey-verification verify`. We first
-retrieves the Unique Device Identifier (UDI), then look for a file
-under the `signatures/` directory named after its UDI, for example
-`signatures/0133704100000015`.
+To verify a device, the user runs `tkey-verification verify`.
 
-Then we load the signer on the TKey and extract the device public key.
-We verify the vendor signature over the public key. This proves that
-the vendor has signed the same device public key.
+It first retrieves the Unique Device Identifier (UDI) from the TKey
+under verification, then queries a web server for verification data
+under a base URL (current default is "https://example.com/verify") +
+UDI, for instance `0133704100000015`.
+
+From the verification data we learn the tag of the signer-app that was
+used when the verification was created, and the correct binary can
+thus loaded onto the TKey. The device public key can then be extracted
+from the TKey. We verify the vendor signature over the public key.
+This proves that the vendor has signed the same device public key.
 
 To check that the device under verification has the right private key
 we now ask the signer to sign a random challenge, resulting in a
@@ -101,6 +105,17 @@ later post something on the log, perhaps just sha256(signature file
 content).
 
 https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md#21-cryptography
+
+#### Verification on a machine without network
+
+If you're on a machine without network and need to verify a TKey you
+can run `tkey-verification --show-url` which will output the URL to
+the verification file.
+
+Download this file (named after the TKey UDI in hex) on some networked
+computer and transfer it back here. Given that the file is in current
+working directory, you can now verify locally with: `tkey-verification
+verify -d=.`
 
 ## Building and running
 
@@ -173,10 +188,11 @@ it in `internal/appbins/bins/TAG.bin` before building the tool.
 11. Before trying to verify you need to remove and re-insert the
     device under verification to get it back to firmware mode.
     `tkey-verification` always requires to load the signer itself.
-    Then try to verify:
+    Then try to verify against local files in a directory (`verify -d
+    signatures`, the default is to query a web server):
 
     ```
-    % ./tkey-verification verify
+    % ./tkey-verification verify -d signatures
     Auto-detected serial port /dev/ttyACM0
     Connecting to device on serial port /dev/ttyACM0 ...
     Firmware name0:'tk1 ' name1:'mkdf' version:4

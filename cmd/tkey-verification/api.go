@@ -85,7 +85,8 @@ func (api *API) Sign(args *Args, _ *struct{}) error {
 		return err
 	}
 
-	if err = os.WriteFile(fn, append(json, '\n'), 0o644); err != nil { //nolint:gosec
+	// #nosec G306
+	if err = os.WriteFile(fn, append(json, '\n'), 0o644); err != nil {
 		err = fmt.Errorf("WriteFile %s failed: %w", fn, err)
 		le.Printf("%s\n", err)
 		return err
