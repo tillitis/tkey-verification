@@ -81,7 +81,7 @@ func serve(vendorPubKey []byte, devPath string, tlsConfig *tls.Config) {
 		conn, err := listener.Accept()
 		if err != nil {
 			le.Printf("Accept failed: %s\n", err)
-			// TODO is this really fatal, should we exit?
+			// Note: is this really fatal, should we exit?
 			os.Exit(1)
 		}
 		le.Printf("Client from %s\n", conn.RemoteAddr())

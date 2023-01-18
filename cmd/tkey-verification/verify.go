@@ -9,32 +9,45 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"path"
 
 	"github.com/tillitis/tkey-verification/internal/appbins"
 	"github.com/tillitis/tkey-verification/internal/tkey"
 	"github.com/tillitis/tkey-verification/internal/vendorsigning"
 )
 
-func verify(devPath string, verbose bool) {
+func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, verifyBaseURL string) {
 	udiBE := tkey.GetUDI(devPath, verbose)
 	if udiBE == nil {
 		os.Exit(1)
 	}
-	fmt.Printf("TKey UDI (BE): %s\n", hex.EncodeToString(udiBE))
+	le.Printf("TKey UDI (BE): %s\n", hex.EncodeToString(udiBE))
+	verifyURL := fmt.Sprintf("%s/%s", verifyBaseURL, hex.EncodeToString(udiBE))
 
-	// Get verification JSON by UDI
-	fn := fmt.Sprintf("%s/%s", signaturesDir, hex.EncodeToString(udiBE))
-	verificationJSON, err := os.ReadFile(fn)
-	if err != nil {
-		le.Printf("ReadFile %s failed: %s", fn, err)
-		os.Exit(1)
+	if showURLOnly {
+		le.Printf("URL to verification data follows on stdout:\n")
+		fmt.Printf("%s\n", verifyURL)
+		os.Exit(0)
 	}
 
 	var verification Verification
-	if err = json.Unmarshal(verificationJSON, &verification); err != nil {
-		le.Printf("Unmarshal failed: %s", err)
-		os.Exit(1)
+	var err error
+	if baseDir != "" {
+		p := path.Join(baseDir, hex.EncodeToString(udiBE))
+		verification, err = verificationFromFile(p)
+		if err != nil {
+			le.Printf("verificationFromFile failed: %s\n", err)
+			os.Exit(1)
+		}
+	} else {
+		verification, err = verificationFromURL(verifyURL)
+		if err != nil {
+			le.Printf("verificationFromURL failed: %s\n", err)
+			os.Exit(1)
+		}
 	}
 
 	if verification.Tag == "" {
@@ -93,4 +106,40 @@ func verify(devPath string, verbose bool) {
 	fmt.Printf("TKey is genuine!\n")
 
 	os.Exit(0)
+}
+
+func verificationFromURL(verifyURL string) (Verification, error) {
+	var verification Verification
+
+	resp, err := http.Get(verifyURL) // #nosec G107
+	if err != nil {
+		return verification, fmt.Errorf("http.Get failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	verificationJSON, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return verification, fmt.Errorf("io.ReadAll failed: %w", err)
+	}
+
+	if err = json.Unmarshal(verificationJSON, &verification); err != nil {
+		return verification, fmt.Errorf("Unmarshal failed: %w", err)
+	}
+
+	return verification, nil
+}
+
+func verificationFromFile(fn string) (Verification, error) {
+	var verification Verification
+
+	verificationJSON, err := os.ReadFile(fn)
+	if err != nil {
+		return verification, fmt.Errorf("ReadFile failed: %w", err)
+	}
+
+	if err = json.Unmarshal(verificationJSON, &verification); err != nil {
+		return verification, fmt.Errorf("Unmarshal failed: %w", err)
+	}
+
+	return verification, nil
 }
