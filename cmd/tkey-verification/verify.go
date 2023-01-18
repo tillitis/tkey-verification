@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"time"
 
 	"github.com/tillitis/tkey-verification/internal/appbins"
 	"github.com/tillitis/tkey-verification/internal/tkey"
@@ -111,7 +112,9 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 func verificationFromURL(verifyURL string) (Verification, error) {
 	var verification Verification
 
-	resp, err := http.Get(verifyURL) // #nosec G107
+	le.Printf("Fetching %s ...\n", verifyURL)
+	client := http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(verifyURL) // #nosec G107
 	if err != nil {
 		return verification, fmt.Errorf("http.Get failed: %w", err)
 	}
@@ -132,6 +135,7 @@ func verificationFromURL(verifyURL string) (Verification, error) {
 func verificationFromFile(fn string) (Verification, error) {
 	var verification Verification
 
+	le.Printf("Reading %s ...\n", fn)
 	verificationJSON, err := os.ReadFile(fn)
 	if err != nil {
 		return verification, fmt.Errorf("ReadFile failed: %w", err)
