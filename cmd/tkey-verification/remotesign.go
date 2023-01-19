@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"encoding/hex"
+	"net"
 	"net/rpc"
 	"os"
 
@@ -15,16 +16,22 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-func remoteSign(appBin *appbins.AppBin, devPath string, verbose bool, checkConfigOnly bool) {
+func remoteSign(conf Config, appBin *appbins.AppBin, devPath string, verbose bool, checkConfigOnly bool) {
 	tlsConfig := tls.Config{
 		Certificates: []tls.Certificate{
-			loadCert(clientCertFile, clientKeyFile),
+			loadCert(conf.ClientCert, conf.ClientKey),
 		},
-		RootCAs:    loadCA(caCertFile),
+		RootCAs:    loadCA(conf.CACert),
 		MinVersion: tls.VersionTLS13,
 	}
 
-	conn, err := tls.Dial("tcp", serverAddr, &tlsConfig)
+	_, _, err := net.SplitHostPort(conf.ServerAddr)
+	if err != nil {
+		le.Printf("Config server: SplitHostPort failed: %s", err)
+		os.Exit(1)
+	}
+
+	conn, err := tls.Dial("tcp", conf.ServerAddr, &tlsConfig)
 	if err != nil {
 		le.Printf("Dial failed: %s", err)
 		os.Exit(1)

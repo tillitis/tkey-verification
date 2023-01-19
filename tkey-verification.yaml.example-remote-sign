@@ -1,0 +1,5 @@
+---
+cacert: "certs/tillitis.crt"
+clientcert: "certs/client.crt"
+clientkey: "certs/client.key"
+server: "localhost:1337"

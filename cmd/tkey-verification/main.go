@@ -14,16 +14,6 @@ import (
 	"github.com/tillitis/tkey-verification/internal/vendorsigning"
 )
 
-const (
-	caCertFile     = "certs/tillitis.crt"
-	serverCertFile = "certs/localhost.crt"
-	serverKeyFile  = "certs/localhost.key"
-	clientCertFile = "certs/client.crt"
-	clientKeyFile  = "certs/client.key"
-	listenAddr     = "localhost:1337"
-	serverAddr     = "localhost:1337"
-)
-
 // Note: this must be set at build time to the Tag of signer-app that
 // is to run on the TKey device under verification (running command
 // remote-sign; for command verify, the tag in the verification data
@@ -33,7 +23,10 @@ var Tag = ""
 
 const signaturesDir = "signatures"
 
-const defaultBaseURL = "https://example.com/verify"
+const (
+	defaultBaseURL    = "https://example.com/verify"
+	defaultConfigFile = "./tkey-verification.yaml"
+)
 
 // Use when printing err/diag msgs
 var le = log.New(os.Stderr, "", 0)
@@ -55,7 +48,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	var devPath, baseURL, baseDir string
+	var devPath, baseURL, baseDir, configFile string
 	var checkConfigOnly, verbose, showURLOnly bool
 
 	pflag.CommandLine.SetOutput(os.Stderr)
@@ -64,16 +57,16 @@ func main() {
 		"Set serial port device `PATH`. If this is not passed, auto-detection will be attempted.")
 	pflag.BoolVar(&verbose, "verbose", false,
 		"Enable verbose output.")
+	pflag.StringVar(&configFile, "config", defaultConfigFile,
+		"`PATH` to configuration file (commands: serve-signer, remote-sign).")
 	pflag.BoolVar(&checkConfigOnly, "check-config", false,
-		"Only check that the certificates/configuration can be loaded, then exit (commands: serve-signer, remote-sign).")
+		"Only check that the configuration is usable, then exit (commands: serve-signer, remote-sign).")
 	pflag.BoolVarP(&showURLOnly, "show-url", "u", false,
 		"Only output the URL to the verification data that should be downloaded (command: verify).")
 	pflag.StringVarP(&baseDir, "base-dir", "d", "",
-		"If this is set, verification data is read from a file located in `directory` and named after the TKey UDI in hex, instead of fetched from a URL. You can for example first use \"verify --show-url\" and download the verification file manually on some other computer, then transfer the file here and use \"verify --base-dir .\" (command: verify).")
-	// Not using a default value for string, because then we cannot
-	// tell difference from unused flag
-	pflag.StringVar(&baseURL, "base-url", "",
-		fmt.Sprintf("Set the base `URL` of verification server for fetching verification data (command: verify) (default \"%s\").", defaultBaseURL))
+		"Read verification data from a file located in `DIRECTORY` and named after the TKey UDI in hex, instead of from a URL. You can for example first use \"verify --show-url\" and download the verification file manually on some other computer, then transfer the file back and use \"verify --base-dir .\" (command: verify).")
+	pflag.StringVar(&baseURL, "base-url", defaultBaseURL,
+		"Set the base `URL` of verification server for fetching verification data (command: verify).")
 	pflag.Usage = func() {
 		desc := fmt.Sprintf(`Usage: tkey-verification command [flags...]
 
@@ -111,30 +104,37 @@ Commands:
 
 	cmd := pflag.Args()[0]
 
-	if cmd == "verify" && checkConfigOnly {
-		le.Printf("Cannot use --check-config for this command.\n")
+	// Use Lookup to tell if user changed string with default value
+	if cmd == "verify" && (pflag.CommandLine.Lookup("config").Changed || checkConfigOnly) {
+		le.Printf("Cannot use --config/--check-config with this command.\n")
 		os.Exit(2)
 	}
-	if cmd != "verify" && (showURLOnly || baseDir != "" || baseURL != "") {
-		le.Printf("Cannot use --show-url, --base-dir, and --base-url with this command.\n")
+	if cmd != "verify" && (showURLOnly || baseDir != "" || pflag.CommandLine.Lookup("base-url").Changed) {
+		le.Printf("Cannot use --show-url/--base-dir/--base-url with this command.\n")
 		os.Exit(2)
 	}
 
 	// Command funcs exit to OS themselves for now
 	switch cmd {
 	case "serve-signer":
-		serveSigner(vendorPubKey, devPath, verbose, checkConfigOnly)
+		conf := loadServeSignerConfig(configFile)
+		if err != nil {
+			le.Printf("Couldn't read config file %v: %v\n", configFile, err)
+			os.Exit(1)
+		}
+		serveSigner(conf, vendorPubKey, devPath, verbose, checkConfigOnly)
 
 	case "remote-sign":
-		remoteSign(deviceSignerApp, devPath, verbose, checkConfigOnly)
+		if configFile == "" {
+			configFile = defaultConfigFile
+		}
+		conf := loadRemoteSignConfig(configFile)
+		remoteSign(conf, deviceSignerApp, devPath, verbose, checkConfigOnly)
 
 	case "verify":
-		if baseDir != "" && (showURLOnly || baseURL != "") {
+		if baseDir != "" && (showURLOnly || pflag.CommandLine.Lookup("base-url").Changed) {
 			le.Printf("Cannot combine --base-dir and --show-url/--base-url\n")
 			os.Exit(2)
-		}
-		if baseURL == "" {
-			baseURL = defaultBaseURL
 		}
 		verify(devPath, verbose, showURLOnly, baseDir, baseURL)
 
