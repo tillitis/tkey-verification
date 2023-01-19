@@ -12,4 +12,5 @@ require (
 	github.com/creack/goselect v0.1.2 // indirect
 	golang.org/x/crypto v0.3.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

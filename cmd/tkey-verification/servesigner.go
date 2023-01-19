@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/hex"
+	"net"
 	"net/rpc"
 	"os"
 	"os/signal"
@@ -22,14 +23,20 @@ type Verification struct {
 	Signature string `json:"signature"`
 }
 
-func serveSigner(vendorPubKey *vendorsigning.PubKey, devPath string, verbose bool, checkConfigOnly bool) {
+func serveSigner(conf Config, vendorPubKey *vendorsigning.PubKey, devPath string, verbose bool, checkConfigOnly bool) {
 	tlsConfig := tls.Config{
 		Certificates: []tls.Certificate{
-			loadCert(serverCertFile, serverKeyFile),
+			loadCert(conf.ServerCert, conf.ServerKey),
 		},
-		ClientCAs:  loadCA(caCertFile),
+		ClientCAs:  loadCA(conf.CACert),
 		ClientAuth: tls.RequireAndVerifyClientCert,
 		MinVersion: tls.VersionTLS13,
+	}
+
+	_, _, err := net.SplitHostPort(conf.ListenAddr)
+	if err != nil {
+		le.Printf("Config listen: SplitHostPort failed: %s", err)
+		os.Exit(1)
 	}
 
 	if checkConfigOnly {
@@ -53,7 +60,7 @@ func serveSigner(vendorPubKey *vendorsigning.PubKey, devPath string, verbose boo
 		os.Exit(1)
 	}
 
-	go serve(vendorPubKey.PubKey[:], devPath, &tlsConfig)
+	go serve(conf.ListenAddr, vendorPubKey.PubKey[:], devPath, &tlsConfig)
 
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
@@ -64,7 +71,7 @@ func serveSigner(vendorPubKey *vendorsigning.PubKey, devPath string, verbose boo
 	os.Exit(0)
 }
 
-func serve(vendorPubKey []byte, devPath string, tlsConfig *tls.Config) {
+func serve(listenAddr string, vendorPubKey []byte, devPath string, tlsConfig *tls.Config) {
 	if err := rpc.Register(NewAPI(vendorPubKey, devPath)); err != nil {
 		le.Printf("Register failed: %s\n", err)
 		os.Exit(1)

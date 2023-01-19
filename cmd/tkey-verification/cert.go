@@ -12,7 +12,7 @@ import (
 func loadCA(certFile string) *x509.CertPool {
 	caPEM, err := os.ReadFile(certFile)
 	if err != nil {
-		le.Printf("ReadFile %s failed: %s", certFile, err)
+		le.Printf("ReadFile failed: %s", err)
 		os.Exit(1)
 	}
 	certPool := x509.NewCertPool()
@@ -26,7 +26,7 @@ func loadCA(certFile string) *x509.CertPool {
 func loadCert(certFile string, keyFile string) tls.Certificate {
 	serverCert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		le.Printf("Load cert:%s key:%s failed: %s", certFile, keyFile, err)
+		le.Printf("Load cert failed: %s", err)
 		os.Exit(1)
 	}
 	return serverCert

@@ -169,7 +169,7 @@ it in `internal/appbins/bins/TAG.bin` before building the tool.
    notice what device qemu said when starting):
 
    ```
-   ./tkey-verification serve-signer --port /dev/pts/12
+   ./tkey-verification serve-signer --config tkey-verification.yaml.example-serve-signer --port /dev/pts/12
    ```
 
 9. Insert the device under verification, the TKey to be signed and verified.
@@ -178,7 +178,7 @@ it in `internal/appbins/bins/TAG.bin` before building the tool.
    (here a hardware TKey)
 
    ```
-   % ./tkey-verification remote-sign
+   % ./tkey-verification remote-sign --config tkey-verification.yaml.example-remote-sign
    ```
 
 10. The signing server should now have signed and saved a verification
