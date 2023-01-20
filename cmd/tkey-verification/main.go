@@ -53,22 +53,20 @@ func main() {
 
 	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.CommandLine.SortFlags = false
-	// Not setting a default value for strings, because then we cannot
-	// tell difference from unused flag.
 	pflag.StringVar(&devPath, "port", "",
 		"Set serial port device `PATH`. If this is not passed, auto-detection will be attempted.")
 	pflag.BoolVar(&verbose, "verbose", false,
 		"Enable verbose output.")
-	pflag.StringVar(&configFile, "config", "",
-		fmt.Sprintf("`PATH` to configuration file (commands: serve-signer, remote-sign) (default: %s).", defaultConfigFile))
+	pflag.StringVar(&configFile, "config", defaultConfigFile,
+		"`PATH` to configuration file (commands: serve-signer, remote-sign).")
 	pflag.BoolVar(&checkConfigOnly, "check-config", false,
 		"Only check that the configuration is usable, then exit (commands: serve-signer, remote-sign).")
 	pflag.BoolVarP(&showURLOnly, "show-url", "u", false,
 		"Only output the URL to the verification data that should be downloaded (command: verify).")
 	pflag.StringVarP(&baseDir, "base-dir", "d", "",
-		"If this is set, verification data is read from a file located in `DIRECTORY` and named after the TKey UDI in hex, instead of fetched from a URL. You can for example first use \"verify --show-url\" and download the verification file manually on some other computer, then transfer the file here and use \"verify --base-dir .\" (command: verify).")
-	pflag.StringVar(&baseURL, "base-url", "",
-		fmt.Sprintf("Set the base `URL` of verification server for fetching verification data (command: verify) (default \"%s\").", defaultBaseURL))
+		"Read verification data from a file located in `DIRECTORY` and named after the TKey UDI in hex, instead of from a URL. You can for example first use \"verify --show-url\" and download the verification file manually on some other computer, then transfer the file back and use \"verify --base-dir .\" (command: verify).")
+	pflag.StringVar(&baseURL, "base-url", defaultBaseURL,
+		"Set the base `URL` of verification server for fetching verification data (command: verify).")
 	pflag.Usage = func() {
 		desc := fmt.Sprintf(`Usage: tkey-verification command [flags...]
 
@@ -100,11 +98,12 @@ Commands:
 
 	cmd := pflag.Args()[0]
 
-	if cmd == "verify" && (configFile != "" || checkConfigOnly) {
+	// Use Lookup to tell if user changed string with default value
+	if cmd == "verify" && (pflag.CommandLine.Lookup("config").Changed || checkConfigOnly) {
 		le.Printf("Cannot use --config/--check-config with this command.\n")
 		os.Exit(2)
 	}
-	if cmd != "verify" && (showURLOnly || baseDir != "" || baseURL != "") {
+	if cmd != "verify" && (showURLOnly || baseDir != "" || pflag.CommandLine.Lookup("base-url").Changed) {
 		le.Printf("Cannot use --show-url/--base-dir/--base-url with this command.\n")
 		os.Exit(2)
 	}
@@ -112,9 +111,6 @@ Commands:
 	// Command funcs exit to OS themselves for now
 	switch cmd {
 	case "serve-signer":
-		if configFile == "" {
-			configFile = defaultConfigFile
-		}
 		conf := loadServeSignerConfig(configFile)
 		if err != nil {
 			le.Printf("Couldn't read config file %v: %v\n", configFile, err)
@@ -130,12 +126,9 @@ Commands:
 		remoteSign(conf, deviceSignerApp, devPath, verbose, checkConfigOnly)
 
 	case "verify":
-		if baseDir != "" && (showURLOnly || baseURL != "") {
+		if baseDir != "" && (showURLOnly || pflag.CommandLine.Lookup("base-url").Changed) {
 			le.Printf("Cannot combine --base-dir and --show-url/--base-url\n")
 			os.Exit(2)
-		}
-		if baseURL == "" {
-			baseURL = defaultBaseURL
 		}
 		verify(devPath, verbose, showURLOnly, baseDir, baseURL)
 
