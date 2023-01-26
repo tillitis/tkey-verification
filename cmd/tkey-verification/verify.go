@@ -119,6 +119,7 @@ func verificationFromURL(verifyURL string) (Verification, error) {
 		return verification, fmt.Errorf("http.Get failed: %w", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return verification, fmt.Errorf("HTTP GET status code: %d (%s)", resp.StatusCode, resp.Status)
 	}

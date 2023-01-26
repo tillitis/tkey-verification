@@ -44,7 +44,7 @@ func main() {
 
 	vendorPubKey := vendorsigning.GetCurrentPubKey()
 	if vendorPubKey == nil {
-		le.Printf("Found no usable embedded vendor signing pubkey\n")
+		le.Printf("Found no usable embedded vendor signing public key\n")
 		os.Exit(1)
 	}
 
@@ -76,11 +76,17 @@ Signer-app tag for device signing: %s
 
 Commands:
   serve-signer  TODO write...
+
   remote-sign   TODO write...
+
   verify        Verify that a TKey is genuine by extracting the TKey UDI and using it
-                to fetch the verification data, including tag and signature, by some
-                means. Then running the correct signer-app on the TKey, extracting the
-                public key and verifying it using the vendor's signing public pubkey.`,
+                to fetch the verification data, including tag and signature from the
+                web. Then running the correct signer-app on the TKey, extracting the
+                public key and verifying it using the vendor's signing public key.
+
+                The flags --show-url and --base-dir can be used to show the URL for
+                downloading the verification data on one machine, and verifying the
+                TKey on another machine that lacks network, see more below.`,
 			strings.Join(appbins.Tags(), " "), Tag, vendorPubKey.String())
 		le.Printf("%s\n\n%s", desc, pflag.CommandLine.FlagUsagesWrapped(86))
 	}

@@ -50,10 +50,10 @@ func serveSigner(conf Config, vendorPubKey *vendorsigning.PubKey, devPath string
 		os.Exit(1)
 	}
 	if bytes.Compare(vendorPubKey.PubKey[:], foundPubKey) != 0 {
-		le.Printf("Found TKey pubkey \"%s\" does not match the embedded vendor signing pubkey in use\n", hex.EncodeToString(foundPubKey))
+		le.Printf("The public key of the found TKey (\"%s\") does not match the embedded vendor signing public key in use\n", hex.EncodeToString(foundPubKey))
 		os.Exit(1)
 	}
-	le.Printf("Found TKey with matching pubkey (UDI (BE): %s)\n", hex.EncodeToString(foundUDIBE))
+	le.Printf("Found signing TKey with the expected public key (UDI (BE): %s)\n", hex.EncodeToString(foundUDIBE))
 
 	if err := os.MkdirAll(signaturesDir, 0o755); err != nil {
 		le.Printf("MkdirAll failed: %s\n", err)

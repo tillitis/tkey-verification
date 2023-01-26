@@ -21,7 +21,7 @@ var le = log.New(os.Stderr, "", 0)
 
 func GetCurrentPubKey() *PubKey {
 	if err := initPubKeys(); err != nil {
-		le.Printf("Failed to init embedded vendor signing pubkeys: %s\n", err)
+		le.Printf("Failed to init embedded vendor signing public keys: %s\n", err)
 		os.Exit(1)
 	}
 	return getCurrentPubKey(pubKeys)
@@ -64,7 +64,7 @@ func initPubKeys() error {
 		}
 
 		if len(fields) != 2 {
-			return fmt.Errorf("Expected 2 space-separated fields: pubkey in hex, and signer-app tag")
+			return fmt.Errorf("Expected 2 space-separated fields: public key in hex, and signer-app tag")
 		}
 		pubKeyHex, tag := fields[0], fields[1]
 
@@ -73,7 +73,7 @@ func initPubKeys() error {
 			return fmt.Errorf("Failed to decode hex \"%s\": %w", pubKeyHex, err)
 		}
 		if l := len(pubKey); l != ed25519.PublicKeySize {
-			return fmt.Errorf("Got %d bytes pubkey from \"%s\", expected %d", l, pubKeyHex, ed25519.PublicKeySize)
+			return fmt.Errorf("Got %d bytes public key from \"%s\", expected %d", l, pubKeyHex, ed25519.PublicKeySize)
 		}
 
 		appBin, err := appbins.Get(tag)
@@ -83,7 +83,7 @@ func initPubKeys() error {
 
 		for _, pk := range newPubKeys {
 			if bytes.Compare(pubKey, pk.PubKey[:]) == 0 {
-				return fmt.Errorf("pubkey \"%s\" already exists", pubKeyHex)
+				return fmt.Errorf("public key \"%s\" already exists", pubKeyHex)
 			}
 		}
 
@@ -94,11 +94,11 @@ func initPubKeys() error {
 	}
 
 	if l := len(newPubKeys); l > 1 {
-		return fmt.Errorf("We currently only support 1 vendor signing pubkey, found %d", l)
+		return fmt.Errorf("We currently only support 1 vendor signing public key, but found %d", l)
 	}
 
 	if getCurrentPubKey(&newPubKeys) == nil {
-		return fmt.Errorf("Found no currently usable vendor signing pubkey")
+		return fmt.Errorf("Found no currently usable vendor signing public key")
 	}
 
 	pubKeys = &newPubKeys
@@ -111,5 +111,5 @@ type PubKey struct {
 }
 
 func (p *PubKey) String() string {
-	return fmt.Sprintf("Using vendor signing pubkey:%s tag:%s", hex.EncodeToString(p.PubKey[:]), p.AppBin.Tag)
+	return fmt.Sprintf("Using vendor signing public key:%s tag:%s", hex.EncodeToString(p.PubKey[:]), p.AppBin.Tag)
 }

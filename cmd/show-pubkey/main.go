@@ -41,7 +41,7 @@ func main() {
 	}
 
 	if pflag.NArg() < 1 {
-		le.Printf("Please pass tag of the signer-app to run when extracting the pubkey.\n"+
+		le.Printf("Please pass tag of the signer-app to run when extracting the public key.\n"+
 			"Supported tags: %s\n", strings.Join(appbins.Tags(), " "))
 		os.Exit(2)
 	}
