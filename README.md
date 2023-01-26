@@ -115,7 +115,7 @@ the verification file.
 Download this file (named after the TKey UDI in hex) on some networked
 computer and transfer it back here. Given that the file is in current
 working directory, you can now verify locally with: `tkey-verification
-verify --from-file=.`
+verify -d=.`
 
 ## Building and running
 
@@ -188,10 +188,11 @@ it in `internal/appbins/bins/TAG.bin` before building the tool.
 11. Before trying to verify you need to remove and re-insert the
     device under verification to get it back to firmware mode.
     `tkey-verification` always requires to load the signer itself.
-    Then try to verify:
+    Then try to verify against local files in a directory (`verify -d
+    signatures`, the default is to query a web server):
 
     ```
-    % ./tkey-verification verify
+    % ./tkey-verification verify -d signatures
     Auto-detected serial port /dev/ttyACM0
     Connecting to device on serial port /dev/ttyACM0 ...
     Firmware name0:'tk1 ' name1:'mkdf' version:4
