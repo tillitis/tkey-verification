@@ -4,12 +4,12 @@ pubkeysfile="${1:-}"
 signerapptag="${2:-}"
 
 if [ -z "$pubkeysfile" ]; then
-  printf "SIGNING_PUBKEYS_FILE is not set (expected as argument #1)\n"
+  printf "SIGNING_PUBKEYS_FILE is not set\n"
   exit 1
 fi
 
 if [ -z "$signerapptag" ]; then
-  printf "DEVICE_SIGNERAPP_TAG is not set (expected as argument #2)\n"
+  printf "DEVICE_SIGNERAPP_TAG is not set\n"
   exit 1
 fi
 
