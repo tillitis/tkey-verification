@@ -10,13 +10,15 @@ install:
 .PHONY: show-pubkey
 show-pubkey:
 	go build ./cmd/show-pubkey
+	@printf "Built ./show-pubkey\n"
 
 # .PHONY to let go-build handle deps and rebuilds
 .PHONY: tkey-verification
 tkey-verification:
+	./check-build.sh "$(SIGNING_PUBKEYS_FILE)" "$(DEVICE_SIGNERAPP_TAG)"
 	cp -a "$(SIGNING_PUBKEYS_FILE)" ./internal/vendorsigning/vendor-signing-pubkeys.txt
-	@[ -n "$(DEVICE_SIGNERAPP_TAG)" ] || { printf "DEVICE_SIGNERAPP_TAG not set\n"; exit 1; }
 	go build -ldflags "-X main.Tag=$(DEVICE_SIGNERAPP_TAG)" ./cmd/tkey-verification
+	@printf "Built ./tkey-verification\n"
 
 .PHONY: clean
 clean:
