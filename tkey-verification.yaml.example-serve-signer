@@ -1,5 +1,5 @@
 ---
 cacert: "certs/tillitis.crt"
-servercert: "certs/localhost.crt"
-serverkey: "certs/localhost.key"
+servercert: "certs/server.crt"
+serverkey: "certs/server.key"
 listen: "localhost:1337"

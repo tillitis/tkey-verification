@@ -159,6 +159,11 @@ it in `internal/appbins/bins/TAG.bin` before building the tool.
 
    See below if you need to get hold of a different public key.
 
+   NOTE: for deploying the server part on a different machine (the
+   default setup runs both serve-signer and remote-sign on localhost)
+   you need to adjust the certificate generation in the
+   [Makefile](Makefile).
+
 7. You now need 1 TKey and 1 QEMU machine running to try this out (or
    2 TKeys, or 2 QEMU machines, if you manage to get that working).
    One is Tillitis' (vendor's) signing TKey, and the other is a TKey
