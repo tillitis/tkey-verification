@@ -123,7 +123,7 @@ Currently, you have to build the signer-app binary yourself, and place
 it in `internal/appbins/bins/TAG.bin` before building the tool.
 
 1. Clone [https://github.com/tillitis-key1-apps](https://github.com/tillitis/tillitis-key1-apps).
-   Alternatively, if you have a working Docker setup, you can try
+   Alternatively, if you have a working podman setup, you can try
    running:
    ```
    ./contrib/build-in-container.sh main
