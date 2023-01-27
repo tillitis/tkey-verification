@@ -57,7 +57,7 @@ func main() {
 	if !ok {
 		os.Exit(1)
 	}
-	le.Printf("TKey UDI (BE): %s\n", hex.EncodeToString(udiBE))
+	le.Printf("TKey UDI(BE): %s\n", hex.EncodeToString(udiBE))
 
 	le.Printf("Public Key follows on stdout:\n")
 	fmt.Printf("%s\n", hex.EncodeToString(pubKey))

@@ -57,7 +57,7 @@ func remoteSign(conf Config, appBin *appbins.AppBin, devPath string, verbose boo
 	if !ok {
 		exit(1)
 	}
-	le.Printf("TKey UDI (BE): %s\n", hex.EncodeToString(udiBE))
+	le.Printf("TKey UDI(BE): %s\n", hex.EncodeToString(udiBE))
 
 	// Locally generate a challenge and sign it
 	challenge := make([]byte, 32)

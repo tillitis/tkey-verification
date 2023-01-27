@@ -25,7 +25,7 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 	if udiBE == nil {
 		os.Exit(1)
 	}
-	le.Printf("TKey UDI (BE): %s\n", hex.EncodeToString(udiBE))
+	le.Printf("TKey UDI(BE): %s\n", hex.EncodeToString(udiBE))
 	verifyURL := fmt.Sprintf("%s/%s", verifyBaseURL, hex.EncodeToString(udiBE))
 
 	if showURLOnly {
