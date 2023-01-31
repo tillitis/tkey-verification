@@ -111,5 +111,5 @@ type PubKey struct {
 }
 
 func (p *PubKey) String() string {
-	return fmt.Sprintf("Using vendor signing public key:%s tag:%s", hex.EncodeToString(p.PubKey[:]), p.AppBin.Tag)
+	return fmt.Sprintf("Vendor signing public key:%s tag:%s", hex.EncodeToString(p.PubKey[:]), p.AppBin.Tag)
 }

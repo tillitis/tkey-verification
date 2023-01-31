@@ -4,7 +4,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -68,11 +67,7 @@ func main() {
 	pflag.StringVar(&baseURL, "base-url", defaultBaseURL,
 		"Set the base `URL` of verification server for fetching verification data (command: verify).")
 	pflag.Usage = func() {
-		desc := fmt.Sprintf(`Usage: tkey-verification command [flags...]
-
-Supported signer-app tags: %s
-Signer-app tag for device signing: %s
-%s
+		le.Printf(`Usage: tkey-verification command [flags...]
 
 Commands:
   serve-signer  TODO write...
@@ -86,9 +81,16 @@ Commands:
 
                 The flags --show-url and --base-dir can be used to show the URL for
                 downloading the verification data on one machine, and verifying the
-                TKey on another machine that lacks network, see more below.`,
-			strings.Join(appbins.Tags(), " "), Tag, vendorPubKey.String())
-		le.Printf("%s\n\n%s", desc, pflag.CommandLine.FlagUsagesWrapped(86))
+                TKey on another machine that lacks network, see more below.
+
+Flags:
+%s
+
+Built with:
+Signer-app tag for device signing: %s
+%s
+Supported signer-app tags: %s
+`, pflag.CommandLine.FlagUsagesWrapped(86), Tag, vendorPubKey.String(), strings.Join(appbins.Tags(), " "))
 	}
 	pflag.Parse()
 
