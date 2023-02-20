@@ -3,119 +3,61 @@
 **NOTE**: This is work in progress. We're not yet publishing
 signatures for verification.
 
-`tkey-verification` is a tool used for signing and verifying that a
-TKey is genuine, produced by [Tillitis](https://tillitis.se/) (vendor)
-and not tampered with.
+`tkey-verification` is a tool used for signing a TKey identity and
+verifying that it still has the same identity as it did when it was
+produced by [Tillitis](https://tillitis.se/) (the vendor).
 
-## Procedure
+## Terminology
 
-### Terminology
-
-- "signing server": An HSM-like machine providing signatures over
-  messages and producing files to be uploaded later.
 - "device under verification": The device the vendor is provisioning
   or the user is verifying.
-- "device public key": The public key of the device under verification
-  when running the signer application.
-- "vendor signature": A signature made by the signing server.
 - "device signature": A signature made on the device under
-  verification with the signer application.
+  verification with the signer TKey program.
+- Unique Device Identifier (UDI): A unique identifier present in all
+  TKeys.
+- "signing server": An HSM-like machine providing signatures over
+  messages and producing files to be uploaded later.
+- "signer": The TKey program signer from `apps/signer/app.bin`
+  compiled from [the apps repo](https://github.com/tillitis/tillitis-key1-apps/).
+- "signer public key": The public key of signer running on the device
+  under verification.
+- "vendor signature": A signature made by the signing server.
 
-### Signing
+## Security Protocol
 
-`tkey-verification serve-signer` is run to provide a signing server on
-a computer on the provisioning network with its own TKey, the vendor
-key.
+### During provisioning
 
-The device under verification is inserted into the provisioning
-workstation.
+1. Retrieve the UDI from the device under verification.
+2. Run the signer with a specific tag on the device under verification
+   thus creating a unique key pair.
+3. Retrieve signer public key from the device under verification.
+4. Ask signer to sign a random challenge.
+5. Verify the signature of the random challenge with the retrieved
+   public key to make sure signing works.
+6. Sign the signer public key with a vendor signature.
+7. Publish the UDI, the tag of the signer program used, and the vendor
+   signature.
 
-`tkey-verification remote-sign` is run on the provisioning workstation
-to retrieve the Unique Device Identifier (UDI), load the signer, ask
-it for the device public key, and ask the signer to sign a random
-challenge. We then verify the signature against the device public key
-before proceeding.
+### Verifying
 
-After verifying we send the UDI and the public key to the signing
-server, which will make the vendor signature.
+1. Retrieve the UDI from the device under verification.
+2. Get the vendor signature and signer tag for this UDI.
+3. Run the signer with the same tag on the device under verification.
+4. Retrive the signer public key.
+5. Ask signer to sign a random challenge.
+6. Verify the signature of the random challenge with the signer public
+   key thus proving that device under verification has access to the
+   corresponding private key.
+7. Verify the vendor signature of the signer public key thus proving
+   that this private/public key pair was the same during vendor
+   signing.
 
-The signing server signs the the device public key and outputs a file
-in a directory `signatures/` which is named after the Unique Device
-Identifier (in hex), for example `signatures/0133704100000015`, which
-contains for example:
-
-```
-{
-  "timestamp": "2023-01-12T12:04:24Z",
-  "tag": "main",
-  "signature": "a720d532e78c7f5aeb2ac61d9c112f6323cd9db1ce45d6ff6d727b05a38dabafab0087d2a9be770e1ce8e889178ea111a67bf366bb4af9d11e68a2dc229ffa0a"
-}
-```
-
-Where the fields are:
-
-- timestamp: RFC3339 UTC timestamp when the signature was done.
-- tag: The Git tag of the ed25519 signer oracle used on the device
-  under verification, `apps/signer/app.bin` compiled from [the apps
-  repo](https://github.com/tillitis/tillitis-key1-apps/).
-- signature: Vendor signature of the device public key. Stored in
-  base16 (hex).
-
-These files will later be published somewhere public, for example on a
-web server. Note that the device public key isn't published but is
-retrievable by anyone with access to the TKey.
-
-### Verification
-
-To verify a device, the user runs `tkey-verification verify`.
-
-It first retrieves the Unique Device Identifier (UDI) from the TKey
-under verification, then queries a web server for verification data
-under a base URL (current default is "https://example.com/verify") +
-UDI, for instance `0133704100000015`.
-
-From the verification data we learn the tag of the signer-app that was
-used when the verification was created, and the correct binary can
-thus loaded onto the TKey. The device public key can then be extracted
-from the TKey. We verify the vendor signature over the public key.
-This proves that the vendor has signed the same device public key.
-
-To check that the device under verification has the right private key
-we now ask the signer to sign a random challenge, resulting in a
-device signature. This signature should be able to be verified with
-the already extracted device public key.
-
-If the signature over the random message is verified this proves that
-the TKey is in possession of the private key corresponding to the
-already verified public key, thus proving that the TKey is genuine.
-
-*Nota bene*: The same signer binary that was used for producing the
-device signature during signing *must* be used when verifying it. If a
-different signer is used then the device public key will not match
-even if the TKey is the same. A verifier must check the "tag" field
-and complain if it does not have a signer binary built from this tag.
-
-We're currently thinking that we could provide binary releases of the
-`tkey-verification` host program. The release will embed pre-built
-signer binaries for all tags we ever used for verifications, as well
-as the tag name to use for new verifications.
-
-We want to be compatible with the sigsum transparency log and might
-later post something on the log, perhaps just sha256(signature file
-content).
-
-https://git.glasklar.is/sigsum/project/documentation/-/blob/main/log.md#21-cryptography
-
-#### Verification on a machine without network
-
-If you're on a machine without network and need to verify a TKey you
-can run `tkey-verification --show-url` which will output the URL to
-the verification file.
-
-Download this file (named after the TKey UDI in hex) on some networked
-computer and transfer it back here. Given that the file is in current
-working directory, you can now verify locally with: `tkey-verification
-verify -d=.`
+Note that the exact same signer binary that was used for producing the
+signer signature during provisioning *must* be used when verifying it.
+If a different signer is used then the device public key will not
+match even if the TKey is the same. A verifier must check the "tag"
+field and complain if it does not have a signer binary built from this
+tag.
 
 ## Building and running
 
@@ -135,7 +77,7 @@ it in `internal/appbins/bins/TAG.bin` before building the tool.
 
 3. Setup the build environment according to instructions in the README.
 
-4. The signer-app needs to be built with the touch requirement
+4. The signer needs to be built with the touch requirement
    removed. Run:
    ```
    make TKEY_SIGNER_APP_NO_TOUCH=yes -C apps signer/app.bin
@@ -147,10 +89,10 @@ it in `internal/appbins/bins/TAG.bin` before building the tool.
    cp ../tillitis-key1-apps/apps/signer/app.bin ./internal/appbins/bins/main.bin
    ```
 
-6. Build the `tkey-verification` tool with the signer-app tag to use
-   when provisioning a verification using `remote-sign`, and the test
-   file which contains public key(s) for vendor signing/verify. Also
-   build CA, server, and client certs:
+6. Build the `tkey-verification` tool with the signer tag to use when
+   provisioning a verification using `remote-sign`, and the test file
+   which contains public key(s) for vendor signing/verify. Also build
+   CA, server, and client certs:
 
    ```
    % make DEVICE_SIGNERAPP_TAG=main SIGNING_PUBKEYS_FILE=test-vendor-signing-pubkeys.txt
@@ -208,6 +150,9 @@ it in `internal/appbins/bins/TAG.bin` before building the tool.
     TKey is genuine!
     ```
 
+For more, see the manual page [tkey-verification(1)](system/tkey-verification.1).
+
+
 ## Running qemu
 
 You need [our fork of qemu](https://github.com/tillitis/qemu). Use the
@@ -264,4 +209,26 @@ Then build everything with this file:
 
 ```
 % make DEVICE_SIGNERAPP_TAG=main SIGNING_PUBKEYS_FILE=other-signing-pubkeys.txt
+```
+
+## Signed metadata
+
+The computer running `tkey-verification serve-sign` generates files
+in a directory `signatures/` which is named after the Unique Device
+Identifier (in hex), for example `signatures/0133704100000015`.
+
+The file contains:
+
+- timestamp: RFC3339 UTC timestamp when the signature was done.
+- tag: The Git tag of the signer program used on the device under verification,
+- signature: Vendor signature of the device public key. Stored in hexadecimal.
+
+Example file content:
+
+```
+{
+  "timestamp": "2023-01-12T12:04:24Z",
+  "tag": "v0.0.4",
+  "signature": "a720d532e78c7f5aeb2ac61d9c112f6323cd9db1ce45d6ff6d727b05a38dabafab0087d2a9be770e1ce8e889178ea111a67bf366bb4af9d11e68a2dc229ffa0a"
+}
 ```
