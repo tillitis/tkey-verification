@@ -20,7 +20,7 @@ var le = log.New(os.Stderr, "", 0)
 
 func main() {
 	var devPath string
-	var verbose bool
+	var verbose, helpOnly bool
 
 	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.CommandLine.SortFlags = false
@@ -28,11 +28,23 @@ func main() {
 		"Set serial port device `PATH`. If this is not passed, auto-detection will be attempted.")
 	pflag.BoolVar(&verbose, "verbose", false,
 		"Enable verbose output.")
+	pflag.BoolVar(&helpOnly, "help", false, "Output this help.")
 	pflag.Usage = func() {
-		desc := fmt.Sprintf(`Usage: show-pubkey [flags...]`)
-		le.Printf("%s\n\n%s", desc, pflag.CommandLine.FlagUsagesWrapped(86))
+		le.Printf(`Usage: show-pubkey [flags...] TAG
+
+Flags:
+%s
+
+Supported verisigner-app tags: %s
+
+`, pflag.CommandLine.FlagUsagesWrapped(86), strings.Join(appbins.Tags(), " "))
 	}
 	pflag.Parse()
+
+	if helpOnly {
+		pflag.Usage()
+		os.Exit(0)
+	}
 
 	if pflag.NArg() > 1 {
 		le.Printf("Unexpected argument: %s\n\n", strings.Join(pflag.Args()[1:], " "))
@@ -41,25 +53,26 @@ func main() {
 	}
 
 	if pflag.NArg() < 1 {
-		le.Printf("Please pass tag of the signer-app to run when extracting the public key.\n"+
-			"Supported tags: %s\n", strings.Join(appbins.Tags(), " "))
+		le.Printf("Please pass tag of the verisigner-app to run when extracting the public key.\n"+
+			"Supported tags:\n%s\n", strings.Join(appbins.Tags(), " \n"))
 		os.Exit(2)
 	}
 
-	appBin, err := appbins.Get(pflag.Args()[0])
+	tag := pflag.Args()[0]
+
+	appBin, err := appbins.GetByTagOnly(tag)
 	if err != nil {
-		le.Printf("Failed: %s\n", err)
-		le.Printf("Supported tags: %s\n", strings.Join(appbins.Tags(), " "))
+		le.Printf("Getting embedded verisigner-app failed: %s\n", err)
 		os.Exit(1)
 	}
 
-	udiBE, pubKey, ok := tkey.Load(appBin, devPath, verbose)
+	udi, pubKey, ok := tkey.Load(appBin, devPath, verbose)
 	if !ok {
 		os.Exit(1)
 	}
-	le.Printf("TKey UDI(BE): %s\n", hex.EncodeToString(udiBE))
+	le.Printf("TKey UDI: %s\n", udi.String())
 
-	le.Printf("Public Key follows on stdout:\n")
-	fmt.Printf("%s\n", hex.EncodeToString(pubKey))
+	le.Printf("Public Key, app tag, and app hash (for vendor-signing-pubkeys.txt) follows on stdout:\n")
+	fmt.Printf("%s %s %s\n", hex.EncodeToString(pubKey), tag, hex.EncodeToString(appBin.Hash()))
 	os.Exit(0)
 }

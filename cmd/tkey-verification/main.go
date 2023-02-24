@@ -4,21 +4,19 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"runtime/debug"
 	"strings"
 
 	"github.com/spf13/pflag"
 	"github.com/tillitis/tkey-verification/internal/appbins"
+	"github.com/tillitis/tkey-verification/internal/firmwares"
 	"github.com/tillitis/tkey-verification/internal/vendorsigning"
 )
 
-// Note: this must be set at build time to the Tag of signer-app that
-// is to run on the TKey device under verification (running command
-// remote-sign; for command verify, the tag in the verification data
-// is used). The signer-app should be built with
-// TKEY_SIGNER_APP_NO_TOUCH=yes
-var Tag = ""
+const progname = "tkey-verification"
 
 const signaturesDir = "signatures"
 
@@ -27,17 +25,19 @@ const (
 	defaultConfigFile = "./tkey-verification.yaml"
 )
 
+var version string
+
 // Use when printing err/diag msgs
 var le = log.New(os.Stderr, "", 0)
 
 func main() {
-	if Tag == "" {
-		le.Printf("main.Tag is empty, program is not built correctly!\n")
-		os.Exit(1)
+	if version == "" {
+		version = readBuildInfo()
 	}
-	deviceSignerApp, err := appbins.Get(Tag)
+
+	deviceSignAppBin, err := appbins.GetDeviceSigner()
 	if err != nil {
-		le.Printf("No AppBin for main.Tag: %s\n", err)
+		le.Printf("Fail to get verisigner-app for device signing: %s\n", err)
 		os.Exit(1)
 	}
 
@@ -47,8 +47,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	builtWith := fmt.Sprintf(`Built with:
+Supported verisigner-app tags:
+  %s
+Device signing using:
+  %s
+Vendor signing:
+  %s
+Known firmwares:
+  %s
+`,
+		strings.Join(appbins.Tags(), " \n  "),
+		deviceSignAppBin.String(),
+		vendorPubKey.String(),
+		strings.Join(firmwares.Firmwares(), " \n  "))
+
 	var devPath, baseURL, baseDir, configFile string
-	var checkConfigOnly, verbose, showURLOnly bool
+	var checkConfigOnly, verbose, showURLOnly, versionOnly, helpOnly bool
 
 	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.CommandLine.SortFlags = false
@@ -66,8 +81,10 @@ func main() {
 		"Read verification data from a file located in `DIRECTORY` and named after the TKey UDI in hex, instead of from a URL. You can for example first use \"verify --show-url\" and download the verification file manually on some other computer, then transfer the file back and use \"verify --base-dir .\" (command: verify).")
 	pflag.StringVar(&baseURL, "base-url", defaultBaseURL,
 		"Set the base `URL` of verification server for fetching verification data (command: verify).")
+	pflag.BoolVar(&versionOnly, "version", false, "Output version information.")
+	pflag.BoolVar(&helpOnly, "help", false, "Output this help.")
 	pflag.Usage = func() {
-		le.Printf(`Usage: tkey-verification command [flags...]
+		desc := fmt.Sprintf(`Usage: %s command [flags...]
 
 Commands:
   serve-signer  TODO write...
@@ -76,23 +93,25 @@ Commands:
 
   verify        Verify that a TKey is genuine by extracting the TKey UDI and using it
                 to fetch the verification data, including tag and signature from the
-                web. Then running the correct signer-app on the TKey, extracting the
-                public key and verifying it using the vendor's signing public key.
+                web. Then running the correct verisigner-app on the TKey, extracting
+                the public key and verifying it using the vendor's signing public key.
 
                 The flags --show-url and --base-dir can be used to show the URL for
                 downloading the verification data on one machine, and verifying the
-                TKey on another machine that lacks network, see more below.
+                TKey on another machine that lacks network, see more below.`, progname)
 
-Flags:
-%s
-
-Built with:
-Signer-app tag for device signing: %s
-%s
-Supported signer-app tags: %s
-`, pflag.CommandLine.FlagUsagesWrapped(86), Tag, vendorPubKey.String(), strings.Join(appbins.Tags(), " "))
+		le.Printf("%s\n\nFlags:\n%s\n%s", desc, pflag.CommandLine.FlagUsagesWrapped(86), builtWith)
 	}
 	pflag.Parse()
+
+	if helpOnly {
+		pflag.Usage()
+		os.Exit(0)
+	}
+	if versionOnly {
+		fmt.Printf("%s %s\n\n%s", progname, version, builtWith)
+		os.Exit(0)
+	}
 
 	if pflag.NArg() != 1 {
 		if pflag.NArg() > 1 {
@@ -131,7 +150,7 @@ Supported signer-app tags: %s
 			configFile = defaultConfigFile
 		}
 		conf := loadRemoteSignConfig(configFile)
-		remoteSign(conf, deviceSignerApp, devPath, verbose, checkConfigOnly)
+		remoteSign(conf, deviceSignAppBin, devPath, verbose, checkConfigOnly)
 
 	case "verify":
 		if baseDir != "" && (showURLOnly || pflag.CommandLine.Lookup("base-url").Changed) {
@@ -145,4 +164,19 @@ Supported signer-app tags: %s
 		pflag.Usage()
 		os.Exit(2)
 	}
+}
+
+func readBuildInfo() string {
+	version := "devel without BuildInfo"
+	if info, ok := debug.ReadBuildInfo(); ok {
+		sb := strings.Builder{}
+		sb.WriteString("devel")
+		for _, setting := range info.Settings {
+			if strings.HasPrefix(setting.Key, "vcs") {
+				sb.WriteString(fmt.Sprintf(" %s=%s", setting.Key, setting.Value))
+			}
+		}
+		version = sb.String()
+	}
+	return version
 }

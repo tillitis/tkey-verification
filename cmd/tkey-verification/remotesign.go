@@ -7,7 +7,6 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/tls"
-	"encoding/hex"
 	"net"
 	"net/rpc"
 	"os"
@@ -53,11 +52,18 @@ func remoteSign(conf Config, appBin *appbins.AppBin, devPath string, verbose boo
 		exit(0)
 	}
 
-	udiBE, pubKey, ok := tkey.Load(appBin, devPath, verbose)
+	udi, pubKey, ok := tkey.Load(appBin, devPath, verbose)
 	if !ok {
 		exit(1)
 	}
-	le.Printf("TKey UDI(BE): %s\n", hex.EncodeToString(udiBE))
+	le.Printf("TKey UDI: %s\n", udi.String())
+
+	fw, err := verifyFirmwareHash(devPath, pubKey, udi)
+	if err != nil {
+		le.Printf("verifyFirmwareHash failed: %s\n", err)
+		os.Exit(1)
+	}
+	le.Printf("TKey firmware with size:%d and verified hash:%0x…\n", fw.Size, fw.Hash[:16])
 
 	// Locally generate a challenge and sign it
 	challenge := make([]byte, 32)
@@ -78,11 +84,17 @@ func remoteSign(conf Config, appBin *appbins.AppBin, devPath string, verbose boo
 		os.Exit(1)
 	}
 
-	// The message we want vendor to sign is the signer's public key
+	msg, err := buildMessage(udi.Bytes, fw.Hash[:], pubKey)
+	if err != nil {
+		le.Printf("buildMessage failed: %s", err)
+		os.Exit(1)
+	}
+
 	args := Args{
-		UDI:     udiBE,
-		Tag:     appBin.Tag,
-		Message: pubKey,
+		UDIBE:   udi.Bytes,
+		AppTag:  appBin.Tag,
+		AppHash: appBin.Hash(),
+		Message: msg,
 	}
 
 	err = client.Call("API.Sign", &args, nil)

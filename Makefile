@@ -6,6 +6,10 @@ all: show-pubkey tkey-verification
 install:
 	install -Dm755 tkey-verification /usr/local/bin/tkey-verification
 
+.PHONY: appbins-from-tags
+appbins-from-tags:
+	./build-appbins-from-tags.sh
+
 # .PHONY to let go-build handle deps and rebuilds
 .PHONY: show-pubkey
 show-pubkey:
@@ -15,13 +19,15 @@ show-pubkey:
 # .PHONY to let go-build handle deps and rebuilds
 .PHONY: tkey-verification
 tkey-verification:
-	./check-build.sh "$(SIGNING_PUBKEYS_FILE)" "$(DEVICE_SIGNERAPP_TAG)"
-	cp -a "$(SIGNING_PUBKEYS_FILE)" ./internal/vendorsigning/vendor-signing-pubkeys.txt
-	go build -ldflags "-X main.Tag=$(DEVICE_SIGNERAPP_TAG)" ./cmd/tkey-verification
-	@printf "Built ./tkey-verification\n"
+	cp -af vendor-signing-pubkeys.txt ./internal/vendorsigning/vendor-signing-pubkeys.txt
+	go build ./cmd/tkey-verification
+	./tkey-verification --version
 
 .PHONY: clean
 clean:
+	make -C apps clean
+	rm -f internal/appbins/bins/*.bin
+	rm -f internal/vendorsigning/vendor-signing-pubkeys.txt
 	rm -f show-pubkey tkey-verification
 
 .PHONY: lint

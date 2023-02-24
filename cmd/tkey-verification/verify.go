@@ -21,12 +21,12 @@ import (
 )
 
 func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, verifyBaseURL string) {
-	udiBE := tkey.GetUDI(devPath, verbose)
-	if udiBE == nil {
+	udi := tkey.GetUDI(devPath, verbose)
+	if udi == nil {
 		os.Exit(1)
 	}
-	le.Printf("TKey UDI(BE): %s\n", hex.EncodeToString(udiBE))
-	verifyURL := fmt.Sprintf("%s/%s", verifyBaseURL, hex.EncodeToString(udiBE))
+	le.Printf("TKey UDI: %s\n", udi.String())
+	verifyURL := fmt.Sprintf("%s/%s", verifyBaseURL, hex.EncodeToString(udi.Bytes))
 
 	if showURLOnly {
 		le.Printf("URL to verification data follows on stdout:\n")
@@ -37,7 +37,7 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 	var verification Verification
 	var err error
 	if baseDir != "" {
-		p := path.Join(baseDir, hex.EncodeToString(udiBE))
+		p := path.Join(baseDir, hex.EncodeToString(udi.Bytes))
 		verification, err = verificationFromFile(p)
 		if err != nil {
 			le.Printf("verificationFromFile failed: %s\n", err)
@@ -51,37 +51,53 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 		}
 	}
 
-	if verification.Tag == "" {
-		le.Printf("Tag in verification data is empty\n")
+	le.Printf("Verification data was created %s\n", verification.Timestamp)
+
+	if verification.AppTag == "" {
+		le.Printf("apptag in verification data is empty\n")
 		os.Exit(1)
 	}
 
-	appBin, err := appbins.Get(verification.Tag)
+	appHash, err := hex.DecodeString(verification.AppHash)
 	if err != nil {
-		// Note: as we embed every signer-app binary ever used, this
-		// should not ever happen. Only if one removes a file from
-		// internal/appbins/bins/, which would be a major mistake.
-		le.Printf("This tkey-verification does not support signer-app tag \"%s\".\n", verification.Tag)
+		le.Printf("decode apphash hex \"%s\" in verification data failed: %s\n", verification.AppHash, err)
 		os.Exit(1)
 	}
 
-	_, pubKey, ok := tkey.Load(appBin, devPath, verbose)
+	appBin, err := appbins.Get(verification.AppTag, appHash)
+	if err != nil {
+		le.Printf("Getting embedded verisigner-app failed: %s\n", err)
+		os.Exit(1)
+	}
+
+	udi, pubKey, ok := tkey.Load(appBin, devPath, verbose)
 	if !ok {
 		os.Exit(1)
 	}
 
-	// Check the vendor signature over the device public key
+	fw, err := verifyFirmwareHash(devPath, pubKey, udi)
+	if err != nil {
+		le.Printf("verifyFirmwareHash failed: %s\n", err)
+		os.Exit(1)
+	}
+	le.Printf("TKey firmware was verified, size:%d hash:%0x…\n", fw.Size, fw.Hash[:16])
+
 	vSignature, err := hex.DecodeString(verification.Signature)
 	if err != nil {
 		le.Printf("Couldn't decode signature: %s", err)
 		os.Exit(1)
 	}
 
-	// Note: we currently only support 1 single vendor signing pubkey
+	// Verify vendor's signature over known message. Note: we
+	// currently only support 1 single vendor signing pubkey
 	vendorPubKey := vendorsigning.GetCurrentPubKey().PubKey[:]
-
-	if !ed25519.Verify(vendorPubKey, pubKey, vSignature) {
-		le.Printf("Vendor signature failed verification!")
+	msg, err := buildMessage(udi.Bytes, fw.Hash[:], pubKey)
+	if err != nil {
+		le.Printf("buildMessage failed: %s", err)
+		os.Exit(1)
+	}
+	if !ed25519.Verify(vendorPubKey, msg, vSignature) {
+		le.Printf("Signature by vendor failed verification!")
 		os.Exit(1)
 	}
 
@@ -100,7 +116,7 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 
 	// Verify device signature against device public key
 	if !ed25519.Verify(pubKey, challenge, signature) {
-		le.Printf("Vendor signature failed verification!")
+		le.Printf("Signature by TKey failed verification!")
 		os.Exit(1)
 	}
 

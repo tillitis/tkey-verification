@@ -36,8 +36,9 @@ func (*API) Ping(_ *struct{}, _ *struct{}) error {
 }
 
 type Args struct {
-	UDI     []byte // BE
-	Tag     string
+	UDIBE   []byte
+	AppTag  string
+	AppHash []byte
 	Message []byte
 }
 
@@ -45,10 +46,22 @@ func (api *API) Sign(args *Args, _ *struct{}) error {
 	api.mu.Lock()
 	defer api.mu.Unlock()
 
-	le.Printf("Going to sign for TKey with UDI(BE):%s tag:%s\n", hex.EncodeToString(args.UDI), args.Tag)
+	le.Printf("Going to sign for TKey with UDI:%s(BE) apptag:%s apphash:%0x…\n", hex.EncodeToString(args.UDIBE), args.AppTag, args.AppHash[:16])
 
-	if args.Tag == "" {
+	if l := len(args.UDIBE); l != tkey.UDISize {
+		err := fmt.Errorf("Expected %d bytes UDIBE, got %d", tkey.UDISize, l)
+		le.Printf("%s\n", err)
+		return err
+	}
+
+	if args.AppTag == "" {
 		err := fmt.Errorf("Empty tag")
+		le.Printf("%s\n", err)
+		return err
+	}
+
+	if l := len(args.Message); l != MessageLen {
+		err := fmt.Errorf("Expected %d bytes message to sign, got %d", MessageLen, l)
 		le.Printf("%s\n", err)
 		return err
 	}
@@ -66,8 +79,8 @@ func (api *API) Sign(args *Args, _ *struct{}) error {
 		return err
 	}
 
-	// File named after the UDI (BE, in hex)
-	fn := fmt.Sprintf("%s/%s", signaturesDir, hex.EncodeToString(args.UDI))
+	// File named after the UDIBE in hex
+	fn := fmt.Sprintf("%s/%s", signaturesDir, hex.EncodeToString(args.UDIBE))
 	if _, err = os.Stat(fn); err == nil || !errors.Is(err, os.ErrNotExist) {
 		err = fmt.Errorf("%s already exists?", fn)
 		le.Printf("%s\n", err)
@@ -76,7 +89,8 @@ func (api *API) Sign(args *Args, _ *struct{}) error {
 
 	json, err := json.Marshal(Verification{
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
-		Tag:       args.Tag,
+		AppTag:    args.AppTag,
+		AppHash:   hex.EncodeToString(args.AppHash),
 		Signature: hex.EncodeToString(signature),
 	})
 	if err != nil {

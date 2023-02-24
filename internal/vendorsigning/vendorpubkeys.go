@@ -6,6 +6,7 @@ package vendorsigning
 import (
 	"bytes"
 	"crypto/ed25519"
+	"crypto/sha512"
 	_ "embed"
 	"encoding/hex"
 	"fmt"
@@ -40,6 +41,8 @@ func getCurrentPubKey(pubKeys *[]PubKey) *PubKey {
 	return &(*pubKeys)[0]
 }
 
+// nolint:typecheck // Avoid lint error when the embedding file is missing.
+//
 //go:embed vendor-signing-pubkeys.txt
 var pubKeysData []byte
 
@@ -63,22 +66,30 @@ func initPubKeys() error {
 			continue
 		}
 
-		if len(fields) != 2 {
-			return fmt.Errorf("Expected 2 space-separated fields: public key in hex, and signer-app tag")
+		if len(fields) != 3 {
+			return fmt.Errorf("Expected 3 space-separated fields: pubkey in hex, verisigner-app tag, and its hash in hex")
 		}
-		pubKeyHex, tag := fields[0], fields[1]
+		pubKeyHex, tag, hashHex := fields[0], fields[1], fields[2]
 
 		pubKey, err := hex.DecodeString(pubKeyHex)
 		if err != nil {
-			return fmt.Errorf("Failed to decode hex \"%s\": %w", pubKeyHex, err)
+			return fmt.Errorf("decode hex \"%s\" failed: %w", pubKeyHex, err)
 		}
 		if l := len(pubKey); l != ed25519.PublicKeySize {
-			return fmt.Errorf("Got %d bytes public key from \"%s\", expected %d", l, pubKeyHex, ed25519.PublicKeySize)
+			return fmt.Errorf("expected %d bytes public key, got %d", ed25519.PublicKeySize, l)
 		}
 
-		appBin, err := appbins.Get(tag)
+		hash, err := hex.DecodeString(hashHex)
 		if err != nil {
-			return fmt.Errorf("%w", err)
+			return fmt.Errorf("decode hex \"%s\" failed: %w", hashHex, err)
+		}
+		if l := len(hash); l != sha512.Size {
+			return fmt.Errorf("expected %d bytes app hash, got %d", sha512.Size, l)
+		}
+
+		appBin, err := appbins.Get(tag, hash)
+		if err != nil {
+			return fmt.Errorf("getting embedded verisigner-app failed: %w", err)
 		}
 
 		for _, pk := range newPubKeys {
@@ -111,5 +122,5 @@ type PubKey struct {
 }
 
 func (p *PubKey) String() string {
-	return fmt.Sprintf("Vendor signing public key:%s tag:%s", hex.EncodeToString(p.PubKey[:]), p.AppBin.Tag)
+	return fmt.Sprintf("pubkey:%0x… %s", p.PubKey[:16], p.AppBin.String())
 }

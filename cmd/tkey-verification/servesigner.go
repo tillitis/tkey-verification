@@ -19,7 +19,8 @@ import (
 
 type Verification struct {
 	Timestamp string `json:"timestamp"`
-	Tag       string `json:"tag"`
+	AppTag    string `json:"apptag"`
+	AppHash   string `json:"apphash"`
 	Signature string `json:"signature"`
 }
 
@@ -43,9 +44,9 @@ func serveSigner(conf Config, vendorPubKey *vendorsigning.PubKey, devPath string
 		os.Exit(0)
 	}
 
-	le.Printf("%s\n", vendorPubKey.String())
+	le.Printf("Vendor signing: %s\n", vendorPubKey.String())
 
-	foundUDIBE, foundPubKey, ok := tkey.Load(vendorPubKey.AppBin, devPath, verbose)
+	foundUDI, foundPubKey, ok := tkey.Load(vendorPubKey.AppBin, devPath, verbose)
 	if !ok {
 		os.Exit(1)
 	}
@@ -53,7 +54,7 @@ func serveSigner(conf Config, vendorPubKey *vendorsigning.PubKey, devPath string
 		le.Printf("The public key of the found TKey (\"%s\") does not match the embedded vendor signing public key in use\n", hex.EncodeToString(foundPubKey))
 		os.Exit(1)
 	}
-	le.Printf("Found signing TKey with the expected public key and UDI(BE):%s\n", hex.EncodeToString(foundUDIBE))
+	le.Printf("Found signing TKey with the expected public key and UDI: %s\n", foundUDI.String())
 
 	if err := os.MkdirAll(signaturesDir, 0o755); err != nil {
 		le.Printf("MkdirAll failed: %s\n", err)
