@@ -21,7 +21,13 @@ import (
 )
 
 var (
-	// For filtering tags when picking device signing appbin
+	// Appbin names (without .bin suffix) to ignore when embedding.
+	// Useful when needed to tag verisigner versions during
+	// development (and wanted tag names that follow the "live"
+	// pattern).
+	ignoreBins = []string{"verisigner-v0.0.1"}
+
+	// For filtering tags when picking device signing appbin:
 	prefix = "verisigner"
 	tagRE  = regexp.MustCompile(fmt.Sprintf(`^%s-v([0-9]+)\.([0-9]+)\.([0-9]+)$`, prefix))
 )
@@ -117,6 +123,7 @@ func initAppBins() error {
 
 	var newAppBins []AppBin
 
+processEntries:
 	for _, entry := range entries {
 		binFn := entry.Name()
 		if !entry.Type().IsRegular() || !strings.HasSuffix(binFn, ".bin") {
@@ -125,6 +132,11 @@ func initAppBins() error {
 		tag := strings.TrimSuffix(binFn, ".bin")
 		if tag == "" {
 			continue
+		}
+		for _, ignore := range ignoreBins {
+			if tag == ignore {
+				continue processEntries
+			}
 		}
 
 		var info fs.FileInfo
@@ -162,6 +174,7 @@ func initAppBins() error {
 	}
 
 	// Check that all .bin.sha512-files have accompanying .bin-file
+checkEntries:
 	for _, entry := range entries {
 		fn := entry.Name()
 		if !entry.Type().IsRegular() || !strings.HasSuffix(fn, ".bin.sha512") {
@@ -170,6 +183,11 @@ func initAppBins() error {
 		tag := strings.TrimSuffix(fn, ".bin.sha512")
 		if tag == "" {
 			continue
+		}
+		for _, ignore := range ignoreBins {
+			if tag == ignore {
+				continue checkEntries
+			}
 		}
 
 		found := false
@@ -199,7 +217,9 @@ func pickLatest(bins []AppBin) (*AppBin, error) {
 	var latest *AppBin
 	latestVer := make([]int64, 3)
 
+	var tags []string
 	for i := range bins {
+		tags = append(tags, bins[i].Tag)
 		matches := tagRE.FindStringSubmatch(bins[i].Tag)
 		if matches == nil {
 			continue
@@ -224,7 +244,8 @@ func pickLatest(bins []AppBin) (*AppBin, error) {
 	}
 
 	if latest == nil {
-		return nil, fmt.Errorf("found no app binary with tag matching `%s`", tagRE.String())
+		return nil, fmt.Errorf("found no app binary with tag matching `%s` candidates: %v",
+			tagRE.String(), tags)
 	}
 	return latest, nil
 }

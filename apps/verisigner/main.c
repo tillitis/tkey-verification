@@ -47,12 +47,9 @@ int main(void)
 	wordcpy(local_cdi, (void *)cdi, 8);
 	crypto_ed25519_public_key(pubkey, (const uint8_t *)local_cdi);
 
-	// color for steady led light, depending on state
-	int led_steady = LED_BLACK;
 	for (;;) {
-		// blocking; flashing cyan (green+blue) while waiting for cmd
-		in = readbyte_ledflash(LED_GREEN | LED_BLUE, 900000);
-		*led = led_steady;
+		*led = LED_GREEN | LED_BLUE;
+		in = readbyte();
 		qemu_puts("Read byte: ");
 		qemu_puthex(in);
 		qemu_lf();
@@ -66,6 +63,12 @@ int main(void)
 		// Read app command, blocking
 		read(cmd, hdr.len);
 
+		if (hdr.endpoint == DST_FW) {
+			appreply_nok(hdr);
+			qemu_puts("Responded NOK to message meant for fw\n");
+			continue;
+		}
+
 		// Is it for us?
 		if (hdr.endpoint != DST_SW) {
 			qemu_puts("Message not meant for app. endpoint was 0x");
@@ -76,8 +79,6 @@ int main(void)
 
 		// Reset response buffer
 		memset(rsp, 0, CMDLEN_MAXBYTES);
-
-		led_steady = LED_BLACK;
 
 		// Min length is 1 byte so this should always be here
 		switch (cmd[0]) {
@@ -113,12 +114,11 @@ int main(void)
 
 			rsp[0] = STATUS_OK;
 			appreply(hdr, APP_RSP_SET_SIZE, rsp);
-			led_steady = LED_GREEN;
 			break;
 
 		case APP_CMD_SIGN_DATA:
 			qemu_puts("APP_CMD_SIGN_DATA\n");
-			const uint32_t cmdBytelen = 128;
+			const uint32_t cmdBytelen = 512;
 
 			// Bad length of this command, or APP_CMD_SET_SIZE has
 			// not been called
@@ -149,7 +149,6 @@ int main(void)
 
 			rsp[0] = STATUS_OK;
 			appreply(hdr, APP_RSP_SIGN_DATA, rsp);
-			led_steady = LED_GREEN;
 			break;
 
 		case APP_CMD_GET_SIG:
@@ -162,7 +161,6 @@ int main(void)
 			rsp[0] = STATUS_OK;
 			memcpy(rsp + 1, signature, 64);
 			appreply(hdr, APP_RSP_GET_SIG, rsp);
-			led_steady = LED_GREEN;
 			break;
 
 		case APP_CMD_GET_NAMEVERSION:

@@ -45,8 +45,8 @@ func Firmwares() []string {
 	}
 	var list []string
 	for hw, fw := range firmwares {
-		list = append(list, fmt.Sprintf("VendorID:0x%04x ProductID:%d ProductRev:%d with size:%d hash:%0x…",
-			hw.VendorID, hw.ProductID, hw.ProductRev, fw.Size, fw.Hash[:16]))
+		list = append(list, fmt.Sprintf("VendorID:0x%04x ProductID:%d ProductRev:%d [0x%s] with size:%d hash:%0x…",
+			hw.VendorID, hw.ProductID, hw.ProductRev, hw.toUDI0BEhex(), fw.Size, fw.Hash[:16]))
 	}
 	return list
 }
@@ -68,9 +68,9 @@ func initFirmwares() error {
 
 	var err error
 
-	// TODO This is the default/qemu UDI0, with firmware from main
-	// branch as of caeee54e192e5fc27f4c1990f1e7f38e30f1652a
-	err = addFirmware("00010203", 0x0010, 8, 3, 3204, "31accb1c40febc2bf02f48656a9433363df2948963ad3b52692f693244a0bf9ddca46ab105b7d51dbd59378c37d58edba92813719eafacfabf608c89c12eb5c1")
+	// TODO This is the default/qemu UDI0, with firmware from
+	// integration branch at cd2dc553716a061c3b39f5f4b16a3e541b4250ea
+	err = addFirmware("00010203", 0x0010, 8, 3, 4124, "a4b63a405cebae0b777250925a9d4e3bb910646f19a35b7f7a7943e0eb155d1adbb87a1603b07c78e869e00d6175f2b9fa2c78813a72c94a7e4cce8a45d842b4")
 	if err != nil {
 		return err
 	}

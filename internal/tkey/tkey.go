@@ -18,6 +18,8 @@ import (
 
 const (
 	// 4 chars each.
+	wantFWName0  = "tk1 "
+	wantFWName1  = "mkdf"
 	wantAppName0 = "veri"
 	wantAppName1 = "sign"
 )
@@ -132,6 +134,11 @@ func Load(appBin *appbins.AppBin, devPath string, verbose bool) (*UDI, []byte, b
 	}
 	le.Printf("Firmware name0:'%s' name1:'%s' version:%d\n",
 		nameVer.Name0, nameVer.Name1, nameVer.Version)
+	// not caring about nameVer.Version
+	if nameVer.Name0 != wantFWName0 || nameVer.Name1 != wantFWName1 {
+		le.Printf("Expected firmware name0:'%s' name1:'%s'\n", wantFWName0, wantFWName1)
+		return nil, nil, false
+	}
 
 	tkUDI, err := tk.GetUDI()
 	if err != nil {

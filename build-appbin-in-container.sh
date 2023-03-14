@@ -61,7 +61,7 @@ printf "Built %s\n" "$destf"
 cd "$destd"
 
 if [ -z "$foundappsrepotag" ]; then
-  tagstr="$(printf 'appsrepotag="%s"' "$appsrepotag")"
+  tagstr="$(printf 'appsrepotag=%s' "$appsrepotag")"
   printf "Writing \`%s\` to new file %s\n" "$tagstr" "$destf.deps"
   printf >"$destf.deps" "%s\n" "$tagstr"
 fi
