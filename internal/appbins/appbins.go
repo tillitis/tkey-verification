@@ -24,8 +24,9 @@ var (
 	// Appbin names (without .bin suffix) to ignore when embedding.
 	// Useful when needed to tag verisigner versions during
 	// development (and wanted tag names that follow the "live"
-	// pattern).
-	ignoreBins = []string{"verisigner-v0.0.1"}
+	// pattern). Note that we currently duplicate this in the build
+	// script ../../build-appbins-from-tags.sh
+	ignoreBins = []string{"verisigner-v0.0.1", "verisigner-v0.0.2"}
 
 	// For filtering tags when picking device signing appbin:
 	prefix = "verisigner"

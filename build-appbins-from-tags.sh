@@ -4,14 +4,10 @@
 # a .deps-file, which along with the .sha512-file must be committed to the
 # repo. This way we remember also which specific apps-repo tag a binary was
 # built with.
-
-# TODO adjust this once apps-repo integration branch is merged to main and tagged.
-appsrepotag="for-verisigner-v0.0.2"
+appsrepotag="v0.0.6"
 
 cd "${0%/*}"
 
-# TODO could skip building those that are ignored by
-# internal/appbins/appbins.go
 tags="$(git ls-remote --tags origin | sed -n "s,.*/tags/\(verisigner-v[0-9]\+\.[0-9]\+\.[0-9]\+$\),\1,p")"
 
 if [ -z "$tags" ]; then
@@ -20,5 +16,8 @@ if [ -z "$tags" ]; then
 fi
 
 for tag in $tags; do
+  # Skip building those that are ignored in internal/appbins/appbins.go
+  [ "$tag" = "verisigner-v0.0.1" ] && continue
+  [ "$tag" = "verisigner-v0.0.2" ] && continue
   ./build-appbin-in-container.sh "$tag" "$appsrepotag"
 done
