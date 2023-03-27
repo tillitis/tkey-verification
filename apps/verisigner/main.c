@@ -20,7 +20,7 @@ static volatile uint32_t *led =   (volatile uint32_t *)TK1_MMIO_TK1_LED;
 
 const uint8_t app_name0[4] = "veri";
 const uint8_t app_name1[4] = "sign";
-const uint32_t app_version = 0x00000001;
+const uint32_t app_version = 0x00000003;
 
 int main(void)
 {
@@ -48,7 +48,7 @@ int main(void)
 	crypto_ed25519_public_key(pubkey, (const uint8_t *)local_cdi);
 
 	for (;;) {
-		*led = LED_GREEN | LED_BLUE;
+		*led = LED_RED | LED_BLUE;
 		in = readbyte();
 		qemu_puts("Read byte: ");
 		qemu_puthex(in);
