@@ -5,8 +5,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 github.com/stretchr/testify v1.8.0 h1:pSgiaMZlXftHpm5L7V1+rVB+AZJydKsMxsQBIJw4PKk=
-github.com/tillitis/tillitis-key1-apps v0.0.5-0.20230314120345-a06e83d1553f h1:iXXiaXsCj1o5+z2RZ2HOhP6MvQWwuGj2OSXdUjftAZY=
-github.com/tillitis/tillitis-key1-apps v0.0.5-0.20230314120345-a06e83d1553f/go.mod h1:euYOVMnDE5ngTX+pbACS4Ud3c8zjh27J6zAzS4ybOcI=
+github.com/tillitis/tillitis-key1-apps v0.0.6 h1:YXs3Jl2ao+OLF7Iuz+K4nKAXTyGL51ae7yWh9FZXqBM=
+github.com/tillitis/tillitis-key1-apps v0.0.6/go.mod h1:euYOVMnDE5ngTX+pbACS4Ud3c8zjh27J6zAzS4ybOcI=
 go.bug.st/serial v1.5.0 h1:ThuUkHpOEmCVXxGEfpoExjQCS2WBVV4ZcUKVYInM9T4=
 go.bug.st/serial v1.5.0/go.mod h1:UABfsluHAiaNI+La2iESysd9Vetq7VRdpxvjx7CmmOE=
 golang.org/x/crypto v0.5.0 h1:U/0M97KRkSFvyD/3FSmdP5W5swImpNgle/EHFhOsQPE=

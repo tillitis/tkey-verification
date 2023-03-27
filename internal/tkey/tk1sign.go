@@ -1,6 +1,8 @@
 // Copyright (C) 2022, 2023 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
+// A copy of tk1sign.go extended with what verisigner-app implements.
+
 // Package tk1sign provides a connection to the ed25519 signer app
 // running on the TKey. You're expected to pass an existing connection
 // to it, so use it like this:
@@ -24,22 +26,19 @@ import (
 	"github.com/tillitis/tillitis-key1-apps/tk1"
 )
 
-// TODO this is a copy of tk1sign.go which we're extending with what
-// we need for verisigner-app
-
 var (
 	cmdGetPubkey       = appCmd{0x01, "cmdGetPubkey", tk1.CmdLen1}
-	rspGetPubkey       = appCmd{0x02, "rspGetPubkey", tk1.CmdLen512}
+	rspGetPubkey       = appCmd{0x02, "rspGetPubkey", tk1.CmdLen128}
 	cmdSetSize         = appCmd{0x03, "cmdSetSize", tk1.CmdLen32}
 	rspSetSize         = appCmd{0x04, "rspSetSize", tk1.CmdLen4}
-	cmdSignData        = appCmd{0x05, "cmdSignData", tk1.CmdLen512}
+	cmdSignData        = appCmd{0x05, "cmdSignData", tk1.CmdLen128}
 	rspSignData        = appCmd{0x06, "rspSignData", tk1.CmdLen4}
 	cmdGetSig          = appCmd{0x07, "cmdGetSig", tk1.CmdLen1}
-	rspGetSig          = appCmd{0x08, "rspGetSig", tk1.CmdLen512}
+	rspGetSig          = appCmd{0x08, "rspGetSig", tk1.CmdLen128}
 	cmdGetNameVersion  = appCmd{0x09, "cmdGetNameVersion", tk1.CmdLen1}
 	rspGetNameVersion  = appCmd{0x0a, "rspGetNameVersion", tk1.CmdLen32}
 	cmdGetFirmwareHash = appCmd{0x0b, "cmdGetFirmwareHash", tk1.CmdLen32}
-	rspGetFirmwareHash = appCmd{0x0c, "rspGetFirmwareHash", tk1.CmdLen512}
+	rspGetFirmwareHash = appCmd{0x0c, "rspGetFirmwareHash", tk1.CmdLen128}
 )
 
 const MaxSignSize = 4096
