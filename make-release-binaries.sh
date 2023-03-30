@@ -37,13 +37,13 @@ cmd="tkey-verification"
 export GOARCH=amd64
 
 export CGO_ENABLED=0
-GOOS=linux   go build -v -ldflags "-X main.version=$version" -o "release/${cmd}_${version}_linux-$GOARCH"   ./cmd/$cmd
-GOOS=windows go build -v -ldflags "-X main.version=$version" -o "release/${cmd}_${version}_windows-$GOARCH" ./cmd/$cmd
+GOOS=linux   go build -v -ldflags "-X main.version=$version" -o "release/${cmd}_${version}_linux-$GOARCH"       ./cmd/$cmd
+GOOS=windows go build -v -ldflags "-X main.version=$version" -o "release/${cmd}_${version}_windows-$GOARCH.exe" ./cmd/$cmd
 
 export CGO_ENABLED=1
 # TODO can't build for macos, go-serial/enumerator requires libs/C stuff on the
 # host compile (and also CGO ofcourse)
-#GOOS=darwin  go build -v -ldflags "-X main.version=$version" -o "release/${cmd}_${version}_macos-$GOARCH"   ./cmd/$cmd
+#GOOS=darwin  go build -v -ldflags "-X main.version=$version" -o "release/${cmd}_${version}_macos-$GOARCH"       ./cmd/$cmd
 
 cd release
 for f in "$cmd"_*; do
