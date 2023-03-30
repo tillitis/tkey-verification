@@ -21,7 +21,7 @@ const progname = "tkey-verification"
 const signaturesDir = "signatures"
 
 const (
-	defaultBaseURL    = "https://example.com/verify"
+	defaultBaseURL    = "https://tkey.tillitis.se/verify"
 	defaultConfigFile = "./tkey-verification.yaml"
 )
 
