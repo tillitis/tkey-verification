@@ -8,6 +8,12 @@ cd "${0%/*}"
 destd="internal/appbins/bins"
 destf="$tag.bin"
 
+if ! hash sha512sum; then
+  sha512sum() {
+    shasum -a 512 "$@"
+  }
+fi
+
 if [ -e "$destd/$destf" ]; then
   cd "$destd"
   printf "%s already exists.\n" "$destf"
