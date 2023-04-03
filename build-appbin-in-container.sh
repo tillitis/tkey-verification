@@ -31,7 +31,7 @@ if [ -e "$destd/$destf.deps" ]; then
     printf "Missing file %s while %s is present\n" "$destf.sha512" "$destf.deps"
     exit 1
   fi
-  foundappsrepotag="$(sed -n "s,^appsrepotag=\(.\+\)$,\1,p" "$destd/$destf.deps")"
+  foundappsrepotag="$(sed -n "s:^appsrepotag=\(.\{1,\}\)$:\1:p" "$destd/$destf.deps")"
   if [ -z "$foundappsrepotag" ]; then
     printf "No appsrepotag defined in %s\n" "$destf.deps"
     exit 1

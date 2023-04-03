@@ -8,7 +8,7 @@ appsrepotag="v0.0.6"
 
 cd "${0%/*}"
 
-tags="$(git ls-remote --tags origin | sed -n "s,.*/tags/\(verisigner-v[0-9]\+\.[0-9]\+\.[0-9]\+$\),\1,p")"
+tags="$(git ls-remote --tags origin | sed -n "s:.*/tags/\(verisigner-v[0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}$\):\1:p")"
 
 if [ -z "$tags" ]; then
   printf "no remote tags matching verisigner-vX.Y.Z\n"
