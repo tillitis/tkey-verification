@@ -8,7 +8,7 @@ cd "${0%/*}"
 destd="internal/appbins/bins"
 destf="$tag.bin"
 
-if ! hash sha512sum; then
+if ! hash 2>/dev/stderr sha512sum; then
   sha512sum() {
     shasum -a 512 "$@"
   }

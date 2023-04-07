@@ -1,11 +1,14 @@
 # Tillitis TKey Verification
 
-**NOTE**: This is work in progress. We're not yet publishing
-signatures for verification.
-
 `tkey-verification` is a tool used for signing a TKey identity and
 verifying that it still has the same identity as it did when it was
 produced by [Tillitis](https://tillitis.se/) (the vendor).
+
+If you own a TKey and want make sure it's genuine you can follow
+[these
+instructions](https://tillitis.se/app/tkey-device-verification/) (On
+Tillitis' web). Or just download a release of the tool right away:
+https://github.com/tillitis/tkey-verification/releases
 
 ## Terminology
 
