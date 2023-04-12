@@ -128,7 +128,7 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 func verificationFromURL(verifyURL string) (Verification, error) {
 	var verification Verification
 
-	le.Printf("Fetching %s ...\n", verifyURL)
+	le.Printf("Fetching verification data from %s ...\n", verifyURL)
 	client := http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(verifyURL) // #nosec G107
 	if err != nil {
@@ -155,7 +155,7 @@ func verificationFromURL(verifyURL string) (Verification, error) {
 func verificationFromFile(fn string) (Verification, error) {
 	var verification Verification
 
-	le.Printf("Reading %s ...\n", fn)
+	le.Printf("Reading verification data from file %s ...\n", fn)
 	verificationJSON, err := os.ReadFile(fn)
 	if err != nil {
 		return verification, fmt.Errorf("ReadFile failed: %w", err)

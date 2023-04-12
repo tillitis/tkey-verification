@@ -55,7 +55,7 @@ cname="tkey-build"
 
 podman run -it --name "$cname" \
        --mount type=bind,source="$(pwd)",target=/contrib \
-       ghcr.io/tillitis/tkey-builder:1 \
+       ghcr.io/tillitis/tkey-builder:2 \
        /bin/bash /contrib/containerbuild "$tag" "$appsrepotag"
 
 podman cp "$cname":/tkey-verification/apps/verisigner/app.bin "$destd/$destf"

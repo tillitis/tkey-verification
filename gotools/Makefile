@@ -15,3 +15,10 @@ certstrap:
 	go mod download github.com/square/certstrap
 	go mod tidy
 	go build github.com/square/certstrap
+
+# .PHONY to let go-build handle deps and rebuilds
+.PHONY: lipo
+lipo:
+	go mod download github.com/konoui/lipo
+	go mod tidy
+	go build github.com/konoui/lipo

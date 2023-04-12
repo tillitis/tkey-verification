@@ -6,9 +6,17 @@ produced by [Tillitis](https://tillitis.se/) (the vendor).
 
 If you own a TKey and want make sure it's genuine you can follow
 [these
-instructions](https://tillitis.se/app/tkey-device-verification/) (On
+instructions](https://tillitis.se/app/tkey-device-verification/) (on
 Tillitis' web). Or just download a release of the tool right away:
 https://github.com/tillitis/tkey-verification/releases
+
+The published binaries can be reproduced by running
+`./make-release-builds.sh` with the wanted version (for example
+"0.0.2"). The [release-builds](release-builds) directory contains
+checksums of released versions (since we got reproducibility in
+place), which the script verifies after building. Running the script
+requires a rootless podman setup. On Ubuntu 22.10, running `apt
+install podman rootlesskit slirp4netns` should be enough.
 
 ## Terminology
 
@@ -276,3 +284,25 @@ Example file content:
   "signature": "db4e7a72b720b33f6d4887df0f9dcdd6988ca8adb6b0042d8e8c92b5be3e4e39d908f166d093f3ab20880102d43a2b0c8e31178ab7cdb59977dcf7204116cc0c"
 }
 ```
+
+## Making releases of tkey-verification
+
+Make the new release binaries for the expected version:
+
+    ./make-release-builds 0.0.42
+
+Generate and commit the new checksums:
+
+    ./gen-release-checksums 0.0.42
+    git add release-builds/*_0.0.42_*.sha512
+    git commit -m "Release 0.0.42"
+
+Then tag a new version and push it all:
+
+    git tag -a v0.0.42 -m v0.0.42
+    git push origin main v0.0.42
+
+Publish the new release at
+https://github.com/tillitis/tkey-verification/releases and upload the
+binaries and checksum files. For MacOS we'll provide only the
+universal binary.

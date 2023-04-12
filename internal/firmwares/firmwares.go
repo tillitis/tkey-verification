@@ -68,7 +68,7 @@ func initFirmwares() error {
 
 	var err error
 
-	// TODO This is the default/qemu UDI0, with firmware from main at
+	// This is the default/qemu UDI0, with firmware from main at
 	// c126199a41149f6284aa9533e72395c978733b44
 	err = addFirmware("00010203", 0x0010, 8, 3, 4192, "3769540390ee3d990ea3f9e4cc9a0d1af5bcaebb82218185a78c39c6bf01d9cdc305ba253a1fb9f3f9fcc63d97c8e5f34bbb1f7bec56a8f246f1d2239867b623")
 	if err != nil {

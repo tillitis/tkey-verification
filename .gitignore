@@ -1,4 +1,5 @@
 /gotools/golangci-lint
 /gotools/certstrap
+/gotools/lipo
 /show-pubkey
 /tkey-verification

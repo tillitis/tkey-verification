@@ -1,5 +1,7 @@
-// Copyright (C) 2022 - Tillitis AB
+// Copyright (C) 2023 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
+
+//go:build linux || windows
 
 package util
 
@@ -10,6 +12,11 @@ import (
 	"go.bug.st/serial/enumerator"
 )
 
+const (
+	tillitisUSBVID = "1207"
+	tillitisUSBPID = "8887"
+)
+
 type constError string
 
 func (err constError) Error() string {
@@ -17,8 +24,6 @@ func (err constError) Error() string {
 }
 
 const (
-	tillitisUSBVID = "1207"
-	tillitisUSBPID = "8887"
 	// Custom errors
 	ErrNoDevice    = constError("no TKey connected")
 	ErrManyDevices = constError("more than one TKey connected")
@@ -30,7 +35,7 @@ type SerialPort struct {
 }
 
 func DetectSerialPort(verbose bool) (string, error) {
-	ports, err := GetSerialPorts()
+	ports, err := getSerialPorts()
 	if err != nil {
 		return "", err
 	}
@@ -56,19 +61,19 @@ func DetectSerialPort(verbose bool) (string, error) {
 	return ports[0].DevPath, nil
 }
 
-func GetSerialPorts() ([]SerialPort, error) {
+func getSerialPorts() ([]SerialPort, error) {
 	var ports []SerialPort
+
 	portDetails, err := enumerator.GetDetailedPortsList()
 	if err != nil {
 		return nil, fmt.Errorf("GetDetailedPortsList: %w", err)
 	}
-	if len(portDetails) == 0 {
-		return ports, nil
-	}
+
 	for _, port := range portDetails {
 		if port.IsUSB && port.VID == tillitisUSBVID && port.PID == tillitisUSBPID {
 			ports = append(ports, SerialPort{port.Name, port.SerialNumber})
 		}
 	}
+
 	return ports, nil
 }

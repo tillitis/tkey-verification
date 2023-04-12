@@ -33,7 +33,9 @@ clean:
 .PHONY: lint
 lint:
 	$(MAKE) -C gotools golangci-lint
-	./gotools/golangci-lint run
+	GOOS=linux   ./gotools/golangci-lint run
+	GOOS=windows ./gotools/golangci-lint run
+	GOOS=darwin  ./gotools/golangci-lint run
 
 .PHONY: certs
 certs:

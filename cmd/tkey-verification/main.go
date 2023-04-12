@@ -87,9 +87,9 @@ Known firmwares:
 		desc := fmt.Sprintf(`Usage: %s command [flags...]
 
 Commands:
-  serve-signer  TODO write...
+  serve-signer  Run the server that offers an API for creating vendor signatures.
 
-  remote-sign   TODO write...
+  remote-sign   Call the remote signing server to sign for a local TKey.
 
   verify        Verify that a TKey is genuine by extracting the TKey UDI and using it
                 to fetch the verification data, including tag and signature from the
