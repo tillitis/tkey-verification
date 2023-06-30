@@ -1,10 +1,11 @@
 // Copyright (C) 2022, 2023 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
-#include <tk1_mem.h>
+#include <monocypher/monocypher-ed25519.h>
+#include <tkey/qemu_debug.h>
+#include <tkey/tk1_mem.h>
 
 #include "app_proto.h"
-#include "monocypher/monocypher-ed25519.h"
 
 // clang-format off
 static volatile uint32_t *cdi =   (volatile uint32_t *)TK1_MMIO_TK1_CDI_FIRST;
@@ -38,6 +39,7 @@ int main(void)
 	int nbytes = 0; // Bytes to write to memory
 	uint8_t in;
 	uint32_t local_cdi[8];
+	uint8_t secret_key[64];
 
 	qemu_puts("Hello! &stack is on: ");
 	qemu_putinthex((uint32_t)&stack);
@@ -45,7 +47,7 @@ int main(void)
 
 	// Generate a public key from CDI (only word aligned access to CDI)
 	wordcpy(local_cdi, (void *)cdi, 8);
-	crypto_ed25519_public_key(pubkey, (const uint8_t *)local_cdi);
+	crypto_ed25519_key_pair(secret_key, pubkey, (uint8_t *)local_cdi);
 
 	for (;;) {
 		*led = LED_RED | LED_BLUE;
@@ -140,8 +142,7 @@ int main(void)
 
 			if (left == 0) {
 				// All loaded, let's sign the message
-				crypto_ed25519_sign(signature,
-						    (void *)local_cdi, pubkey,
+				crypto_ed25519_sign(signature, secret_key,
 						    message, message_size);
 				signature_done = 1;
 				message_size = 0;
