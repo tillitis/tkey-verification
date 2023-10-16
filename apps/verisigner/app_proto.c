@@ -1,6 +1,8 @@
 // Copyright (C) 2022, 2023 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
+#include <tkey/qemu_debug.h>
+
 #include "app_proto.h"
 
 // Send reply frame with response status Not OK (NOK==1), shortest length

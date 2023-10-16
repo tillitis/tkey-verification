@@ -1,12 +1,10 @@
-
-# We expect our apps repo cloned as a sibling to this
-APPSREPOAPPS=../../tillitis-key1-apps/apps
-
 OBJCOPY ?= llvm-objcopy
+
+LIBDIR ?= $(CURDIR)/../../tkey-libs
 
 CC = clang
 
-INCLUDE=$(APPSREPOAPPS)/include
+INCLUDE=$(LIBDIR)/include
 
 # NOTE: The following note is not valid, you'd have to edit
 # $(APPSREPOAPPS)/Makefile somehow:
@@ -16,23 +14,19 @@ CFLAGS = -target riscv32-unknown-none-elf -march=rv32iczmmul -mabi=ilp32 -mcmode
    -static -std=gnu99 -O2 -ffast-math -fno-common -fno-builtin-printf \
    -fno-builtin-putchar -nostdlib -mno-relax -flto \
    -Wall -Werror=implicit-function-declaration \
-   -I $(INCLUDE) -I $(APPSREPOAPPS) \
-   -DNODEBUG
+   -I $(INCLUDE) -I $(LIBDIR) \
+   #-DQEMU_DEBUG
 
 AS = clang
 ASFLAGS = -target riscv32-unknown-none-elf -march=rv32iczmmul -mabi=ilp32 -mcmodel=medany -mno-relax
 
-LDFLAGS=-T $(APPSREPOAPPS)/app.lds -L $(APPSREPOAPPS)/libcommon/ -lcommon -L $(APPSREPOAPPS)/libcrt0/ -lcrt0
+LDFLAGS=-T $(LIBDIR)/app.lds -L $(LIBDIR) -lcommon -lcrt0
 
 RM=/bin/rm
 
 
 .PHONY: all
 all: verisigner/app.bin
-
-.PHONY: appsrepo
-appsrepo:
-	cd $(APPSREPOAPPS) && make libcommon/libcommon.a libcrt0/libcrt0.a monocypher/libmonocypher.a
 
 # Turn elf into bin for device
 %.bin: %.elf
@@ -47,14 +41,13 @@ check-verisigner-hash: verisigner/app.bin
 
 # verisigner-app, our signer-app fork for verification
 VERISIGNEROBJS=verisigner/main.o verisigner/app_proto.o
-verisigner/app.elf: appsrepo $(VERISIGNEROBJS)
-	$(CC) $(CFLAGS) $(VERISIGNEROBJS) $(LDFLAGS) -L $(APPSREPOAPPS)/monocypher -lmonocypher -I $(APPSREPOAPPS)/monocypher -o $@
+verisigner/app.elf: $(VERISIGNEROBJS)
+	$(CC) $(CFLAGS) $(VERISIGNEROBJS) $(LDFLAGS) -L $(LIBDIR) -lmonocypher -o $@
 $(VERISIGNEROBJS): verisigner/app_proto.h
 
 .PHONY: clean
 clean:
 	$(RM) -f verisigner/app.bin verisigner/app.elf $(VERISIGNEROBJS)
-	cd $(APPSREPOAPPS) && make clean
 
 # Uses ../.clang-format
 FMTFILES=verisigner/*.[ch]

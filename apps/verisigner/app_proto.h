@@ -4,8 +4,8 @@
 #ifndef APP_PROTO_H
 #define APP_PROTO_H
 
-#include <lib.h>
-#include <proto.h>
+#include <tkey/lib.h>
+#include <tkey/proto.h>
 
 // clang-format off
 enum appcmd {
