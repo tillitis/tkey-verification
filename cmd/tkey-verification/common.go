@@ -9,7 +9,6 @@ import (
 	"crypto/sha512"
 	"fmt"
 
-	"github.com/tillitis/tkey-verification/internal/firmwares"
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
@@ -36,8 +35,8 @@ func buildMessage(udiBE, fwHash, pubKey []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func verifyFirmwareHash(devPath string, expectedPubKey []byte, udi *tkey.UDI) (*firmwares.Firmware, error) {
-	expectedFW, err := firmwares.GetFirmware(udi)
+func verifyFirmwareHash(devPath string, expectedPubKey []byte, udi *tkey.UDI) (*Firmware, error) {
+	expectedFW, err := GetFirmware(udi)
 	if err != nil {
 		return nil, fmt.Errorf("GetFirmware failed: %w", err)
 	}

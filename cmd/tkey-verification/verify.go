@@ -15,12 +15,10 @@ import (
 	"path"
 	"time"
 
-	"github.com/tillitis/tkey-verification/internal/appbins"
 	"github.com/tillitis/tkey-verification/internal/tkey"
-	"github.com/tillitis/tkey-verification/internal/vendorsigning"
 )
 
-func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, verifyBaseURL string, appBins appbins.AppBins, vendorKeys vendorsigning.VendorKeys) {
+func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, verifyBaseURL string, appBins AppBins, vendorKeys VendorKeys) {
 	udi := tkey.GetUDI(devPath, verbose)
 	if udi == nil {
 		os.Exit(1)
@@ -70,7 +68,8 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 		os.Exit(1)
 	}
 
-	udi, pubKey, ok := tkey.Load(&appBin, devPath, verbose)
+	le.Printf("Loading device app built from %s ...\n", appBin.String())
+	udi, pubKey, ok := tkey.Load(appBin.Bin, devPath, verbose)
 	if !ok {
 		os.Exit(1)
 	}

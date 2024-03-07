@@ -11,9 +11,6 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
-	"github.com/tillitis/tkey-verification/internal/appbins"
-	"github.com/tillitis/tkey-verification/internal/firmwares"
-	"github.com/tillitis/tkey-verification/internal/vendorsigning"
 )
 
 const progname = "tkey-verification"
@@ -43,15 +40,15 @@ func main() {
 		version = readBuildInfo()
 	}
 
-	appBins, err := appbins.New(latestAppHash)
+	appBins, err := NewAppBins(latestAppHash)
 	if err != nil {
-		fmt.Printf("Failed to init embedded verisigner-apps: %v", err)
+		fmt.Printf("Failed to init embedded device apps: %v\n", err)
 		os.Exit(1)
 	}
 
 	deviceSignAppBin := appBins.Latest()
 
-	vendorKeys, err := vendorsigning.New(appBins, currentVendorHash)
+	vendorKeys, err := NewVendorKeys(appBins, currentVendorHash)
 	if err != nil {
 		le.Printf("Found no usable embedded vendor signing public key\n")
 		os.Exit(1)
@@ -72,7 +69,7 @@ Known firmwares:
 		strings.Join(appBins.Tags(), " \n  "),
 		deviceSignAppBin.String(),
 		vendorPubKey.String(),
-		strings.Join(firmwares.Firmwares(), " \n  "))
+		strings.Join(Firmwares(), " \n  "))
 
 	var devPath, baseURL, baseDir, configFile string
 	var checkConfigOnly, verbose, showURLOnly, versionOnly, helpOnly bool

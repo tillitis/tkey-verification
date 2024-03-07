@@ -1,7 +1,7 @@
 // Copyright (C) 2023 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
-package appbins
+package main
 
 import (
 	"bytes"
@@ -10,8 +10,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/fs"
-	"log"
-	"os"
 	"path"
 	"regexp"
 	"sort"
@@ -30,8 +28,6 @@ var (
 	prefix = "verisigner"
 	tagRE  = regexp.MustCompile(fmt.Sprintf(`^%s-v([0-9]+)\.([0-9]+)\.([0-9]+)$`, prefix))
 )
-
-var le = log.New(os.Stderr, "", 0)
 
 type AppBin struct {
 	Tag string
@@ -92,7 +88,7 @@ func (a AppBins) Latest() AppBin {
 	return a.Bins[a.latest]
 }
 
-func New(latestHash string) (AppBins, error) {
+func NewAppBins(latestHash string) (AppBins, error) {
 	var appBins = AppBins{
 		Bins: map[string]AppBin{},
 	}
@@ -151,7 +147,7 @@ func New(latestHash string) (AppBins, error) {
 	if _, ok := appBins.Bins[latestHash]; ok {
 		appBins.latest = latestHash
 	} else {
-		return AppBins{}, fmt.Errorf("Requested latest hash binary not found")
+		return AppBins{}, fmt.Errorf("Requested latest hash binary not found: %v", latestHash)
 	}
 
 	return appBins, nil

@@ -1,7 +1,7 @@
 // Copyright (C) Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
-package vendorsigning
+package main
 
 import (
 	"bytes"
@@ -10,14 +10,8 @@ import (
 	_ "embed"
 	"encoding/hex"
 	"fmt"
-	"log"
-	"os"
 	"strings"
-
-	"github.com/tillitis/tkey-verification/internal/appbins"
 )
-
-var le = log.New(os.Stderr, "", 0)
 
 // nolint:typecheck // Avoid lint error when the embedding file is missing.
 //
@@ -27,7 +21,7 @@ var pubKeysData []byte
 type PubKey struct {
 	PubKey [ed25519.PublicKeySize]byte
 	Tag    string
-	AppBin appbins.AppBin
+	AppBin AppBin
 }
 
 func (p *PubKey) String() string {
@@ -43,7 +37,7 @@ func (v VendorKeys) Current() PubKey {
 	return v.Keys[v.CurrentAppHash]
 }
 
-func New(appBins appbins.AppBins, currentHash string) (VendorKeys, error) {
+func NewVendorKeys(appBins AppBins, currentHash string) (VendorKeys, error) {
 	lines := strings.Split(strings.Trim(strings.ReplaceAll(string(pubKeysData), "\r\n", "\n"), "\n"), "\n")
 
 	var vendorKeys = VendorKeys{

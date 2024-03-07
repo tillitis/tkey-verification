@@ -11,11 +11,10 @@ import (
 	"net/rpc"
 	"os"
 
-	"github.com/tillitis/tkey-verification/internal/appbins"
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-func remoteSign(conf Config, appBin appbins.AppBin, devPath string, verbose bool, checkConfigOnly bool) {
+func remoteSign(conf Config, appBin AppBin, devPath string, verbose bool, checkConfigOnly bool) {
 	tlsConfig := tls.Config{
 		Certificates: []tls.Certificate{
 			loadCert(conf.ClientCert, conf.ClientKey),
@@ -52,7 +51,8 @@ func remoteSign(conf Config, appBin appbins.AppBin, devPath string, verbose bool
 		exit(0)
 	}
 
-	udi, pubKey, ok := tkey.Load(&appBin, devPath, verbose)
+	le.Printf("Loading device app built from %s ...\n", appBin.String())
+	udi, pubKey, ok := tkey.Load(appBin.Bin, devPath, verbose)
 	if !ok {
 		exit(1)
 	}

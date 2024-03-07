@@ -14,7 +14,6 @@ import (
 	"syscall"
 
 	"github.com/tillitis/tkey-verification/internal/tkey"
-	"github.com/tillitis/tkey-verification/internal/vendorsigning"
 )
 
 type Verification struct {
@@ -24,7 +23,7 @@ type Verification struct {
 	Signature string `json:"signature"`
 }
 
-func serveSigner(conf Config, vendorPubKey vendorsigning.PubKey, devPath string, verbose bool, checkConfigOnly bool) {
+func serveSigner(conf Config, vendorPubKey PubKey, devPath string, verbose bool, checkConfigOnly bool) {
 	tlsConfig := tls.Config{
 		Certificates: []tls.Certificate{
 			loadCert(conf.ServerCert, conf.ServerKey),
@@ -45,8 +44,8 @@ func serveSigner(conf Config, vendorPubKey vendorsigning.PubKey, devPath string,
 	}
 
 	le.Printf("Vendor signing: %s\n", vendorPubKey.String())
-
-	foundUDI, foundPubKey, ok := tkey.Load(&vendorPubKey.AppBin, devPath, verbose)
+	le.Printf("Loading device app built from %s ...\n", vendorPubKey.AppBin.String())
+	foundUDI, foundPubKey, ok := tkey.Load(vendorPubKey.AppBin.Bin, devPath, verbose)
 	if !ok {
 		os.Exit(1)
 	}
