@@ -15,7 +15,7 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-func remoteSign(conf Config, appBin *appbins.AppBin, devPath string, verbose bool, checkConfigOnly bool) {
+func remoteSign(conf Config, appBin appbins.AppBin, devPath string, verbose bool, checkConfigOnly bool) {
 	tlsConfig := tls.Config{
 		Certificates: []tls.Certificate{
 			loadCert(conf.ClientCert, conf.ClientKey),
@@ -52,7 +52,7 @@ func remoteSign(conf Config, appBin *appbins.AppBin, devPath string, verbose boo
 		exit(0)
 	}
 
-	udi, pubKey, ok := tkey.Load(appBin, devPath, verbose)
+	udi, pubKey, ok := tkey.Load(&appBin, devPath, verbose)
 	if !ok {
 		exit(1)
 	}

@@ -151,7 +151,7 @@ func Load(appBin *appbins.AppBin, devPath string, verbose bool) (*UDI, []byte, b
 		return nil, nil, false
 	}
 
-	le.Printf("Loading verisigner-app built from %s ...\n", appBin.String())
+	le.Printf("Loading device app built from %s ...\n", appBin.String())
 	// No USS.
 	if err = tk.LoadApp(appBin.Bin, []byte{}); err != nil {
 		le.Printf("Failed to load app: %s\n", err)
@@ -167,10 +167,10 @@ func Load(appBin *appbins.AppBin, devPath string, verbose bool) (*UDI, []byte, b
 	le.Printf("App name0:'%s' name1:'%s' version:%d\n",
 		nameVer.Name0, nameVer.Name1, nameVer.Version)
 	// not caring about nameVer.Version
-	if nameVer.Name0 != wantAppName0 || nameVer.Name1 != wantAppName1 {
-		le.Printf("Expected app name0:'%s' name1:'%s'\n", wantAppName0, wantAppName1)
-		return nil, nil, false
-	}
+	// if nameVer.Name0 != wantAppName0 || nameVer.Name1 != wantAppName1 {
+	// 	le.Printf("Expected app name0:'%s' name1:'%s'\n", wantAppName0, wantAppName1)
+	// 	return nil, nil, false
+	// }
 
 	pubKey, err := tkSigner.GetPubkey()
 	if err != nil {
