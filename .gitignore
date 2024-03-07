@@ -3,3 +3,9 @@
 /gotools/lipo
 /show-pubkey
 /tkey-verification
+/releases
+/signatures
+/apps/verisigner/app.*
+*.o
+/certs
+
