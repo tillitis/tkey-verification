@@ -1,6 +1,6 @@
-/gotools/golangci-lint
-/gotools/certstrap
-/gotools/lipo
+/dist
 /show-pubkey
 /tkey-verification
+/certs
+
 
