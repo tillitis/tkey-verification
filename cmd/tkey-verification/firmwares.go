@@ -1,21 +1,18 @@
 // Copyright (C) 2023 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
-package firmwares
+package main
 
 import (
 	"crypto/sha512"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"os"
 	"sync"
 
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
-
-var le = log.New(os.Stderr, "", 0)
 
 const (
 	fwSizeMin uint32 = 2000

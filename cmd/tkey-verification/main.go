@@ -11,9 +11,6 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
-	"github.com/tillitis/tkey-verification/internal/appbins"
-	"github.com/tillitis/tkey-verification/internal/firmwares"
-	"github.com/tillitis/tkey-verification/internal/vendorsigning"
 )
 
 const progname = "tkey-verification"
@@ -31,21 +28,33 @@ var version string
 var le = log.New(os.Stderr, "", 0)
 
 func main() {
+	// Define this to point to the current vendor signing public
+	// key by setting it to the hash of the binary that was used
+	// for signatures.
+	const currentVendorHash = "f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142"
+
+	// Hash of latest signer, to be used for new vendor signing
+	const latestAppHash = "a6494cbdeb410dd796b8888a4703fa9991f48ca548a402e86403f0f61dafac91dd3313ad317b720ea31ecf16db03d3881c9c2161a8e504f3db302d1dffdc761c"
+
 	if version == "" {
 		version = readBuildInfo()
 	}
 
-	deviceSignAppBin, err := appbins.GetDeviceSigner()
+	appBins, err := NewAppBins(latestAppHash)
 	if err != nil {
-		le.Printf("Fail to get verisigner-app for device signing: %s\n", err)
+		fmt.Printf("Failed to init embedded device apps: %v\n", err)
 		os.Exit(1)
 	}
 
-	vendorPubKey := vendorsigning.GetCurrentPubKey()
-	if vendorPubKey == nil {
+	deviceSignAppBin := appBins.Latest()
+
+	vendorKeys, err := NewVendorKeys(appBins, currentVendorHash)
+	if err != nil {
 		le.Printf("Found no usable embedded vendor signing public key\n")
 		os.Exit(1)
 	}
+
+	vendorPubKey := vendorKeys.Current()
 
 	builtWith := fmt.Sprintf(`Built with:
 Supported verisigner-app tags:
@@ -57,10 +66,10 @@ Vendor signing:
 Known firmwares:
   %s
 `,
-		strings.Join(appbins.Tags(), " \n  "),
+		strings.Join(appBins.Tags(), " \n  "),
 		deviceSignAppBin.String(),
 		vendorPubKey.String(),
-		strings.Join(firmwares.Firmwares(), " \n  "))
+		strings.Join(Firmwares(), " \n  "))
 
 	var devPath, baseURL, baseDir, configFile string
 	var checkConfigOnly, verbose, showURLOnly, versionOnly, helpOnly bool
@@ -139,10 +148,6 @@ Commands:
 	switch cmd {
 	case "serve-signer":
 		conf := loadServeSignerConfig(configFile)
-		if err != nil {
-			le.Printf("Couldn't read config file %v: %v\n", configFile, err)
-			os.Exit(1)
-		}
 		serveSigner(conf, vendorPubKey, devPath, verbose, checkConfigOnly)
 
 	case "remote-sign":
@@ -157,7 +162,8 @@ Commands:
 			le.Printf("Cannot combine --base-dir and --show-url/--base-url\n")
 			os.Exit(2)
 		}
-		verify(devPath, verbose, showURLOnly, baseDir, baseURL)
+
+		verify(devPath, verbose, showURLOnly, baseDir, baseURL, appBins, vendorKeys)
 
 	default:
 		le.Printf("%s is not a valid command.\n", cmd)

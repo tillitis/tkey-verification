@@ -12,7 +12,6 @@ import (
 	"syscall"
 
 	"github.com/tillitis/tillitis-key1-apps/tk1"
-	"github.com/tillitis/tkey-verification/internal/appbins"
 	"github.com/tillitis/tkey-verification/internal/util"
 )
 
@@ -89,7 +88,7 @@ func GetUDI(devPath string, verbose bool) *UDI {
 // loads the passed verisigner-app onto the TKey (with no USS), starts it,
 // and gets the public key from it. Returns the UDI (BigEndian, BE),
 // public key, and a true bool if successful.
-func Load(appBin *appbins.AppBin, devPath string, verbose bool) (*UDI, []byte, bool) {
+func Load(bin []byte, devPath string, verbose bool) (*UDI, []byte, bool) {
 	if !verbose {
 		tk1.SilenceLogging()
 	}
@@ -151,9 +150,8 @@ func Load(appBin *appbins.AppBin, devPath string, verbose bool) (*UDI, []byte, b
 		return nil, nil, false
 	}
 
-	le.Printf("Loading verisigner-app built from %s ...\n", appBin.String())
 	// No USS.
-	if err = tk.LoadApp(appBin.Bin, []byte{}); err != nil {
+	if err = tk.LoadApp(bin, []byte{}); err != nil {
 		le.Printf("Failed to load app: %s\n", err)
 		return nil, nil, false
 	}
@@ -167,10 +165,10 @@ func Load(appBin *appbins.AppBin, devPath string, verbose bool) (*UDI, []byte, b
 	le.Printf("App name0:'%s' name1:'%s' version:%d\n",
 		nameVer.Name0, nameVer.Name1, nameVer.Version)
 	// not caring about nameVer.Version
-	if nameVer.Name0 != wantAppName0 || nameVer.Name1 != wantAppName1 {
-		le.Printf("Expected app name0:'%s' name1:'%s'\n", wantAppName0, wantAppName1)
-		return nil, nil, false
-	}
+	// if nameVer.Name0 != wantAppName0 || nameVer.Name1 != wantAppName1 {
+	// 	le.Printf("Expected app name0:'%s' name1:'%s'\n", wantAppName0, wantAppName1)
+	// 	return nil, nil, false
+	// }
 
 	pubKey, err := tkSigner.GetPubkey()
 	if err != nil {

@@ -15,12 +15,10 @@ import (
 	"path"
 	"time"
 
-	"github.com/tillitis/tkey-verification/internal/appbins"
 	"github.com/tillitis/tkey-verification/internal/tkey"
-	"github.com/tillitis/tkey-verification/internal/vendorsigning"
 )
 
-func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, verifyBaseURL string) {
+func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, verifyBaseURL string, appBins AppBins, vendorKeys VendorKeys) {
 	udi := tkey.GetUDI(devPath, verbose)
 	if udi == nil {
 		os.Exit(1)
@@ -64,13 +62,14 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 		os.Exit(1)
 	}
 
-	appBin, err := appbins.Get(verification.AppTag, appHash)
+	appBin, err := appBins.Get(string(appHash))
 	if err != nil {
 		le.Printf("Getting embedded verisigner-app failed: %s\n", err)
 		os.Exit(1)
 	}
 
-	udi, pubKey, ok := tkey.Load(appBin, devPath, verbose)
+	le.Printf("Loading device app built from %s ...\n", appBin.String())
+	udi, pubKey, ok := tkey.Load(appBin.Bin, devPath, verbose)
 	if !ok {
 		os.Exit(1)
 	}
@@ -90,13 +89,13 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 
 	// Verify vendor's signature over known message. Note: we
 	// currently only support 1 single vendor signing pubkey
-	vendorPubKey := vendorsigning.GetCurrentPubKey().PubKey[:]
+	vendorPubKey := vendorKeys.Current().PubKey
 	msg, err := buildMessage(udi.Bytes, fw.Hash[:], pubKey)
 	if err != nil {
 		le.Printf("buildMessage failed: %s", err)
 		os.Exit(1)
 	}
-	if !ed25519.Verify(vendorPubKey, msg, vSignature) {
+	if !ed25519.Verify(vendorPubKey[:], msg, vSignature) {
 		le.Printf("Signature by vendor failed verification!")
 		os.Exit(1)
 	}

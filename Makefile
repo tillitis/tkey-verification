@@ -19,15 +19,14 @@ show-pubkey:
 # .PHONY to let go-build handle deps and rebuilds
 .PHONY: tkey-verification
 tkey-verification:
-	cp -af vendor-signing-pubkeys.txt ./internal/vendorsigning/vendor-signing-pubkeys.txt
+	cp -af vendor-signing-pubkeys.txt ./cmd/tkey-verification/vendor-signing-pubkeys.txt
 	go build ./cmd/tkey-verification
 	./tkey-verification --version
 
 .PHONY: clean
 clean:
 	make -C apps clean
-	rm -f internal/appbins/bins/*.bin
-	rm -f internal/vendorsigning/vendor-signing-pubkeys.txt
+	rm -f cmd/tkey-verification/vendor-signing-pubkeys.txt
 	rm -f show-pubkey tkey-verification
 
 .PHONY: lint

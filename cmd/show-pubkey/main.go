@@ -29,6 +29,13 @@ func main() {
 	pflag.BoolVar(&verbose, "verbose", false,
 		"Enable verbose output.")
 	pflag.BoolVar(&helpOnly, "help", false, "Output this help.")
+
+	appBins, err := appbins.InitAppBins()
+	if err != nil {
+		fmt.Printf("Failed to init embedded verisigner-apps: %v", err)
+		os.Exit(1)
+	}
+
 	pflag.Usage = func() {
 		le.Printf(`Usage: show-pubkey [flags...] TAG
 
@@ -37,7 +44,7 @@ Flags:
 
 Supported verisigner-app tags: %s
 
-`, pflag.CommandLine.FlagUsagesWrapped(86), strings.Join(appbins.Tags(), " "))
+`, pflag.CommandLine.FlagUsagesWrapped(86), strings.Join(appbins.Tags(appBins), " "))
 	}
 	pflag.Parse()
 
@@ -53,14 +60,14 @@ Supported verisigner-app tags: %s
 	}
 
 	if pflag.NArg() < 1 {
-		le.Printf("Please pass tag of the verisigner-app to run when extracting the public key.\n"+
-			"Supported tags:\n%s\n", strings.Join(appbins.Tags(), " \n"))
+		le.Printf("Please pass tag of the app to run when extracting the public key.\n"+
+			"Supported tags:\n%s\n", strings.Join(appbins.Tags(appBins), " \n"))
 		os.Exit(2)
 	}
 
 	tag := pflag.Args()[0]
 
-	appBin, err := appbins.GetByTagOnly(tag)
+	appBin, err := appbins.GetByTagOnly(appBins, tag)
 	if err != nil {
 		le.Printf("Getting embedded verisigner-app failed: %s\n", err)
 		os.Exit(1)
