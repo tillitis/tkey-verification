@@ -56,13 +56,13 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 		os.Exit(1)
 	}
 
-	appHash, err := hex.DecodeString(verification.AppHash)
+	_, err = hex.DecodeString(verification.AppHash)
 	if err != nil {
 		le.Printf("decode apphash hex \"%s\" in verification data failed: %s\n", verification.AppHash, err)
 		os.Exit(1)
 	}
 
-	appBin, err := appBins.Get(string(appHash))
+	appBin, err := appBins.Get(verification.AppHash)
 	if err != nil {
 		le.Printf("Getting embedded verisigner-app failed: %s\n", err)
 		os.Exit(1)

@@ -11,8 +11,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/tillitis/tillitis-key1-apps/tk1"
 	"github.com/tillitis/tkey-verification/internal/util"
+	"github.com/tillitis/tkeyclient"
+	"github.com/tillitis/tkeysign"
 )
 
 const (
@@ -28,7 +29,7 @@ var le = log.New(os.Stderr, "", 0)
 // GetUDI gets the UDI of a TKey that must be in firmware-mode.
 func GetUDI(devPath string, verbose bool) *UDI {
 	if !verbose {
-		tk1.SilenceLogging()
+		tkeyclient.SilenceLogging()
 	}
 
 	var err error
@@ -39,7 +40,7 @@ func GetUDI(devPath string, verbose bool) *UDI {
 		}
 	}
 
-	tk := tk1.New()
+	tk := tkeyclient.New()
 	le.Printf("Connecting to device on serial port %s ...\n", devPath)
 	if err = tk.Connect(devPath); err != nil {
 		le.Printf("Could not open %s: %v\n", devPath, err)
@@ -58,7 +59,7 @@ func GetUDI(devPath string, verbose bool) *UDI {
 		os.Exit(1)
 	}, os.Interrupt, syscall.SIGTERM)
 
-	var nameVer *tk1.NameVersion
+	var nameVer *tkeyclient.NameVersion
 	nameVer, err = tk.GetNameVersion()
 	if err != nil {
 		le.Printf("Please unplug the TKey and plug it in again to put it in firmware-mode.\n")
@@ -90,7 +91,7 @@ func GetUDI(devPath string, verbose bool) *UDI {
 // public key, and a true bool if successful.
 func Load(bin []byte, devPath string, verbose bool) (*UDI, []byte, bool) {
 	if !verbose {
-		tk1.SilenceLogging()
+		tkeyclient.SilenceLogging()
 	}
 
 	var err error
@@ -101,14 +102,14 @@ func Load(bin []byte, devPath string, verbose bool) (*UDI, []byte, bool) {
 		}
 	}
 
-	tk := tk1.New()
+	tk := tkeyclient.New()
 	le.Printf("Connecting to device on serial port %s ...\n", devPath)
 	if err = tk.Connect(devPath); err != nil {
 		le.Printf("Could not open %s: %v\n", devPath, err)
 		return nil, nil, false
 	}
 
-	tkSigner := New(tk)
+	tkSigner := tkeysign.New(tk)
 
 	cleanup := func() {
 		if err = tkSigner.Close(); err != nil {
@@ -122,7 +123,7 @@ func Load(bin []byte, devPath string, verbose bool) (*UDI, []byte, bool) {
 		os.Exit(1)
 	}, os.Interrupt, syscall.SIGTERM)
 
-	var nameVer *tk1.NameVersion
+	var nameVer *tkeyclient.NameVersion
 	nameVer, err = tk.GetNameVersion()
 	if err != nil {
 		// Note: tkey-provision picks up and displays the last line of
@@ -193,12 +194,12 @@ func Sign(devPath string, expectedPubKey []byte, message []byte) ([]byte, error)
 		}
 	}
 
-	tk := tk1.New()
+	tk := tkeyclient.New()
 	if err = tk.Connect(devPath); err != nil {
 		return nil, fmt.Errorf("Could not open %s: %w", devPath, err)
 	}
 
-	tkSigner := New(tk)
+	tkSigner := tkeysign.New(tk)
 
 	cleanup := func() {
 		if err = tkSigner.Close(); err != nil {
@@ -242,7 +243,7 @@ func Sign(devPath string, expectedPubKey []byte, message []byte) ([]byte, error)
 
 // GetFirmwareHash connects to a TKey and asks an already running
 // verisigner-app for a hash (sha512) of the TKey's firmware binary.
-func GetFirmwareHash(devPath string, expectedPubKey []byte, firmwareSize uint32) ([]byte, error) {
+func GetFirmwareHash(devPath string, expectedPubKey []byte, firmwareSize int) ([]byte, error) {
 	var err error
 	if devPath == "" {
 		devPath, err = util.DetectSerialPort(false)
@@ -251,12 +252,12 @@ func GetFirmwareHash(devPath string, expectedPubKey []byte, firmwareSize uint32)
 		}
 	}
 
-	tk := tk1.New()
+	tk := tkeyclient.New()
 	if err = tk.Connect(devPath); err != nil {
 		return nil, fmt.Errorf("Could not open %s: %w", devPath, err)
 	}
 
-	tkSigner := New(tk)
+	tkSigner := tkeysign.New(tk)
 
 	cleanup := func() {
 		if err = tkSigner.Close(); err != nil {
@@ -288,7 +289,7 @@ func GetFirmwareHash(devPath string, expectedPubKey []byte, firmwareSize uint32)
 		return nil, fmt.Errorf("The TKey does not have the expected public key")
 	}
 
-	fwHash, err := tkSigner.GetFirmwareHash(firmwareSize)
+	fwHash, err := tkSigner.GetFWDigest(firmwareSize)
 	if err != nil {
 		return nil, fmt.Errorf("GetFirmwareHash failed: %w", err)
 	}
