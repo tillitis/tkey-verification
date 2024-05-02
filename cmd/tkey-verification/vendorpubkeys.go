@@ -37,7 +37,7 @@ func (v VendorKeys) Current() PubKey {
 	return v.Keys[v.CurrentAppHash]
 }
 
-func NewVendorKeys(appBins AppBins, currentHash string) (VendorKeys, error) {
+func NewVendorKeys(appBins AppBins, currentVendorHash string) (VendorKeys, error) {
 	lines := strings.Split(strings.Trim(strings.ReplaceAll(string(pubKeysData), "\r\n", "\n"), "\n"), "\n")
 
 	var vendorKeys = VendorKeys{
@@ -56,7 +56,7 @@ func NewVendorKeys(appBins AppBins, currentHash string) (VendorKeys, error) {
 		if len(fields) != 3 {
 			return vendorKeys, fmt.Errorf("Expected 3 space-separated fields: pubkey in hex, verisigner-app tag, and its hash in hex")
 		}
-		pubKeyHex, tag, hashHex := fields[0], fields[1], fields[2]
+		pubKeyHex, tag, appHashHex := fields[0], fields[1], fields[2]
 
 		pubKey, err := hex.DecodeString(pubKeyHex)
 		if err != nil {
@@ -66,17 +66,19 @@ func NewVendorKeys(appBins AppBins, currentHash string) (VendorKeys, error) {
 			return vendorKeys, fmt.Errorf("expected %d bytes public key, got %d", ed25519.PublicKeySize, l)
 		}
 
-		hash, err := hex.DecodeString(hashHex)
+		appHash, err := hex.DecodeString(appHashHex)
 		if err != nil {
-			return vendorKeys, fmt.Errorf("decode hex \"%s\" failed: %w", hashHex, err)
+			return vendorKeys, fmt.Errorf("decode hex \"%s\" failed: %w", appHashHex, err)
 		}
-		if l := len(hash); l != sha512.Size {
+		if l := len(appHash); l != sha512.Size {
 			return vendorKeys, fmt.Errorf("expected %d bytes app hash, got %d", sha512.Size, l)
 		}
 
-		appBin := appBins.Bins[string(hash)]
-		if err != nil {
-			return vendorKeys, fmt.Errorf("getting embedded verisigner-app failed: %w", err)
+		var appBin AppBin
+		if _, ok := appBins.Bins[appHashHex]; ok {
+			appBin = appBins.Bins[appHashHex]
+		} else {
+			return vendorKeys, fmt.Errorf("getting embedded app failed: %w", err)
 		}
 
 		for _, pk := range vendorKeys.Keys {
@@ -85,7 +87,7 @@ func NewVendorKeys(appBins AppBins, currentHash string) (VendorKeys, error) {
 			}
 		}
 
-		vendorKeys.Keys[string(hash)] = PubKey{
+		vendorKeys.Keys[appHashHex] = PubKey{
 			PubKey: *(*[ed25519.PublicKeySize]byte)(pubKey),
 			Tag:    tag,
 			AppBin: appBin,
@@ -96,8 +98,8 @@ func NewVendorKeys(appBins AppBins, currentHash string) (VendorKeys, error) {
 		return vendorKeys, fmt.Errorf("We currently only support 1 vendor signing public key, but found %d", l)
 	}
 
-	if _, ok := vendorKeys.Keys[currentHash]; ok {
-		vendorKeys.CurrentAppHash = currentHash
+	if _, ok := vendorKeys.Keys[currentVendorHash]; ok {
+		vendorKeys.CurrentAppHash = currentVendorHash
 	} else {
 		return VendorKeys{}, fmt.Errorf("Current key hash does not exist")
 	}

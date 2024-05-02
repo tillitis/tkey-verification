@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	fwSizeMin uint32 = 2000
-	fwSizeMax uint32 = 8192
+	fwSizeMin int = 2000
+	fwSizeMax int = 8192
 )
 
 func GetFirmware(udi *tkey.UDI) (*Firmware, error) {
@@ -96,7 +96,7 @@ func initFirmwares() error {
 // udi0BEhex. For example, given the hardware triple argument (0x10,
 // 8, 3) the udi0BEhex argument must be "00010203" (this is the
 // default UDI0 in FPGA bitstream and QEMU machine).
-func addFirmware(udi0BEhex string, vendorID uint16, productID uint8, productRev uint8, fwSize uint32, fwHashHex string) error {
+func addFirmware(udi0BEhex string, vendorID uint16, productID uint8, productRev uint8, fwSize int, fwHashHex string) error {
 	udi0BE, err := hex.DecodeString(udi0BEhex)
 	if err != nil {
 		return fmt.Errorf("decode udi0BEhex \"%s\" failed: %w", udi0BEhex, err)
@@ -180,5 +180,5 @@ func (h hardware) toUDI0BEhex() string {
 
 type Firmware struct {
 	Hash [sha512.Size]byte
-	Size uint32
+	Size int
 }
