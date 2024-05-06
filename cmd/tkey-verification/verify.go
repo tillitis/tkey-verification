@@ -18,7 +18,7 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, verifyBaseURL string, appBins AppBins, vendorKeys VendorKeys) {
+func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, verifyBaseURL string, appBins AppBins, vendorKeys VendorKeys, firmwares Firmwares) {
 	udi := tkey.GetUDI(devPath, verbose)
 	if udi == nil {
 		os.Exit(1)

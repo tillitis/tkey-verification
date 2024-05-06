@@ -8,8 +8,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"os"
-	"sync"
 
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
@@ -19,79 +17,70 @@ const (
 	fwSizeMax int = 8192
 )
 
-func GetFirmware(udi *tkey.UDI) (*Firmware, error) {
-	if err := initFirmwares(); err != nil {
-		le.Printf("Failed to init embedded firmwares: %s\n", err)
-		os.Exit(1)
-	}
+type Firmware struct {
+	Hash [sha512.Size]byte
+	Size int
+}
+
+type Firmwares struct {
+	firmwares map[hardware]Firmware
+}
+
+func (f Firmwares) GetFirmware(udi *tkey.UDI) (*Firmware, error) {
 	hw, err := newHardware(udi.VendorID, udi.ProductID, udi.ProductRev)
 	if err != nil {
 		return nil, err
 	}
-	fw, ok := firmwares[*hw]
+	fw, ok := f.firmwares[*hw]
 	if !ok {
 		return nil, nil
 	}
+
 	return &fw, nil
 }
 
-func Firmwares() []string {
-	if err := initFirmwares(); err != nil {
-		le.Printf("Failed to init embedded firmwares: %s\n", err)
-		os.Exit(1)
-	}
+func (f Firmwares) List() []string {
 	var list []string
-	for hw, fw := range firmwares {
+	for hw, fw := range f.firmwares {
 		list = append(list, fmt.Sprintf("VendorID:0x%04x ProductID:%d ProductRev:%d [0x%s] with size:%d hash:%0x…",
 			hw.VendorID, hw.ProductID, hw.ProductRev, hw.toUDI0BEhex(), fw.Size, fw.Hash[:16]))
 	}
+
 	return list
 }
 
-var (
-	firmwares map[hardware]Firmware
-	lock      = &sync.Mutex{}
-)
-
-func initFirmwares() error {
-	lock.Lock()
-	defer lock.Unlock()
-
-	if firmwares != nil {
-		return nil
-	}
-
-	firmwares = make(map[hardware]Firmware)
+func NewFirmwares() (Firmwares, error) {
+	fws := Firmwares{}
 
 	var err error
 
 	// This is the default/qemu UDI0, with firmware from main at
 	// c126199a41149f6284aa9533e72395c978733b44
-	err = addFirmware("00010203", 0x0010, 8, 3, 4192, "3769540390ee3d990ea3f9e4cc9a0d1af5bcaebb82218185a78c39c6bf01d9cdc305ba253a1fb9f3f9fcc63d97c8e5f34bbb1f7bec56a8f246f1d2239867b623")
+	err = fws.addFirmware("00010203", 0x0010, 8, 3, 4192, "3769540390ee3d990ea3f9e4cc9a0d1af5bcaebb82218185a78c39c6bf01d9cdc305ba253a1fb9f3f9fcc63d97c8e5f34bbb1f7bec56a8f246f1d2239867b623")
 	if err != nil {
-		return err
+		return fws, err
 	}
 
-	err = addFirmware("01337080", 0x1337, 2, 0, 4192, "3769540390ee3d990ea3f9e4cc9a0d1af5bcaebb82218185a78c39c6bf01d9cdc305ba253a1fb9f3f9fcc63d97c8e5f34bbb1f7bec56a8f246f1d2239867b623")
+	err = fws.addFirmware("01337080", 0x1337, 2, 0, 4192, "3769540390ee3d990ea3f9e4cc9a0d1af5bcaebb82218185a78c39c6bf01d9cdc305ba253a1fb9f3f9fcc63d97c8e5f34bbb1f7bec56a8f246f1d2239867b623")
 	if err != nil {
-		return err
+		return fws, err
 	}
 
-	err = addFirmware("01337081", 0x1337, 2, 1, 4192, "3769540390ee3d990ea3f9e4cc9a0d1af5bcaebb82218185a78c39c6bf01d9cdc305ba253a1fb9f3f9fcc63d97c8e5f34bbb1f7bec56a8f246f1d2239867b623")
+	err = fws.addFirmware("01337081", 0x1337, 2, 1, 4192, "3769540390ee3d990ea3f9e4cc9a0d1af5bcaebb82218185a78c39c6bf01d9cdc305ba253a1fb9f3f9fcc63d97c8e5f34bbb1f7bec56a8f246f1d2239867b623")
 	if err != nil {
-		return err
+		return fws, err
 	}
 
-	err = addFirmware("01337082", 0x1337, 2, 2, 4160, "06d0aafcc763307420380a8c5a324f3fccfbba6af7ff6fe0facad684ebd69dd43234c8531a096c77c2dc3543f8b8b629c94136ca7e257ca560da882e4dbbb025")
+	err = fws.addFirmware("01337082", 0x1337, 2, 2, 4160, "06d0aafcc763307420380a8c5a324f3fccfbba6af7ff6fe0facad684ebd69dd43234c8531a096c77c2dc3543f8b8b629c94136ca7e257ca560da882e4dbbb025")
 	if err != nil {
-		return err
+		return fws, err
 	}
 
-	if len(firmwares) == 0 {
-		return fmt.Errorf("Got no firmwares from the embedded data")
+	if len(fws.firmwares) == 0 {
+		return fws, fmt.Errorf("Got no firmwares from the embedded data")
 	}
 
-	return nil
+	return fws, nil
 }
 
 // addFirmware adds a new known hardware identified by the triple
@@ -101,7 +90,7 @@ func initFirmwares() error {
 // udi0BEhex. For example, given the hardware triple argument (0x10,
 // 8, 3) the udi0BEhex argument must be "00010203" (this is the
 // default UDI0 in FPGA bitstream and QEMU machine).
-func addFirmware(udi0BEhex string, vendorID uint16, productID uint8, productRev uint8, fwSize int, fwHashHex string) error {
+func (f *Firmwares) addFirmware(udi0BEhex string, vendorID uint16, productID uint8, productRev uint8, fwSize int, fwHashHex string) error {
 	udi0BE, err := hex.DecodeString(udi0BEhex)
 	if err != nil {
 		return fmt.Errorf("decode udi0BEhex \"%s\" failed: %w", udi0BEhex, err)
@@ -134,11 +123,11 @@ func addFirmware(udi0BEhex string, vendorID uint16, productID uint8, productRev 
 		return fmt.Errorf("udi0BEhex arg `%s` does not match `%s` calculated from hardware triple args", udi0BEhex, hw.toUDI0BEhex())
 	}
 
-	if _, ok := firmwares[*hw]; ok {
+	if _, ok := f.firmwares[*hw]; ok {
 		return fmt.Errorf("hardware with UDI0 0x%s already exists", hw.toUDI0BEhex())
 	}
 
-	firmwares[*hw] = Firmware{
+	f.firmwares[*hw] = Firmware{
 		Hash: *(*[64]byte)(fwHash),
 		Size: fwSize,
 	}
@@ -181,9 +170,4 @@ func (h hardware) toUDI0BEhex() string {
 	// last 2 bits of productID | 6 bits productRev
 	udi0BE[3] = ((h.ProductID & 0b000011) << 6) | h.ProductRev
 	return hex.EncodeToString(udi0BE[:])
-}
-
-type Firmware struct {
-	Hash [sha512.Size]byte
-	Size int
 }

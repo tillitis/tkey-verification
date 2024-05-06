@@ -56,6 +56,12 @@ func main() {
 
 	vendorPubKey := vendorKeys.Current()
 
+	firmwares, err := NewFirmwares()
+	if err != nil {
+		le.Printf("Found no usable firmwares\n")
+		os.Exit(1)
+	}
+
 	builtWith := fmt.Sprintf(`Built with:
 Supported verisigner-app tags:
   %s
@@ -69,7 +75,7 @@ Known firmwares:
 		strings.Join(appBins.Tags(), " \n  "),
 		deviceSignAppBin.String(),
 		vendorPubKey.String(),
-		strings.Join(Firmwares(), " \n  "))
+		strings.Join(firmwares.List(), " \n  "))
 
 	var devPath, baseURL, baseDir, configFile string
 	var checkConfigOnly, verbose, showURLOnly, versionOnly, helpOnly bool
