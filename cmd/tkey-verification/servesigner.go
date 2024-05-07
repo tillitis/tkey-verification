@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/hex"
+	"fmt"
 	"net"
 	"net/rpc"
 	"os"
@@ -43,24 +44,36 @@ func serveSigner(conf Config, vendorPubKey PubKey, devPath string, verbose bool,
 		os.Exit(0)
 	}
 
+	tk, err := tkey.NewTKey(devPath, verbose)
+	if err != nil {
+		le.Printf("Couldn't connect to TKey: %v\n", err)
+		os.Exit(1)
+	}
+
+	exit := func(code int) {
+		tk.Close()
+		os.Exit(code)
+	}
+
 	le.Printf("Vendor signing: %s\n", vendorPubKey.String())
 	le.Printf("Loading device app built from %s ...\n", vendorPubKey.AppBin.String())
-	foundUDI, foundPubKey, ok := tkey.Load(vendorPubKey.AppBin.Bin, devPath, verbose)
-	if !ok {
-		os.Exit(1)
+	foundPubKey, err := tk.LoadSigner(vendorPubKey.AppBin.Bin)
+	if err != nil {
+		fmt.Printf("Couldn't load device app: %v\n", err)
+		exit(1)
 	}
 	if bytes.Compare(vendorPubKey.PubKey[:], foundPubKey) != 0 {
 		le.Printf("The public key of the found TKey (\"%s\") does not match the embedded vendor signing public key in use\n", hex.EncodeToString(foundPubKey))
 		os.Exit(1)
 	}
-	le.Printf("Found signing TKey with the expected public key and UDI: %s\n", foundUDI.String())
+	le.Printf("Found signing TKey with the expected public key and UDI: %s\n", tk.Udi.String())
 
 	if err := os.MkdirAll(signaturesDir, 0o755); err != nil {
 		le.Printf("MkdirAll failed: %s\n", err)
 		os.Exit(1)
 	}
 
-	go serve(conf.ListenAddr, vendorPubKey.PubKey[:], devPath, &tlsConfig)
+	go serve(conf.ListenAddr, vendorPubKey.PubKey[:], *tk, &tlsConfig)
 
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
@@ -71,8 +84,8 @@ func serveSigner(conf Config, vendorPubKey PubKey, devPath string, verbose bool,
 	os.Exit(0)
 }
 
-func serve(listenAddr string, vendorPubKey []byte, devPath string, tlsConfig *tls.Config) {
-	if err := rpc.Register(NewAPI(vendorPubKey, devPath)); err != nil {
+func serve(listenAddr string, vendorPubKey []byte, tk tkey.TKey, tlsConfig *tls.Config) {
+	if err := rpc.Register(NewAPI(vendorPubKey, tk)); err != nil {
 		le.Printf("Register failed: %s\n", err)
 		os.Exit(1)
 	}

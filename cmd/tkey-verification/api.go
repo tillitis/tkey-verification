@@ -19,14 +19,14 @@ import (
 type API struct {
 	mu           sync.Mutex
 	vendorPubKey []byte
-	devPath      string
+	tk           tkey.TKey
 }
 
-func NewAPI(vendorPubKey []byte, devPath string) *API {
+func NewAPI(vendorPubKey []byte, tk tkey.TKey) *API {
 	return &API{
 		mu:           sync.Mutex{},
 		vendorPubKey: vendorPubKey,
-		devPath:      devPath,
+		tk:           tk,
 	}
 }
 
@@ -66,7 +66,7 @@ func (api *API) Sign(args *Args, _ *struct{}) error {
 		return err
 	}
 
-	signature, err := tkey.Sign(api.devPath, api.vendorPubKey, args.Message)
+	signature, err := api.tk.Sign(args.Message)
 	if err != nil {
 		err = fmt.Errorf("tkey.Sign failed: %w", err)
 		le.Printf("%s\n", err)
