@@ -161,7 +161,7 @@ Commands:
 			configFile = defaultConfigFile
 		}
 		conf := loadRemoteSignConfig(configFile)
-		remoteSign(conf, deviceSignAppBin, devPath, verbose, checkConfigOnly)
+		remoteSign(conf, deviceSignAppBin, devPath, verbose, checkConfigOnly, firmwares)
 
 	case "verify":
 		if baseDir != "" && (showURLOnly || pflag.CommandLine.Lookup("base-url").Changed) {
@@ -169,7 +169,7 @@ Commands:
 			os.Exit(2)
 		}
 
-		verify(devPath, verbose, showURLOnly, baseDir, baseURL, appBins, vendorKeys)
+		verify(devPath, verbose, showURLOnly, baseDir, baseURL, appBins, vendorKeys, firmwares)
 
 	default:
 		le.Printf("%s is not a valid command.\n", cmd)

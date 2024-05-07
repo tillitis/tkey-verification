@@ -7,6 +7,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/rpc"
 	"os"
@@ -14,7 +15,7 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-func remoteSign(conf Config, appBin AppBin, devPath string, verbose bool, checkConfigOnly bool) {
+func remoteSign(conf Config, appBin AppBin, devPath string, verbose bool, checkConfigOnly bool, firmwares Firmwares) {
 	tlsConfig := tls.Config{
 		Certificates: []tls.Certificate{
 			loadCert(conf.ClientCert, conf.ClientKey),
@@ -51,17 +52,29 @@ func remoteSign(conf Config, appBin AppBin, devPath string, verbose bool, checkC
 		exit(0)
 	}
 
-	le.Printf("Loading device app built from %s ...\n", appBin.String())
-	udi, pubKey, ok := tkey.Load(appBin.Bin, devPath, verbose)
-	if !ok {
+	tk, err := tkey.NewTKey("", verbose)
+	if err != nil {
+		le.Printf("Couldn't connect to TKey: %v\n", err)
 		exit(1)
 	}
-	le.Printf("TKey UDI: %s\n", udi.String())
 
-	fw, err := verifyFirmwareHash(devPath, pubKey, udi)
+	le.Printf("Loading device app built from %s ...\n", appBin.String())
+	pubKey, err := tk.LoadSigner(appBin.Bin)
+	if err != nil {
+		fmt.Printf("Couldn't load device app: %v", err)
+		exit(1)
+	}
+	le.Printf("TKey UDI: %s\n", tk.Udi.String())
+
+	expectfw, err := firmwares.GetFirmware(tk.Udi)
+	if err != nil {
+		le.Printf("Couldn't find firmware for UDI %s: %v\n", tk.Udi.String(), err)
+		exit(1)
+	}
+	fw, err := verifyFirmwareHash(expectfw, *tk, pubKey)
 	if err != nil {
 		le.Printf("verifyFirmwareHash failed: %s\n", err)
-		os.Exit(1)
+		exit(1)
 	}
 	le.Printf("TKey firmware with size:%d and verified hash:%0x…\n", fw.Size, fw.Hash[:16])
 
@@ -72,7 +85,7 @@ func remoteSign(conf Config, appBin AppBin, devPath string, verbose bool, checkC
 		exit(1)
 	}
 
-	signature, err := tkey.Sign(devPath, pubKey, challenge)
+	signature, err := tk.Sign(challenge)
 	if err != nil {
 		le.Printf("tkey.Sign failed: %s", err)
 		exit(1)
@@ -84,14 +97,14 @@ func remoteSign(conf Config, appBin AppBin, devPath string, verbose bool, checkC
 		os.Exit(1)
 	}
 
-	msg, err := buildMessage(udi.Bytes, fw.Hash[:], pubKey)
+	msg, err := buildMessage(tk.Udi.Bytes, fw.Hash[:], pubKey)
 	if err != nil {
 		le.Printf("buildMessage failed: %s", err)
 		os.Exit(1)
 	}
 
 	args := Args{
-		UDIBE:   udi.Bytes,
+		UDIBE:   tk.Udi.Bytes,
 		AppTag:  appBin.Tag,
 		AppHash: appBin.Hash(),
 		Message: msg,
