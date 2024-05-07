@@ -26,14 +26,14 @@ type Firmwares struct {
 	firmwares map[hardware]Firmware
 }
 
-func (f Firmwares) GetFirmware(udi *tkey.UDI) (*Firmware, error) {
+func (f Firmwares) GetFirmware(udi tkey.UDI) (*Firmware, error) {
 	hw, err := newHardware(udi.VendorID, udi.ProductID, udi.ProductRev)
 	if err != nil {
 		return nil, err
 	}
 	fw, ok := f.firmwares[*hw]
 	if !ok {
-		return nil, nil
+		return nil, fmt.Errorf("unknown UDI")
 	}
 
 	return &fw, nil
@@ -50,7 +50,9 @@ func (f Firmwares) List() []string {
 }
 
 func NewFirmwares() (Firmwares, error) {
-	fws := Firmwares{}
+	fws := Firmwares{
+		firmwares: make(map[hardware]Firmware),
+	}
 
 	var err error
 
