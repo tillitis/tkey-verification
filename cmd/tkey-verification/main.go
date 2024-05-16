@@ -34,7 +34,7 @@ func main() {
 	const currentVendorHash = "f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142"
 
 	// Hash of latest signer, to be used for new vendor signing
-	const latestAppHash = "a6494cbdeb410dd796b8888a4703fa9991f48ca548a402e86403f0f61dafac91dd3313ad317b720ea31ecf16db03d3881c9c2161a8e504f3db302d1dffdc761c"
+	const latestAppHash = "fe4458e4125966885d9b745a25422948d76e60371165b97729fce1b423f22b87929c684b4381f2220aa0c94266ba035730d5f08a6e6e0aab7d7bf15165d2fff6"
 
 	if version == "" {
 		version = readBuildInfo()

@@ -105,10 +105,10 @@ func (t TKey) Close() {
 	t.client.Close()
 }
 
-// LoadSigner gets the UDI of a TKey that must be in firmware-mode. It then
-// loads the passed verisigner-app onto the TKey (with no USS), starts it,
-// and gets the public key from it. Returns the UDI (BigEndian, BE),
-// public key, and a true bool if successful.
+// LoadSigner gets the UDI of a TKey that must be in firmware-mode. It
+// then loads the passed device app onto the TKey (with no USS),
+// starts it, and gets the public key from it. Returns the UDI
+// (BigEndian, BE), public key, and a true bool if successful.
 func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 	var err error
 
