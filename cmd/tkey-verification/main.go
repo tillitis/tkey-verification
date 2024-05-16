@@ -77,7 +77,7 @@ Known firmwares:
 		vendorPubKey.String(),
 		strings.Join(firmwares.List(), " \n  "))
 
-	var devPath, baseURL, baseDir, configFile string
+	var devPath, baseURL, baseDir, configFile, binPath string
 	var checkConfigOnly, verbose, showURLOnly, versionOnly, helpOnly bool
 
 	pflag.CommandLine.SetOutput(os.Stderr)
@@ -96,6 +96,8 @@ Known firmwares:
 		"Read verification data from a file located in `DIRECTORY` and named after the TKey UDI in hex, instead of from a URL. You can for example first use \"verify --show-url\" and download the verification file manually on some other computer, then transfer the file back and use \"verify --base-dir .\" (command: verify).")
 	pflag.StringVar(&baseURL, "base-url", defaultBaseURL,
 		"Set the base `URL` of verification server for fetching verification data (command: verify).")
+	pflag.StringVarP(&binPath, "app", "a", "",
+		"`PATH` to the device app to show vendor signing pubkey (command: show-pubkey).")
 	pflag.BoolVar(&versionOnly, "version", false, "Output version information.")
 	pflag.BoolVar(&helpOnly, "help", false, "Output this help.")
 	pflag.Usage = func() {
@@ -115,7 +117,13 @@ Commands:
 
                 The flags --show-url and --base-dir can be used to show the URL for
                 downloading the verification data on one machine, and verifying the
-                TKey on another machine that lacks network, see more below.`, progname)
+                TKey on another machine that lacks network, see more below.
+
+  show-pubkey	Prints the info needed for the vendor-signing-pubkeys.txt to stdout.
+		This includes public key, app tag, and app hash in the right format.
+
+		Use the flag --app to specify the path o the desired app to use, i.e.,
+		tkey-verification show-pubkey --app /path/to/app`, progname)
 
 		le.Printf("%s\n\nFlags:\n%s\n%s", desc, pflag.CommandLine.FlagUsagesWrapped(86), builtWith)
 	}
@@ -129,7 +137,6 @@ Commands:
 		fmt.Printf("%s %s\n\n%s", progname, version, builtWith)
 		os.Exit(0)
 	}
-
 	if pflag.NArg() != 1 {
 		if pflag.NArg() > 1 {
 			le.Printf("Unexpected argument: %s\n\n", strings.Join(pflag.Args()[1:], " "))
@@ -188,6 +195,13 @@ Commands:
 		}
 
 		verify(devPath, verbose, showURLOnly, baseDir, baseURL, appBins, vendorKeys, firmwares)
+
+	case "show-pubkey":
+		if binPath == "" {
+			le.Printf("Needs the path to an app, use `--app PATH`\n")
+			os.Exit(2)
+		}
+		showPubkey(binPath, devPath, verbose)
 
 	default:
 		le.Printf("%s is not a valid command.\n", cmd)
