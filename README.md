@@ -238,16 +238,14 @@ If you want to use some other key(s) this is how:
 If you're just testing start a QEMU as a signing endpoint. See above.
 
 Get the public key from the TKey in the signing server. We provide a
-`show-pubkey` tool for that. The tag of the verisigner-app binary to use
-must be given as an argument. The tool embeds verisigner-app binaries in
-the same way as the `tkey-verification` tool.
+command in `tkey-verification`, `show-pubkey`, for that. The path to
+the app binary to use must be given as an argument.
 
 An example using the tag "main" for this vendor public key, example
 output:
 
 ```
-$ make show-pubkey
-$ ./show-pubkey --port /dev/pts/12 verisigner-v0.0.1
+$ ./tkey-verification show-pubkey --port /dev/pts/12 --app bins/verisigner-v0.0.1
 ...
 038dd0b898c601517a09cd249d3c4f2de8e9aab38c5fa02701ae29bb41a6d863 verisigner-v0.0.1 9598910ec9ebe2504a5f894de6f8e0677dc94c156c7bd6f7e805a35354b3c85daa4ca66ab93f4d75221b501def457b4cafc933c6cdcf16d1eb8ccba6cccf6630
 ```
