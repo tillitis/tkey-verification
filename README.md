@@ -10,26 +10,19 @@ instructions](https://tillitis.se/app/tkey-device-verification/) (on
 Tillitis' web). Or just download a release of the tool right away:
 https://github.com/tillitis/tkey-verification/releases
 
-The published binaries can be reproduced by running
-`./make-release-builds.sh` with the wanted version (for example
-"0.0.2"). The [release-builds](release-builds) directory contains
-checksums of released versions (since we got reproducibility in
-place), which the script verifies after building. Running the script
-requires a rootless podman setup. On Ubuntu 22.10, running `apt
-install podman rootlesskit slirp4netns` should be enough.
-
 ## Terminology
 
 - "device under verification": The device the vendor is provisioning
   or the user is verifying.
 - "device signature": A signature made on the device under
-  verification with the signer TKey program.
+  verification with the signer device app.
 - Unique Device Identifier (UDI): A unique identifier present in all
   TKeys. The 1st half identifies the revision of the hardware, the 2nd
-  half is a random serial number.
+  half is a serial number.
 - "signing server": An HSM-like machine providing signatures over
   messages and producing files to be uploaded later.
-- "signer": The TKey program verisigner (kept in this repository)
+- "signer": The device app verisigner (kept in this repository) or
+  [tkey-device-signer](https://github.com/tillitis/tkey-device-signer).
 - "signer public key": The public key of signer running on the device
   under verification.
 - "vendor signature": A signature made by the signing server.
@@ -39,25 +32,26 @@ install podman rootlesskit slirp4netns` should be enough.
 ### During provisioning
 
 1. Retrieve the UDI from the device under verification.
-2. Run the signer with a specific tag on the device under verification
-   thus creating a unique key pair.
+2. Run the signer with a specific tag on the device under
+   verification. This creates a unique key pair.
 3. Retrieve signer public key from the device under verification.
 4. Ask signer to sign a random challenge.
 5. Verify the signature of the random challenge with the retrieved
-   public key to make sure signing works.
-6. Ask signer for a hash of the firmware binary (in ROM). Consult the
+   public key to make sure signing works and the device proves that it
+   has the corresponding private key.
+6. Ask signer for a digest of the firmware binary (in ROM). Consult the
    internal firmware database to verify that the TKey, according to
    its hardware revision, is running the expected firmware.
-7. Sign a message consisting of the UDI, firmware hash, and signer
+7. Sign a message consisting of the UDI, firmware digest, and signer
    public key, with a vendor signature.
-8. Publish the UDI, the tag of the signer program used, the hash of
-   the binary of the same signer program, the vendor signature, and
-   the timestamp when signature was made.
+8. Publish the UDI, the tag of the signer program used, the hash
+   digest of the binary of the same signer program, the vendor
+   signature, and the timestamp when signature was made.
 
 ### Verifying
 
 1. Retrieve the UDI from the device under verification.
-2. Get the vendor signature and signer tag and hash for this UDI.
+2. Get the vendor signature and signer tag and digest for this UDI.
 3. Run the signer with the same tag and hash on the device under
    verification.
 4. Retrive the signer public key.
@@ -65,10 +59,11 @@ install podman rootlesskit slirp4netns` should be enough.
 6. Verify the signature of the random challenge with the signer public
    key thus proving that device under verification has access to the
    corresponding private key.
-7. Ask signer for a hash of the firmware binary (in ROM). Consult the
-   internal firmware database to verify that the TKey, according to
-   its hardware revision, is running the expected firmware.
-8. Recreate the message of UDI, firmware hash, signer public key.
+7. Ask signer for a hash digest of the firmware binary (in ROM).
+   Consult the internal firmware database to verify that the TKey,
+   according to its hardware revision, is running the expected
+   firmware.
+8. Recreate the message of UDI, firmware digest, signer public key.
    Verify the vendor signature of the message, thus proving that the
    UDI, the firmware, and this private/public key pair was the same
    during vendor signing.
@@ -80,16 +75,15 @@ match even if the TKey is the same. A verifier must check the "tag"
 and "hash" field and complain if it does not have a signer binary
 built from this tag, and with the same hash.
 
-## Building and running
+## Building tkey-verification
 
-This tries to document the intended production use, which uses some
-convenient scripts to automatically do containerized builds of all
-needed verisigner-app binaries. This might not be ideal for developing
-and testing new versions of the verisigner-app (for example `cd apps
-&& make` requires checking out a specific commit of the [the apps
-repo](https://github.com/tillitis/tillitis-key1-apps/) as a sibling to
-this repo, as it contains dependencies). The use of containers
-currently requires a working rootless podman setup.
+A reproducible build should be able to be done with: `make podman`.
+This requires a rootless podman setup.
+
+XXX: Probably goreleaser to build for all archs.
+
+The [release-builds](release-builds) directory contains checksums of
+released versions (since we got reproducibility in place).
 
 1. First get all app binaries built. The make command below runs a
    script which builds verisigner binaries from all tags named
@@ -143,22 +137,37 @@ currently requires a working rootless podman setup.
    you need to adjust the certificate generation in the
    [Makefile](Makefile).
 
-4. You now need 1 TKey and 1 QEMU machine running to try this out (or
+## Building included device apps
+
+The device apps used for signing is included in binary form under
+`cmd/tkey-verification/bins/`.
+
+Reproducible versions of the device app `verisigner` binary included
+in this repo can be built from earlier tags. See the earlier tags and
+instructions there.
+
+The
+[tkey-device-signer](https://github.com/tillitis/tkey-device-signer)
+binary can be built reproducible from corresponding tags.
+
+## Testing
+
+-  You need 1 TKey and 1 QEMU machine running to try this out (or
    2 TKeys, or 2 QEMU machines, if you manage to get that working).
    One is Tillitis' (vendor's) signing TKey, and the other is a TKey
    that you want to sign and then verify as genuine. You need to know
    the serial port device paths for these.
 
-5. Run the signing server on QEMU (see below for details on how to
+-  Run the signing server on QEMU (see below for details on how to
    start, notice what device QEMU said when starting):
 
    ```
    ./tkey-verification serve-signer --config tkey-verification.yaml.example-serve-signer --port /dev/pts/12
    ```
 
-6. Insert the device under verification, the TKey to be signed and verified.
+- Insert the device under verification, the TKey to be signed and verified.
 
-7. Get the signing server to sign for a device under verification
+-  Get the signing server to sign for a device under verification
    (here a hardware TKey)
 
    ```
@@ -174,15 +183,15 @@ currently requires a working rootless podman setup.
    Remote Sign was successful
    ```
 
-8. The signing server should now have signed and saved a verification
-   file under `signatures` with a filename generated from the Unique
-   Device Identifier, typically something like `0133704100000015`
+- The signing server should now have signed and saved a verification
+  file under `signatures` with a filename generated from the Unique
+  Device Identifier, typically something like `0133704100000015`
 
-9. Before trying to verify you need to remove and re-insert the device
-   under verification to get it back to firmware mode.
-   `tkey-verification` always requires to load the signer itself. Then
-   try to verify against local files in a directory using `verify -d
-   signatures` (the default is to query a web server):
+- Before trying to verify you need to remove and re-insert the device
+  under verification to get it back to firmware mode.
+  `tkey-verification` always requires to load the signer itself. Then
+  try to verify against local files in a directory using `verify -d
+  signatures` (the default is to query a web server):
 
    ```
    $ ./tkey-verification verify -d signatures
@@ -203,7 +212,7 @@ currently requires a working rootless podman setup.
 
 For more, see the manual page [tkey-verification(1)](system/tkey-verification.1).
 
-
+## INcl
 ## Running QEMU
 
 You need [our fork of QEMU](https://github.com/tillitis/qemu). Use the
@@ -220,14 +229,13 @@ $ /path/to/qemu/build/qemu-system-riscv32 -nographic -M tk1,fifo=chrid -bios fir
 ## Creating the vendor public keys file
 
 The vendor's public key is built into the tkey-verification binary
-from a text file. Note that only 1 single public key is supported
-currently.
+from a text file.
 
-For each public key, the tag and hash of the verisigner-app binary
-used when extracting the public key is also provided. The signing
-server needs this so that its TKey can have the correct private key
-when signing. Note that these tags per public key are independent and
-can differ from the tag used for device signing.
+For each public key, the tag and hash digest of the device app used
+when extracting the public key is also provided. The signing server
+needs this so that its TKey can have the correct private key when
+signing. Note that these tags per public key are independent from and
+can be different from the tag used for device signing.
 
 A test file is provided in `test-vendor-signing-pubkeys.txt`. It
 contains the default public key of our QEMU machine, given most recent
@@ -251,10 +259,10 @@ $ ./show-pubkey --port /dev/pts/12 verisigner-v0.0.1
 ...
 038dd0b898c601517a09cd249d3c4f2de8e9aab38c5fa02701ae29bb41a6d863 verisigner-v0.0.1 9598910ec9ebe2504a5f894de6f8e0677dc94c156c7bd6f7e805a35354b3c85daa4ca66ab93f4d75221b501def457b4cafc933c6cdcf16d1eb8ccba6cccf6630
 ```
-Enter that line into a file, for instance `other-pubkeys.txt`. Then build everything with this file:
+Enter that line into a file, for instance `other-pubkey.txt`. Then build everything with this file:
 
 ```
-$ other-pubkeys.txt vendor-signing-pubkeys.txt
+$ cat other-pubkey.txt >> vendor-signing-pubkeys.txt
 $ make
 ```
 
