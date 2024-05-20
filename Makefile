@@ -1,40 +1,35 @@
+shasum = sha512sum
 
 .PHONY: all
-all: show-pubkey tkey-verification
+all: tkey-verification
 
-.PHONY:
-install:
-	install -Dm755 tkey-verification /usr/local/bin/tkey-verification
-
-.PHONY: appbins-from-tags
-appbins-from-tags:
-	./build-appbins-from-tags.sh
-
-# .PHONY to let go-build handle deps and rebuilds
-.PHONY: show-pubkey
-show-pubkey:
-	go build ./cmd/show-pubkey
-	@printf "Built ./show-pubkey\n"
-
+APP_VERSION ?= $(shell git describe --dirty --always | sed -n "s/^v\(.*\)/\1/p")
 # .PHONY to let go-build handle deps and rebuilds
 .PHONY: tkey-verification
 tkey-verification:
 	cp -af vendor-signing-pubkeys.txt ./cmd/tkey-verification/vendor-signing-pubkeys.txt
-	go build ./cmd/tkey-verification
+	CGO_ENABLED=0 go build -ldflags "-X main.version=$(APP_VERSION)" -trimpath -buildvcs=false ./cmd/tkey-verification
 	./tkey-verification --version
+
+.PHONY: podman
+podman:
+	podman run --arch=amd64 --rm --mount type=bind,source=$(CURDIR),target=/src -w /src -it ghcr.io/tillitis/tkey-builder:4 make -j
+
+.PHONY: check-digests
+check-digests:
+	cd cmd/tkey-verification/bins && \
+	$(shasum) -c signer-v1.0.1.bin.sha512 && \
+	$(shasum) -c verisigner-v0.0.3.bin.sha512
 
 .PHONY: clean
 clean:
 	make -C apps clean
 	rm -f cmd/tkey-verification/vendor-signing-pubkeys.txt
-	rm -f show-pubkey tkey-verification
+	rm -f tkey-verification
 
 .PHONY: lint
 lint:
-	$(MAKE) -C gotools golangci-lint
-	GOOS=linux   ./gotools/golangci-lint run
-	GOOS=windows ./gotools/golangci-lint run
-	GOOS=darwin  ./gotools/golangci-lint run
+	golangci-lint run
 
 .PHONY: certs
 certs:
