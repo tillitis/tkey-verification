@@ -117,7 +117,7 @@ released versions (since we got reproducibility in place).
    client certs:
 
    ```
-   $ cp test-vendor-signing-pubkeys.txt vendor-signing-pubkeys.txt
+   $ cp test-vendor-signing-pubkeys.txt cmd/tkey-verification/vendor-signing-pubkeys.txt
    $ make
    $ make certs
    ```

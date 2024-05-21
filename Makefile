@@ -6,7 +6,6 @@ all: tkey-verification
 # .PHONY to let go-build handle deps and rebuilds
 .PHONY: tkey-verification
 tkey-verification:
-	cp -af vendor-signing-pubkeys.txt ./cmd/tkey-verification/vendor-signing-pubkeys.txt
 	CGO_ENABLED=0 go build -trimpath -buildvcs=false ./cmd/tkey-verification
 	./tkey-verification --version
 
