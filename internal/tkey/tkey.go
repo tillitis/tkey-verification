@@ -57,7 +57,7 @@ func NewTKey(devPath string, verbose bool) (*TKey, error) {
 	if devPath == "" {
 		devPath, err = util.DetectSerialPort(true)
 		if err != nil {
-			return nil, nil
+			return nil, fmt.Errorf("no device")
 		}
 	}
 
