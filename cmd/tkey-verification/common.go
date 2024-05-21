@@ -35,16 +35,14 @@ func buildMessage(udiBE, fwHash, pubKey []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func verifyFirmwareHash(expectedFW *Firmware, tk tkey.TKey, expectedPubKey []byte) (*Firmware, error) {
-	if expectedFW == nil {
-		return nil, fmt.Errorf("No known firmware")
-	}
+func verifyFirmwareHash(expectedFW Firmware, tk tkey.TKey, expectedPubKey []byte) (Firmware, error) {
 	fwHash, err := tk.GetFirmwareHash(expectedFW.Size)
 	if err != nil {
-		return nil, fmt.Errorf("GetFirmwareHash failed: %w", err)
+		return Firmware{}, fmt.Errorf("GetFirmwareHash failed: %w", err)
 	}
 	if !bytes.Equal(expectedFW.Hash[:], fwHash) {
-		return nil, fmt.Errorf("TKey does not have expected firmware hash %0x…, but instead %0x…", expectedFW.Hash[:16], fwHash[:16])
+		return Firmware{}, fmt.Errorf("TKey does not have expected firmware hash %0x…, but instead %0x…", expectedFW.Hash[:16], fwHash[:16])
 	}
+
 	return expectedFW, nil
 }
