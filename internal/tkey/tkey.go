@@ -25,7 +25,6 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/tillitis/tkey-verification/internal/util"
 	"github.com/tillitis/tkeyclient"
 	"github.com/tillitis/tkeysign"
 )
@@ -66,7 +65,7 @@ func NewTKey(devPath string, verbose bool) (*TKey, error) {
 	}
 
 	if devPath == "" {
-		devPath, err = util.DetectSerialPort(true)
+		devPath, err = tkeyclient.DetectSerialPort(true)
 		if err != nil {
 			return nil, ErrNoDevice
 		}
