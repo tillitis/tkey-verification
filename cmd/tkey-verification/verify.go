@@ -90,7 +90,7 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 		exit(1)
 	}
 
-	fw, err := verifyFirmwareHash(expectedFw, *tk, pubKey)
+	fw, err := verifyFirmwareHash(*expectedFw, *tk, pubKey)
 	if err != nil {
 		le.Printf("verifyFirmwareHash failed for TKey with UDI: %s, %v\n", tk.Udi.String(), err)
 		exit(1)

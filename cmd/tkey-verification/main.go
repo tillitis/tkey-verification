@@ -104,6 +104,8 @@ Known firmwares:
 Commands:
   serve-signer  Run the server that offers an API for creating vendor signatures.
 
+  sign-challenge Sign a random challenge and verify it against the reported public key
+
   remote-sign   Call the remote signing server to sign for a local TKey.
 
   verify        Verify that a TKey is genuine by extracting the TKey UDI and using it
@@ -160,8 +162,24 @@ Commands:
 		if configFile == "" {
 			configFile = defaultConfigFile
 		}
-		conf := loadRemoteSignConfig(configFile)
-		remoteSign(conf, deviceSignAppBin, devPath, verbose, checkConfigOnly, firmwares)
+		server := loadRemoteSignConfig(configFile)
+		fmt.Printf("server: %#v\n", server)
+
+		if checkConfigOnly {
+			os.Exit(0)
+		}
+
+		remoteSign(server, deviceSignAppBin, devPath, firmwares, verbose)
+
+	case "sign-challenge":
+		udi, pubKey, _, err := signChallenge(devPath, deviceSignAppBin, firmwares, verbose)
+		if err != nil {
+			le.Printf("Couldn't sign challenge: %v\n", err)
+			os.Exit(2)
+		}
+
+		le.Printf("TKey UDI: %s\n", udi.String())
+		le.Printf("Device app public key: %x\n", pubKey)
 
 	case "verify":
 		if baseDir != "" && (showURLOnly || pflag.CommandLine.Lookup("base-url").Changed) {
