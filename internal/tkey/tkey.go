@@ -38,6 +38,17 @@ const (
 	wantAppName1 = "sign"
 )
 
+type constError string
+
+func (err constError) Error() string {
+	return string(err)
+}
+
+const (
+	ErrNoDevice    = constError("no TKey connected")
+	ErrNotFirmware = constError("not firmware")
+)
+
 var le = log.New(os.Stderr, "", 0)
 
 type TKey struct {
@@ -57,34 +68,34 @@ func NewTKey(devPath string, verbose bool) (*TKey, error) {
 	if devPath == "" {
 		devPath, err = util.DetectSerialPort(true)
 		if err != nil {
-			return nil, fmt.Errorf("no device")
+			return nil, ErrNoDevice
 		}
 	}
 
 	tk := tkeyclient.New()
 	le.Printf("Connecting to device on serial port %s ...\n", devPath)
 	if err := tk.Connect(devPath); err != nil {
-		return nil, fmt.Errorf("couldn't open device %s: %w\n", devPath, err)
+		return nil, fmt.Errorf("couldn't open device %s: %w", devPath, err)
 	}
 
 	nameVer, err := tk.GetNameVersion()
 	if err != nil {
 		le.Printf("Please unplug the TKey and plug it in again to put it in firmware-mode.\n")
 		le.Printf("Either the device path (%s) is wrong, or the TKey is not in firmware-mode (already running an app).\n", devPath)
-		return nil, fmt.Errorf("not firmware")
+		return nil, ErrNotFirmware
 	}
 	le.Printf("Firmware name0:'%s' name1:'%s' version:%d\n",
 		nameVer.Name0, nameVer.Name1, nameVer.Version)
 
 	tkUDI, err := tk.GetUDI()
 	if err != nil {
-		return nil, fmt.Errorf("GetUDI failed: %w\n", err)
+		return nil, fmt.Errorf("GetUDI failed: %w", err)
 	}
 
 	var udi UDI
 
 	if err = udi.fromRawLE(tkUDI.RawBytes()); err != nil {
-		return nil, fmt.Errorf("UDI fromRawLE failed: %w\n", err)
+		return nil, fmt.Errorf("UDI fromRawLE failed: %w", err)
 	}
 
 	tkey := TKey{
@@ -114,7 +125,7 @@ func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 
 	// No USS.
 	if err = t.client.LoadApp(bin, []byte{}); err != nil {
-		return nil, fmt.Errorf("Failed to load app: %w\n", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 	if t.verbose {
 		le.Printf("App loaded.\n")
@@ -124,7 +135,7 @@ func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 
 	nameVer, err := t.signer.GetAppNameVersion()
 	if err != nil {
-		return nil, fmt.Errorf("GetAppNameVersion: %w\n", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	if t.verbose {
@@ -140,7 +151,7 @@ func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 
 	pubKey, err := t.signer.GetPubkey()
 	if err != nil {
-		return nil, fmt.Errorf("GetPubKey failed: %w\n", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	return pubKey, nil
@@ -152,7 +163,7 @@ func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 func (t TKey) Sign(message []byte) ([]byte, error) {
 	signature, err := t.signer.Sign(message)
 	if err != nil {
-		return nil, fmt.Errorf("Sign failed: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	return signature, nil
@@ -163,7 +174,7 @@ func (t TKey) Sign(message []byte) ([]byte, error) {
 func (t TKey) GetFirmwareHash(firmwareSize int) ([]byte, error) {
 	fwHash, err := t.signer.GetFWDigest(firmwareSize)
 	if err != nil {
-		return nil, fmt.Errorf("GetFirmwareHash failed: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	return fwHash, nil
