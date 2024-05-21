@@ -23,7 +23,6 @@ check-digests:
 .PHONY: clean
 clean:
 	make -C apps clean
-	rm -f cmd/tkey-verification/vendor-signing-pubkeys.txt
 	rm -f tkey-verification
 
 .PHONY: lint
