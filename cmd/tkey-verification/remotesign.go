@@ -8,29 +8,77 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"fmt"
-	"net"
 	"net/rpc"
 	"os"
 
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-func remoteSign(conf Config, appBin AppBin, devPath string, verbose bool, checkConfigOnly bool, firmwares Firmwares) {
-	tlsConfig := tls.Config{
-		Certificates: []tls.Certificate{
-			loadCert(conf.ClientCert, conf.ClientKey),
-		},
-		RootCAs:    loadCA(conf.CACert),
-		MinVersion: tls.VersionTLS13,
-	}
-
-	_, _, err := net.SplitHostPort(conf.ServerAddr)
+func remoteSign(server Server, appBin AppBin, devPath string, firmwares Firmwares, verbose bool) {
+	udi, pubKey, fw, err := signChallenge(devPath, appBin, firmwares, verbose)
 	if err != nil {
-		le.Printf("Config server: SplitHostPort failed: %s", err)
+		le.Printf("Couldn't sign challenge: %s", err)
 		os.Exit(1)
 	}
 
-	conn, err := tls.Dial("tcp", conf.ServerAddr, &tlsConfig)
+	err = vendorSign(server, udi.Bytes, pubKey, fw, appBin)
+	if err != nil {
+	}
+
+	le.Printf("Remote Sign was successful\n")
+}
+
+// Returns UDI, pubkey, expected firmware, error
+func signChallenge(devPath string, appBin AppBin, firmwares Firmwares, verbose bool) (*tkey.UDI, []byte, Firmware, error) {
+	var fw Firmware
+	tk, err := tkey.NewTKey(devPath, verbose)
+	if err != nil {
+		return nil, nil, fw, fmt.Errorf("Couldn't connect to TKey: %v", err)
+	}
+
+	defer tk.Close()
+
+	le.Printf("Loading device app built from %s ...\n", appBin.String())
+	pubKey, err := tk.LoadSigner(appBin.Bin)
+	if err != nil {
+		return nil, nil, fw, fmt.Errorf("couldn't load device app: %w", err)
+	}
+	le.Printf("TKey UDI: %s\n", tk.Udi.String())
+
+	expectfw, err := firmwares.GetFirmware(tk.Udi)
+	if err != nil {
+		return nil, nil, fw, fmt.Errorf("couldn't find firmware for UDI %s: %w", tk.Udi.String(), err)
+	}
+
+	fw, err = verifyFirmwareHash(*expectfw, *tk, pubKey)
+	if err != nil {
+		return nil, nil, fw, fmt.Errorf("verifyFirmwareHash failed: %w", err)
+	}
+	le.Printf("TKey firmware with size:%d and verified hash:%0x…\n", fw.Size, fw.Hash[:16])
+
+	// Locally generate a challenge and sign it
+	challenge := make([]byte, 32)
+	if _, err = rand.Read(challenge); err != nil {
+		return nil, nil, fw, fmt.Errorf("rand.Read failed: %w", err)
+	}
+
+	signature, err := tk.Sign(challenge)
+	if err != nil {
+		return nil, nil, fw, fmt.Errorf("tkey.Sign failed: %w", err)
+	}
+
+	fmt.Printf("signature: %x\n", signature)
+
+	// Verify the signature against the extracted public key
+	if !ed25519.Verify(pubKey, challenge, signature) {
+		return nil, nil, fw, fmt.Errorf("device signature failed verification!")
+	}
+
+	return &tk.Udi, pubKey, fw, nil
+}
+
+func vendorSign(server Server, udi []byte, pubKey []byte, fw Firmware, appBin AppBin) error {
+	conn, err := tls.Dial("tcp", server.Addr, &server.TlsConfig)
 	if err != nil {
 		le.Printf("Dial failed: %s", err)
 		os.Exit(1)
@@ -42,69 +90,15 @@ func remoteSign(conf Config, appBin AppBin, devPath string, verbose bool, checkC
 	}
 
 	client := rpc.NewClient(conn)
-	err = client.Call("API.Ping", struct{}{}, nil)
-	if err != nil {
-		le.Printf("API.Ping error: %s", err)
-		exit(1)
-	}
 
-	if checkConfigOnly {
-		exit(0)
-	}
-
-	tk, err := tkey.NewTKey("", verbose)
-	if err != nil {
-		le.Printf("Couldn't connect to TKey: %v\n", err)
-		exit(1)
-	}
-
-	le.Printf("Loading device app built from %s ...\n", appBin.String())
-	pubKey, err := tk.LoadSigner(appBin.Bin)
-	if err != nil {
-		fmt.Printf("Couldn't load device app: %v", err)
-		exit(1)
-	}
-	le.Printf("TKey UDI: %s\n", tk.Udi.String())
-
-	expectfw, err := firmwares.GetFirmware(tk.Udi)
-	if err != nil {
-		le.Printf("Couldn't find firmware for UDI %s: %v\n", tk.Udi.String(), err)
-		exit(1)
-	}
-	fw, err := verifyFirmwareHash(expectfw, *tk, pubKey)
-	if err != nil {
-		le.Printf("verifyFirmwareHash failed: %s\n", err)
-		exit(1)
-	}
-	le.Printf("TKey firmware with size:%d and verified hash:%0x…\n", fw.Size, fw.Hash[:16])
-
-	// Locally generate a challenge and sign it
-	challenge := make([]byte, 32)
-	if _, err = rand.Read(challenge); err != nil {
-		le.Printf("rand.Read failed: %s\n", err)
-		exit(1)
-	}
-
-	signature, err := tk.Sign(challenge)
-	if err != nil {
-		le.Printf("tkey.Sign failed: %s", err)
-		exit(1)
-	}
-
-	// Verify the signature against the extracted public key
-	if !ed25519.Verify(pubKey, challenge, signature) {
-		le.Printf("device signature failed verification!")
-		os.Exit(1)
-	}
-
-	msg, err := buildMessage(tk.Udi.Bytes, fw.Hash[:], pubKey)
+	msg, err := buildMessage(udi, fw.Hash[:], pubKey)
 	if err != nil {
 		le.Printf("buildMessage failed: %s", err)
-		os.Exit(1)
+		exit(1)
 	}
 
 	args := Args{
-		UDIBE:   tk.Udi.Bytes,
+		UDIBE:   udi,
 		AppTag:  appBin.Tag,
 		AppHash: appBin.Hash(),
 		Message: msg,
@@ -116,6 +110,5 @@ func remoteSign(conf Config, appBin AppBin, devPath string, verbose bool, checkC
 		exit(1)
 	}
 
-	le.Printf("Remote Sign was successful\n")
-	exit(0)
+	return nil
 }

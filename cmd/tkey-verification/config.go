@@ -4,11 +4,18 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
+	"net"
 	"os"
 
 	"gopkg.in/yaml.v2"
 )
+
+type Server struct {
+	Addr      string
+	TlsConfig tls.Config
+}
 
 type Config struct {
 	CACert     string `yaml:"cacert"`
@@ -33,7 +40,7 @@ func loadServeSignerConfig(fn string) Config {
 	return conf
 }
 
-func loadRemoteSignConfig(fn string) Config {
+func loadRemoteSignConfig(fn string) Server {
 	conf, err := loadConfig(fn)
 	if err != nil {
 		le.Printf("%s\n", err)
@@ -43,7 +50,26 @@ func loadRemoteSignConfig(fn string) Config {
 		le.Printf("Command is \"remote-sign\", but found servercert/serverkey/listen in config file.\n")
 		os.Exit(1)
 	}
-	return conf
+
+	var server Server
+
+	server.TlsConfig = tls.Config{
+		Certificates: []tls.Certificate{
+			loadCert(conf.ClientCert, conf.ClientKey),
+		},
+		RootCAs:    loadCA(conf.CACert),
+		MinVersion: tls.VersionTLS13,
+	}
+
+	_, _, err = net.SplitHostPort(conf.ServerAddr)
+	if err != nil {
+		le.Printf("Config server: %s", err)
+		os.Exit(1)
+	}
+
+	server.Addr = conf.ServerAddr
+
+	return server
 }
 
 func loadConfig(fn string) (Config, error) {
