@@ -1,4 +1,5 @@
 shasum = sha512sum
+CGO = 0
 
 .PHONY: all
 all: tkey-verification
@@ -6,8 +7,7 @@ all: tkey-verification
 # .PHONY to let go-build handle deps and rebuilds
 .PHONY: tkey-verification
 tkey-verification:
-	cp -af vendor-signing-pubkeys.txt ./cmd/tkey-verification/vendor-signing-pubkeys.txt
-	CGO_ENABLED=0 go build -trimpath -buildvcs=false ./cmd/tkey-verification
+	CGO_ENABLED=$(CGO) go build -trimpath -buildvcs=false ./cmd/tkey-verification
 	./tkey-verification --version
 
 .PHONY: podman
