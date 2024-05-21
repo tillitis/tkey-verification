@@ -17,12 +17,14 @@ import (
 func remoteSign(server Server, appBin AppBin, devPath string, firmwares Firmwares, verbose bool) {
 	udi, pubKey, fw, err := signChallenge(devPath, appBin, firmwares, verbose)
 	if err != nil {
-		le.Printf("Couldn't sign challenge: %s", err)
+		le.Printf("Couldn't sign challenge: %s\n", err)
 		os.Exit(1)
 	}
 
 	err = vendorSign(server, udi.Bytes, pubKey, fw, appBin)
 	if err != nil {
+		le.Printf("Couldn't get a vendor signature: %s\n", err)
+		os.Exit(1)
 	}
 
 	le.Printf("Remote Sign was successful\n")
@@ -33,7 +35,7 @@ func signChallenge(devPath string, appBin AppBin, firmwares Firmwares, verbose b
 	var fw Firmware
 	tk, err := tkey.NewTKey(devPath, verbose)
 	if err != nil {
-		return nil, nil, fw, fmt.Errorf("Couldn't connect to TKey: %v", err)
+		return nil, nil, fw, fmt.Errorf("%w", err)
 	}
 
 	defer tk.Close()
@@ -41,7 +43,7 @@ func signChallenge(devPath string, appBin AppBin, firmwares Firmwares, verbose b
 	le.Printf("Loading device app built from %s ...\n", appBin.String())
 	pubKey, err := tk.LoadSigner(appBin.Bin)
 	if err != nil {
-		return nil, nil, fw, fmt.Errorf("couldn't load device app: %w", err)
+		return nil, nil, fw, fmt.Errorf("%w", err)
 	}
 	le.Printf("TKey UDI: %s\n", tk.Udi.String())
 
@@ -52,26 +54,26 @@ func signChallenge(devPath string, appBin AppBin, firmwares Firmwares, verbose b
 
 	fw, err = verifyFirmwareHash(*expectfw, *tk, pubKey)
 	if err != nil {
-		return nil, nil, fw, fmt.Errorf("verifyFirmwareHash failed: %w", err)
+		return nil, nil, fw, fmt.Errorf("%w", err)
 	}
 	le.Printf("TKey firmware with size:%d and verified hash:%0x…\n", fw.Size, fw.Hash[:16])
 
 	// Locally generate a challenge and sign it
 	challenge := make([]byte, 32)
 	if _, err = rand.Read(challenge); err != nil {
-		return nil, nil, fw, fmt.Errorf("rand.Read failed: %w", err)
+		return nil, nil, fw, fmt.Errorf("%w", err)
 	}
 
 	signature, err := tk.Sign(challenge)
 	if err != nil {
-		return nil, nil, fw, fmt.Errorf("tkey.Sign failed: %w", err)
+		return nil, nil, fw, fmt.Errorf("%w", err)
 	}
 
 	fmt.Printf("signature: %x\n", signature)
 
 	// Verify the signature against the extracted public key
 	if !ed25519.Verify(pubKey, challenge, signature) {
-		return nil, nil, fw, fmt.Errorf("device signature failed verification!")
+		return nil, nil, fw, fmt.Errorf("device signature failed verification")
 	}
 
 	return &tk.Udi, pubKey, fw, nil
