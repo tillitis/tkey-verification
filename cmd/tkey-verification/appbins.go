@@ -141,7 +141,7 @@ func NewAppBins(latestHash string) (AppBins, error) {
 			return AppBins{}, fmt.Errorf("Hash of %s does not match hash in %s", binFn, hashFn)
 		}
 
-		appBins.Bins[fmt.Sprintf("%x", hash)] = appBin
+		appBins.Bins[hex.EncodeToString(hash)] = appBin
 	}
 
 	if _, ok := appBins.Bins[latestHash]; ok {
