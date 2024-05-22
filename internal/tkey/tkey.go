@@ -4,18 +4,20 @@
 // Package tkey offers...
 //
 // Start by
-// tk, err := NewTKey("/dev/ttyACM0", false)
+//
+//	tk, err := NewTKey("/dev/ttyACM0", false)
 //
 // Load a signer program:
 //
-// err := tk.LoadSigner(...)
+//	pubkey, err := tk.LoadSigner(...)
 //
 // Ask it to sign something
 //
-// sig, err := tk.Sign(message)
+//	sig, err := tk.Sign(message)
 //
-// digest, err = tk.GetFirmwareHash(4711)
-//
+//	digest, err = tk.GetFirmwareHash(4711)
+//	tk.Close()
+
 package tkey
 
 import (
@@ -97,7 +99,7 @@ func NewTKey(devPath string, verbose bool) (*TKey, error) {
 	return &tkey, nil
 }
 
-// GetUDI gets the UDI of a TKey that must be in firmware-mode.
+// GetUDI gets the UDI of a TKey
 func (t TKey) GetUDI() UDI {
 	return t.Udi
 }
@@ -106,10 +108,9 @@ func (t TKey) Close() {
 	t.client.Close()
 }
 
-// LoadSigner gets the UDI of a TKey that must be in firmware-mode. It
-// then loads the passed device app onto the TKey (with no USS),
-// starts it, and gets the public key from it. Returns the UDI
-// (BigEndian, BE), public key, and a true bool if successful.
+// LoadSigner loads device app BIN without USS.
+//
+// Returns the public key and any error.
 func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 	var err error
 
@@ -142,8 +143,7 @@ func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 }
 
 // Sign connects to a TKey and asks an already running device app to
-// sign a message. The public key of the device app must be
-// expectedPubKey.
+// sign a message.
 func (t TKey) Sign(message []byte) ([]byte, error) {
 	signature, err := t.signer.Sign(message)
 	if err != nil {
