@@ -14,7 +14,7 @@ import (
 
 type Server struct {
 	Addr      string
-	TlsConfig tls.Config
+	TLSConfig tls.Config
 }
 
 type Config struct {
@@ -53,7 +53,7 @@ func loadRemoteSignConfig(fn string) Server {
 
 	var server Server
 
-	server.TlsConfig = tls.Config{
+	server.TLSConfig = tls.Config{
 		Certificates: []tls.Certificate{
 			loadCert(conf.ClientCert, conf.ClientKey),
 		},
