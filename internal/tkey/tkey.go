@@ -133,12 +133,6 @@ func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 			nameVer.Name0, nameVer.Name1, nameVer.Version)
 	}
 
-	// not caring about nameVer.Version
-	// if nameVer.Name0 != wantAppName0 || nameVer.Name1 != wantAppName1 {
-	// 	le.Printf("Expected app name0:'%s' name1:'%s'\n", wantAppName0, wantAppName1)
-	// 	return nil, nil, false
-	// }
-
 	pubKey, err := t.signer.GetPubkey()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
