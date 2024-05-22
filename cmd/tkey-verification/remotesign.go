@@ -14,7 +14,7 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-func remoteSign(server Server, appBin AppBin, devPath string, firmwares Firmwares, verbose bool) {
+func remoteSign(server *Server, appBin AppBin, devPath string, firmwares Firmwares, verbose bool) {
 	udi, pubKey, fw, err := signChallenge(devPath, appBin, firmwares, verbose)
 	if err != nil {
 		le.Printf("Couldn't sign challenge: %s\n", err)
@@ -79,7 +79,7 @@ func signChallenge(devPath string, appBin AppBin, firmwares Firmwares, verbose b
 	return &tk.Udi, pubKey, fw, nil
 }
 
-func vendorSign(server Server, udi []byte, pubKey []byte, fw Firmware, appBin AppBin) error {
+func vendorSign(server *Server, udi []byte, pubKey []byte, fw Firmware, appBin AppBin) error {
 	conn, err := tls.Dial("tcp", server.Addr, &server.TLSConfig)
 	if err != nil {
 		return fmt.Errorf("dial failed: %w", err)
