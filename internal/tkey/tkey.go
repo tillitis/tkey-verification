@@ -49,13 +49,13 @@ type TKey struct {
 }
 
 func NewTKey(devPath string, verbose bool) (*TKey, error) {
-	var err error
-
 	if !verbose {
 		tkeyclient.SilenceLogging()
 	}
 
 	if devPath == "" {
+		var err error
+
 		devPath, err = tkeyclient.DetectSerialPort(true)
 		if err != nil {
 			return nil, ErrNoDevice
