@@ -52,7 +52,7 @@ func signChallenge(devPath string, appBin AppBin, firmwares Firmwares, verbose b
 		return nil, nil, fw, fmt.Errorf("couldn't find firmware for UDI %s: %w", tk.Udi.String(), err)
 	}
 
-	fw, err = verifyFirmwareHash(*expectfw, *tk, pubKey)
+	fw, err = verifyFirmwareHash(*expectfw, *tk)
 	if err != nil {
 		return nil, nil, fw, fmt.Errorf("%w", err)
 	}
