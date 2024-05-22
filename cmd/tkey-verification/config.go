@@ -40,7 +40,7 @@ func loadServeSignerConfig(fn string) Config {
 	return conf
 }
 
-func loadRemoteSignConfig(fn string) Server {
+func loadRemoteSignConfig(fn string) *Server {
 	conf, err := loadConfig(fn)
 	if err != nil {
 		le.Printf("%s\n", err)
@@ -69,7 +69,7 @@ func loadRemoteSignConfig(fn string) Server {
 
 	server.Addr = conf.ServerAddr
 
-	return server
+	return &server
 }
 
 func loadConfig(fn string) (Config, error) {
