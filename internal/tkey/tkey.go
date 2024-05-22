@@ -16,7 +16,6 @@
 //
 // digest, err = tk.GetFirmwareHash(4711)
 //
-
 package tkey
 
 import (
@@ -27,14 +26,6 @@ import (
 
 	"github.com/tillitis/tkeyclient"
 	"github.com/tillitis/tkeysign"
-)
-
-const (
-	// 4 chars each.
-	wantFWName0  = "tk1 "
-	wantFWName1  = "mkdf"
-	wantAppName0 = "veri"
-	wantAppName1 = "sign"
 )
 
 type constError string
