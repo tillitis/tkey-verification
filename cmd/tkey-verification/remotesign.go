@@ -80,23 +80,16 @@ func signChallenge(devPath string, appBin AppBin, firmwares Firmwares, verbose b
 }
 
 func vendorSign(server Server, udi []byte, pubKey []byte, fw Firmware, appBin AppBin) error {
-	conn, err := tls.Dial("tcp", server.Addr, &server.TlsConfig)
+	conn, err := tls.Dial("tcp", server.Addr, &server.TLSConfig)
 	if err != nil {
-		le.Printf("Dial failed: %s", err)
-		os.Exit(1)
-	}
-
-	exit := func(code int) {
-		conn.Close()
-		os.Exit(code)
+		return fmt.Errorf("dial failed: %w", err)
 	}
 
 	client := rpc.NewClient(conn)
 
 	msg, err := buildMessage(udi, fw.Hash[:], pubKey)
 	if err != nil {
-		le.Printf("buildMessage failed: %s", err)
-		exit(1)
+		return fmt.Errorf("couldn't build message for vendor signing: %w", err)
 	}
 
 	args := Args{
@@ -108,8 +101,7 @@ func vendorSign(server Server, udi []byte, pubKey []byte, fw Firmware, appBin Ap
 
 	err = client.Call("API.Sign", &args, nil)
 	if err != nil {
-		le.Printf("API.Sign error: %s", err)
-		exit(1)
+		return fmt.Errorf("vendor signing: %w", err)
 	}
 
 	return nil
