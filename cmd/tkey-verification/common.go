@@ -35,7 +35,7 @@ func buildMessage(udiBE, fwHash, pubKey []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func verifyFirmwareHash(expectedFW Firmware, tk tkey.TKey, expectedPubKey []byte) (Firmware, error) {
+func verifyFirmwareHash(expectedFW Firmware, tk tkey.TKey) (Firmware, error) {
 	fwHash, err := tk.GetFirmwareHash(expectedFW.Size)
 	if err != nil {
 		return Firmware{}, fmt.Errorf("GetFirmwareHash failed: %w", err)
