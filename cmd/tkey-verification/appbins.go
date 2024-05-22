@@ -66,7 +66,6 @@ func (a AppBins) Get(hash string) (AppBin, error) {
 	return AppBin{}, fmt.Errorf("not found")
 }
 
-// nolint:typecheck // Avoid lint error when the embedding file is missing.
 //go:embed bins/*.bin bins/*.bin.sha512
 var binsFS embed.FS
 
