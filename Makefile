@@ -22,7 +22,6 @@ check-digests:
 
 .PHONY: clean
 clean:
-	make -C apps clean
 	rm -f tkey-verification
 
 .PHONY: lint
