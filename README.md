@@ -29,7 +29,9 @@ install podman rootlesskit slirp4netns` should be enough.
   half is a random serial number.
 - "signing server": An HSM-like machine providing signatures over
   messages and producing files to be uploaded later.
-- "signer": The TKey program verisigner (kept in this repository)
+- "signer": The device app verisigner (kept in this repository, look
+  for versigner tags) or
+  [tkey-device-signer](https://github.com/tillitis/tkey-device-signer).
 - "signer public key": The public key of signer running on the device
   under verification.
 - "vendor signature": A signature made by the signing server.
@@ -91,27 +93,10 @@ repo](https://github.com/tillitis/tillitis-key1-apps/) as a sibling to
 this repo, as it contains dependencies). The use of containers
 currently requires a working rootless podman setup.
 
-1. First get all app binaries built. The make command below runs a
-   script which builds verisigner binaries from all tags named
-   "verisigner-vX.Y.Z" and places them in
-   `internal/appbins/bins/TAG.bin`. The scripts sets which tag of the
-   tillitis-key1-apps repository to use by default. The script clones
-   the repository inside a container, so the verisigner-tags need to
-   have been pushed to the remote. Further details:
-
-   - If a .bin.deps-file exists, its contents are used to set the
-     apps-repo tag to use for the build, otherwise the file is created
-     with the used default tag.
-   - If a .bin.sha512-file is present, the built binary is verified
-     against it, otherwise that file is created.
-   - If the .bin-file already exists, it is directly verified using
-     the .bin.sha512-file.
-
-   ```
-   make appbins-from-tags
-   ```
-
-   Note: the .deps- and .sha512-files are to be committed to the repo!
+1. The device apps used for signing is included in binary form under
+   `cmd/tkey-verification/bins/`. See more info under [Building
+   included device apps](#building-included-device-apps) if you want to
+   build them yourself.
 
 2. `tkey-verification` contains an in-code database mapping known
    hardware revisions (1st half of UDI) to their expected firmware
