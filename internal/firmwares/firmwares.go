@@ -85,6 +85,11 @@ func initFirmwares() error {
 		return err
 	}
 
+	err = addFirmware("01337082", 0x1337, 2, 2, 4160, "06d0aafcc763307420380a8c5a324f3fccfbba6af7ff6fe0facad684ebd69dd43234c8531a096c77c2dc3543f8b8b629c94136ca7e257ca560da882e4dbbb025")
+	if err != nil {
+		return err
+	}
+
 	if len(firmwares) == 0 {
 		return fmt.Errorf("Got no firmwares from the embedded data")
 	}
