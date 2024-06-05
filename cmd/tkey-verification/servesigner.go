@@ -24,7 +24,7 @@ type Verification struct {
 	Signature string `json:"signature"`
 }
 
-func serveSigner(conf Config, vendorPubKey PubKey, devPath string, verbose bool, checkConfigOnly bool) {
+func serveSigner(conf Config, devPath string, verbose bool, checkConfigOnly bool) {
 	tlsConfig := tls.Config{
 		Certificates: []tls.Certificate{
 			loadCert(conf.ServerCert, conf.ServerKey),
@@ -39,6 +39,20 @@ func serveSigner(conf Config, vendorPubKey PubKey, devPath string, verbose bool,
 		le.Printf("Config listen: SplitHostPort failed: %s", err)
 		os.Exit(1)
 	}
+
+	appBins, err := NewAppBins(latestAppHash)
+	if err != nil {
+		fmt.Printf("Failed to init embedded device apps: %v\n", err)
+		os.Exit(1)
+	}
+
+	vendorKeys, err := NewVendorKeys(appBins, currentVendorHash)
+	if err != nil {
+		le.Printf("Found no usable embedded vendor signing public key\n")
+		os.Exit(1)
+	}
+
+	vendorPubKey := vendorKeys.Current()
 
 	if checkConfigOnly {
 		os.Exit(0)
