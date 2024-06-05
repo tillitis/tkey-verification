@@ -17,7 +17,6 @@
 //
 //	digest, err = tk.GetFirmwareHash(4711)
 //	tk.Close()
-
 package tkey
 
 import (
@@ -28,17 +27,6 @@ import (
 
 	"github.com/tillitis/tkeyclient"
 	"github.com/tillitis/tkeysign"
-)
-
-type constError string
-
-func (err constError) Error() string {
-	return string(err)
-}
-
-const (
-	ErrNoDevice    = constError("no TKey connected")
-	ErrNotFirmware = constError("not firmware")
 )
 
 var le = log.New(os.Stderr, "", 0)
@@ -67,7 +55,7 @@ func NewTKey(devPath string, verbose bool) (*TKey, error) {
 	tk := tkeyclient.New()
 	le.Printf("Connecting to device on serial port %s ...\n", devPath)
 	if err := tk.Connect(devPath); err != nil {
-		return nil, fmt.Errorf("couldn't open device %s: %w", devPath, err)
+		return nil, ConnError{devPath: devPath, err: err}
 	}
 
 	nameVer, err := tk.GetNameVersion()
@@ -81,13 +69,13 @@ func NewTKey(devPath string, verbose bool) (*TKey, error) {
 
 	tkUDI, err := tk.GetUDI()
 	if err != nil {
-		return nil, fmt.Errorf("GetUDI failed: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	var udi UDI
 
 	if err = udi.fromRawLE(tkUDI.RawBytes()); err != nil {
-		return nil, fmt.Errorf("UDI fromRawLE failed: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	tkey := TKey{

@@ -27,12 +27,12 @@ func (u *UDI) String() string {
 // Identifier (as from the firmware protocol) to Big Endian.
 func (u *UDI) fromRawLE(udiLE []byte) error {
 	if l := len(udiLE); l != UDISize {
-		return fmt.Errorf("UDILE is %d bytes, expected %d", l, UDISize)
+		return ErrWrongUDILen
 	}
 
 	vpr := binary.LittleEndian.Uint32(udiLE[0:4])
 	if reserved := uint8((vpr >> 28) & 0xf); reserved != 0 {
-		return fmt.Errorf("UDI: 4 reserved bits are not zero (%d)", reserved)
+		return ErrWrongUDIData
 	}
 	u.VendorID = uint16((vpr >> 12) & 0xffff)
 	u.ProductID = uint8((vpr >> 6) & 0x3f)
