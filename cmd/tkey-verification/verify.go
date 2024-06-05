@@ -18,7 +18,26 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, verifyBaseURL string, appBins AppBins, vendorKeys VendorKeys, firmwares Firmwares) {
+func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, verifyBaseURL string) {
+
+	appBins, err := NewAppBins(latestAppHash)
+	if err != nil {
+		fmt.Printf("Failed to init embedded device apps: %v\n", err)
+		os.Exit(1)
+	}
+
+	vendorKeys, err := NewVendorKeys(appBins, currentVendorHash)
+	if err != nil {
+		le.Printf("Found no usable embedded vendor signing public key\n")
+		os.Exit(1)
+	}
+
+	firmwares, err := NewFirmwares()
+	if err != nil {
+		le.Printf("Found no usable firmwares\n")
+		os.Exit(1)
+	}
+
 	tk, err := tkey.NewTKey(devPath, verbose)
 	if err != nil {
 		le.Printf("Couldn't connect to TKey: %v\n", err)

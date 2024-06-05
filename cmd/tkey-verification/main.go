@@ -1,4 +1,4 @@
-// Copyright (C) 2022, 2023 - Tillitis AB
+// Copyright (C) 2022-2024 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
 package main
@@ -7,11 +7,18 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"runtime/debug"
 	"strings"
 
 	"github.com/spf13/pflag"
 )
+
+// Define this to point to the current vendor signing public
+// key by setting it to the hash of the binary that was used
+// for signatures.
+const currentVendorHash = "f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142"
+
+// Hash of latest signer, to be used for new vendor signing
+const latestAppHash = "cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4"
 
 const progname = "tkey-verification"
 
@@ -28,57 +35,12 @@ var version string
 var le = log.New(os.Stderr, "", 0)
 
 func main() {
-	// Define this to point to the current vendor signing public
-	// key by setting it to the hash of the binary that was used
-	// for signatures.
-	const currentVendorHash = "f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142"
-
-	// Hash of latest signer, to be used for new vendor signing
-	const latestAppHash = "fe4458e4125966885d9b745a25422948d76e60371165b97729fce1b423f22b87929c684b4381f2220aa0c94266ba035730d5f08a6e6e0aab7d7bf15165d2fff6"
+	var devPath, baseURL, baseDir, configFile, binPath string
+	var checkConfigOnly, verbose, showURLOnly, versionOnly, build, helpOnly bool
 
 	if version == "" {
 		version = readBuildInfo()
 	}
-
-	appBins, err := NewAppBins(latestAppHash)
-	if err != nil {
-		fmt.Printf("Failed to init embedded device apps: %v\n", err)
-		os.Exit(1)
-	}
-
-	deviceSignAppBin := appBins.Latest()
-
-	vendorKeys, err := NewVendorKeys(appBins, currentVendorHash)
-	if err != nil {
-		le.Printf("Found no usable embedded vendor signing public key\n")
-		os.Exit(1)
-	}
-
-	vendorPubKey := vendorKeys.Current()
-
-	firmwares, err := NewFirmwares()
-	if err != nil {
-		le.Printf("Found no usable firmwares\n")
-		os.Exit(1)
-	}
-
-	builtWith := fmt.Sprintf(`Built with:
-Supported verisigner-app tags:
-  %s
-Device signing using:
-  %s
-Vendor signing:
-  %s
-Known firmwares:
-  %s
-`,
-		strings.Join(appBins.Tags(), " \n  "),
-		deviceSignAppBin.String(),
-		vendorPubKey.String(),
-		strings.Join(firmwares.List(), " \n  "))
-
-	var devPath, baseURL, baseDir, configFile, binPath string
-	var checkConfigOnly, verbose, showURLOnly, versionOnly, helpOnly bool
 
 	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.CommandLine.SortFlags = false
@@ -99,34 +61,9 @@ Known firmwares:
 	pflag.StringVarP(&binPath, "app", "a", "",
 		"`PATH` to the device app to show vendor signing pubkey (command: show-pubkey).")
 	pflag.BoolVar(&versionOnly, "version", false, "Output version information.")
+	pflag.BoolVar(&build, "build", false, "Output build data about included device apps and firmwares")
 	pflag.BoolVar(&helpOnly, "help", false, "Output this help.")
-	pflag.Usage = func() {
-		desc := fmt.Sprintf(`Usage: %s command [flags...]
-
-Commands:
-  serve-signer  Run the server that offers an API for creating vendor signatures.
-
-  sign-challenge Sign a random challenge and verify it against the reported public key
-
-  remote-sign   Call the remote signing server to sign for a local TKey.
-
-  verify        Verify that a TKey is genuine by extracting the TKey UDI and using it
-                to fetch the verification data, including tag and signature from the
-                web. Then running the correct verisigner-app on the TKey, extracting
-                the public key and verifying it using the vendor's signing public key.
-
-                The flags --show-url and --base-dir can be used to show the URL for
-                downloading the verification data on one machine, and verifying the
-                TKey on another machine that lacks network, see more below.
-
-  show-pubkey	Prints the info needed for the vendor-signing-pubkeys.txt to stdout.
-		This includes public key, app tag, and app hash in the right format.
-
-		Use the flag --app to specify the path o the desired app to use, i.e.,
-		tkey-verification show-pubkey --app /path/to/app`, progname)
-
-		le.Printf("%s\n\nFlags:\n%s\n%s", desc, pflag.CommandLine.FlagUsagesWrapped(86), builtWith)
-	}
+	pflag.Usage = usage
 	pflag.Parse()
 
 	if helpOnly {
@@ -134,9 +71,15 @@ Commands:
 		os.Exit(0)
 	}
 	if versionOnly {
-		fmt.Printf("%s %s\n\n%s", progname, version, builtWith)
+		fmt.Printf("%s %s\n", progname, version)
 		os.Exit(0)
 	}
+
+	if build {
+		builtWith()
+		os.Exit(0)
+	}
+
 	if pflag.NArg() != 1 {
 		if pflag.NArg() > 1 {
 			le.Printf("Unexpected argument: %s\n\n", strings.Join(pflag.Args()[1:], " "))
@@ -163,7 +106,7 @@ Commands:
 	switch cmd {
 	case "serve-signer":
 		conf := loadServeSignerConfig(configFile)
-		serveSigner(conf, vendorPubKey, devPath, verbose, checkConfigOnly)
+		serveSigner(conf, devPath, verbose, checkConfigOnly)
 
 	case "remote-sign":
 		if configFile == "" {
@@ -175,10 +118,10 @@ Commands:
 			os.Exit(0)
 		}
 
-		remoteSign(server, deviceSignAppBin, devPath, firmwares, verbose)
+		remoteSign(server, devPath, verbose)
 
 	case "sign-challenge":
-		udi, pubKey, _, err := signChallenge(devPath, deviceSignAppBin, firmwares, verbose)
+		_, udi, pubKey, _, err := signChallenge(devPath, verbose)
 		if err != nil {
 			le.Printf("Couldn't sign challenge: %v\n", err)
 			os.Exit(2)
@@ -193,7 +136,7 @@ Commands:
 			os.Exit(2)
 		}
 
-		verify(devPath, verbose, showURLOnly, baseDir, baseURL, appBins, vendorKeys, firmwares)
+		verify(devPath, verbose, showURLOnly, baseDir, baseURL)
 
 	case "show-pubkey":
 		if binPath == "" {
@@ -207,19 +150,4 @@ Commands:
 		pflag.Usage()
 		os.Exit(2)
 	}
-}
-
-func readBuildInfo() string {
-	version := "devel without BuildInfo"
-	if info, ok := debug.ReadBuildInfo(); ok {
-		sb := strings.Builder{}
-		sb.WriteString("devel")
-		for _, setting := range info.Settings {
-			if strings.HasPrefix(setting.Key, "vcs") {
-				sb.WriteString(fmt.Sprintf(" %s=%s", setting.Key, setting.Value))
-			}
-		}
-		version = sb.String()
-	}
-	return version
 }
