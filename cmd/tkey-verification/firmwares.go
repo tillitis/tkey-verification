@@ -40,7 +40,7 @@ func (f Firmwares) GetFirmware(udi tkey.UDI) (*Firmware, error) {
 }
 
 func (f Firmwares) List() []string {
-	var list []string
+	list := []string{}
 	for hw, fw := range f.firmwares {
 		list = append(list, fmt.Sprintf("VendorID:0x%04x ProductID:%d ProductRev:%d [0x%s] with size:%d hash:%0x…",
 			hw.VendorID, hw.ProductID, hw.ProductRev, hw.toUDI0BEhex(), fw.Size, fw.Hash[:16]))
