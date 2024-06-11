@@ -104,13 +104,12 @@ currently requires a working rootless podman setup.
    [internal/firmwares/firmwares.go](internal/firmwares/firmwares.go)
 
 3. Build the `tkey-verification` tool with the test file containing
-   public key(s) for vendor signing/verify. Also build CA, server, and
-   client certs:
+   public key(s) for vendor signing/verify.
 
    ```
    $ cp test-vendor-signing-pubkeys.txt cmd/tkey-verification/vendor-signing-pubkeys.txt
    $ make
-   $ make certs
+
    ```
 
    The tag of the verisigner-app to run on the device under
@@ -128,7 +127,38 @@ currently requires a working rootless podman setup.
    you need to adjust the certificate generation in the
    [Makefile](Makefile).
 
-4. You now need 1 TKey and 1 QEMU machine running to try this out (or
+## Certificates
+
+For your convenience we include a test CA and some test certificates
+in `certs`. They expire 10 years after being generated.
+
+If you need to rebuild CA, server, and client certs you can use any
+ordinary X.509 certificate tools like GnuTLS's certtool or OpenSSL to
+generate your certificates.
+
+You can also install the small [certstrap
+tool](https://github.com/square/certstrap) and run:
+
+```
+$ make certs
+```
+
+## Building included device apps
+
+The device apps used for signing is included in binary form under
+`cmd/tkey-verification/bins/`.
+
+Reproducible versions of the device app `verisigner` binary included
+in this repo can be built from earlier tags. See the earlier tags and
+instructions there.
+
+The
+[tkey-device-signer](https://github.com/tillitis/tkey-device-signer)
+binary can be built reproducible from corresponding tags.
+
+## Testing
+
+-  You need 1 TKey and 1 QEMU machine running to try this out (or
    2 TKeys, or 2 QEMU machines, if you manage to get that working).
    One is Tillitis' (vendor's) signing TKey, and the other is a TKey
    that you want to sign and then verify as genuine. You need to know

@@ -11,6 +11,7 @@ cd ..
 tag="SPDX-License-Identifier:"
 
 missingok_dirs=(
+    certs
 )
 
 missingok_files=(
@@ -33,10 +34,6 @@ cmd/tkey-verification/bins/verisigner-v0.0.3.bin
 cmd/tkey-verification/bins/verisigner-v0.0.3.bin.deps
 cmd/tkey-verification/bins/verisigner-v0.0.3.bin.sha512
 cmd/tkey-verification/vendor-signing-pubkeys.txt
-gon.hcl
-gotools/Makefile
-gotools/go.mod
-gotools/go.sum
 release-builds/tkey-verification_0.0.2_linux-amd64.sha512
 release-builds/tkey-verification_0.0.2_macos-amd64.sha512
 release-builds/tkey-verification_0.0.2_macos-arm64.sha512
