@@ -16,6 +16,8 @@ missingok_dirs=(
 missingok_files=(
 .editorconfig
 .gitignore
+.github/workflows/ci.yaml
+.github/workflows/golangci-lint.yml
 .golangci.yml
 .goreleaser.yaml
 LICENSE
