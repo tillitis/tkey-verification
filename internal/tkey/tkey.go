@@ -24,6 +24,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/tillitis/tkeyclient"
 	"github.com/tillitis/tkeysign"
@@ -52,13 +53,26 @@ func NewTKey(devPath string, verbose bool) (*TKey, error) {
 		}
 	}
 
-	tk := tkeyclient.New()
+	// Initialize part of tkey - UDI is filled in later when we
+	// have a connection. See below.
+	tkey := TKey{
+		client:  *tkeyclient.New(),
+		verbose: verbose,
+	}
+
 	le.Printf("Connecting to device on serial port %s ...\n", devPath)
-	if err := tk.Connect(devPath); err != nil {
+	if err := tkey.client.Connect(devPath); err != nil {
 		return nil, ConnError{devPath: devPath, err: err}
 	}
 
-	nameVer, err := tk.GetNameVersion()
+	// We now have a connection, so close it if we get any of
+	// these signals.
+	handleSignals(func() {
+		tkey.Close()
+		os.Exit(1)
+	}, os.Interrupt, syscall.SIGTERM)
+
+	nameVer, err := tkey.client.GetNameVersion()
 	if err != nil {
 		le.Printf("Please unplug the TKey and plug it in again to put it in firmware-mode.\n")
 		le.Printf("Either the device path (%s) is wrong, or the TKey is not in firmware-mode (already running an app).\n", devPath)
@@ -67,7 +81,7 @@ func NewTKey(devPath string, verbose bool) (*TKey, error) {
 	le.Printf("Firmware name0:'%s' name1:'%s' version:%d\n",
 		nameVer.Name0, nameVer.Name1, nameVer.Version)
 
-	tkUDI, err := tk.GetUDI()
+	tkUDI, err := tkey.client.GetUDI()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -78,11 +92,7 @@ func NewTKey(devPath string, verbose bool) (*TKey, error) {
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	tkey := TKey{
-		client:  *tk,
-		Udi:     udi,
-		verbose: verbose,
-	}
+	tkey.Udi = udi
 
 	return &tkey, nil
 }
