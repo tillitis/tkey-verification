@@ -49,7 +49,6 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 		os.Exit(code)
 	}
 
-	fmt.Printf("tk: %#v\n", tk)
 	le.Printf("TKey UDI: %s\n", tk.Udi.String())
 	verifyURL := fmt.Sprintf("%s/%s", verifyBaseURL, hex.EncodeToString(tk.Udi.Bytes))
 
