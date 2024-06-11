@@ -11,22 +11,8 @@ import (
 	"fmt"
 	"io/fs"
 	"path"
-	"regexp"
 	"sort"
 	"strings"
-)
-
-var (
-	// Appbin names (without .bin suffix) to ignore when embedding.
-	// Useful when needed to tag verisigner versions during
-	// development (and wanted tag names that follow the "live"
-	// pattern). Note that we currently duplicate this in the build
-	// script ../../build-appbins-from-tags.sh
-	ignoreBins = []string{"verisigner-v0.0.1", "verisigner-v0.0.2"}
-
-	// For filtering tags when picking device signing appbin:
-	prefix = "verisigner"
-	tagRE  = regexp.MustCompile(fmt.Sprintf(`^%s-v([0-9]+)\.([0-9]+)\.([0-9]+)$`, prefix))
 )
 
 type AppBin struct {
@@ -72,7 +58,7 @@ var binsFS embed.FS
 const binsDir = "bins"
 
 func (a AppBins) Tags() []string {
-	var tags []string
+	tags := []string{}
 
 	for _, appBin := range a.Bins {
 		tags = append(tags, appBin.Tag)

@@ -22,10 +22,10 @@ linters:
     - gofumpt
     - nestif
     - exhaustruct  # TODO? annoying for now
-    - err113  # TODO enable later
     - godot
     - depguard
     - noctx
+    - unparam
 
 issues:
   max-issues-per-linter: 0
