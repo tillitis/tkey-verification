@@ -127,8 +127,7 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 		exit(1)
 	}
 
-	// Verify vendor's signature over known message. Note: we
-	// currently only support 1 single vendor signing pubkey
+	// Verify vendor's signature over known message.
 	vendorPubKey := vendorKeys.Current().PubKey
 	msg, err := buildMessage(tk.Udi.Bytes, fw.Hash[:], pubKey)
 	if err != nil {
