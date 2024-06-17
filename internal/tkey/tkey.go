@@ -47,7 +47,7 @@ func NewTKey(devPath string, verbose bool) (*TKey, error) {
 	if devPath == "" {
 		var err error
 
-		devPath, err = tkeyclient.DetectSerialPort(true)
+		devPath, err = tkeyclient.DetectSerialPort(verbose)
 		if err != nil {
 			return nil, ErrNoDevice
 		}
@@ -60,7 +60,10 @@ func NewTKey(devPath string, verbose bool) (*TKey, error) {
 		verbose: verbose,
 	}
 
-	le.Printf("Connecting to device on serial port %s ...\n", devPath)
+	if verbose {
+		le.Printf("Connecting to device on serial port %s ...\n", devPath)
+	}
+
 	if err := tkey.client.Connect(devPath); err != nil {
 		return nil, ConnError{devPath: devPath, err: err}
 	}
@@ -78,8 +81,11 @@ func NewTKey(devPath string, verbose bool) (*TKey, error) {
 		le.Printf("Either the device path (%s) is wrong, or the TKey is not in firmware-mode (already running an app).\n", devPath)
 		return nil, ErrNotFirmware
 	}
-	le.Printf("Firmware name0:'%s' name1:'%s' version:%d\n",
-		nameVer.Name0, nameVer.Name1, nameVer.Version)
+
+	if verbose {
+		le.Printf("Firmware name0:'%s' name1:'%s' version:%d\n",
+			nameVer.Name0, nameVer.Name1, nameVer.Version)
+	}
 
 	tkUDI, err := tkey.client.GetUDI()
 	if err != nil {
