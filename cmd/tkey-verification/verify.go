@@ -68,6 +68,10 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 			exit(1)
 		}
 	} else {
+		if verbose {
+			le.Printf("Fetching verification data from %s ...\n", verifyURL)
+		}
+
 		verification, err = verificationFromURL(verifyURL)
 		if err != nil {
 			le.Printf("verificationFromURL failed: %s\n", err)
@@ -113,7 +117,9 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 		le.Printf("verifyFirmwareHash failed for TKey with UDI: %s, %v\n", tk.Udi.String(), err)
 		exit(1)
 	}
-	le.Printf("TKey firmware was verified, size:%d hash:%0x…\n", fw.Size, fw.Hash[:16])
+	if verbose {
+		le.Printf("TKey firmware was verified, size:%d hash:%0x…\n", fw.Size, fw.Hash[:16])
+	}
 
 	vSignature, err := hex.DecodeString(verification.Signature)
 	if err != nil {
@@ -161,7 +167,6 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 func verificationFromURL(verifyURL string) (Verification, error) {
 	var verification Verification
 
-	le.Printf("Fetching verification data from %s ...\n", verifyURL)
 	client := http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(verifyURL) // #nosec G107
 	if err != nil {
