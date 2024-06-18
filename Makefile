@@ -21,6 +21,9 @@ check-digests:
 	$(shasum) -c signer-v1.0.1.bin.sha512 && \
 	$(shasum) -c verisigner-v0.0.3.bin.sha512
 
+.PHONY: man
+man: doc/tkey-verification.1
+
 doc/tkey-verification.1: doc/tkey-verification.scd
 	scdoc < $^ > $@
 

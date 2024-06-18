@@ -173,6 +173,8 @@ Verifying the identity of a Tillitis TKey using a networked computer.
 
 ```
 $ tkey-verification verify
+TKey UDI: 0x0133708100000002(BE) VendorID: 0x1337 ProductID: 2 ProductRev: 1
+TKey is genuine!
 ```
 
 Verifying the identity with a non-networked computer: First
@@ -187,6 +189,9 @@ Unique Device Identifier. and run:
 
 ```
 $ tkey-verification verify -d=.
+TKey UDI: 0x0133708100000002(BE) VendorID: 0x1337 ProductID: 2 ProductRev: 1
+Reading verification data from file ./0133708100000002 ...
+TKey is genuine!
 ```
 
 In order to include a new vendor signing key, use:
