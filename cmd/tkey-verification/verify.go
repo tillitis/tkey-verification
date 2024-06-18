@@ -1,4 +1,4 @@
-// Copyright (C) 2022, 2023 - Tillitis AB
+// Copyright (C) 2022-2024 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
 package main
@@ -18,29 +18,31 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
+const verifyInfoURL = "https://www.tillitis.se/verify"
+
 func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, verifyBaseURL string) {
 
 	appBins, err := NewAppBins(latestAppHash)
 	if err != nil {
-		fmt.Printf("Failed to init embedded device apps: %v\n", err)
+		missing(fmt.Sprintf("no embedded device apps: %v", err))
 		os.Exit(1)
 	}
 
 	vendorKeys, err := NewVendorKeys(appBins, currentVendorHash)
 	if err != nil {
-		le.Printf("Found no usable embedded vendor signing public key\n")
+		missing("no vendor signing public key")
 		os.Exit(1)
 	}
 
 	firmwares, err := NewFirmwares()
 	if err != nil {
-		le.Printf("Found no usable firmwares\n")
+		missing("no firmware digests")
 		os.Exit(1)
 	}
 
 	tk, err := tkey.NewTKey(devPath, verbose)
 	if err != nil {
-		le.Printf("Couldn't connect to TKey: %v\n", err)
+		commFailed(err.Error())
 		os.Exit(1)
 	}
 
@@ -50,6 +52,7 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 	}
 
 	le.Printf("TKey UDI: %s\n", tk.Udi.String())
+
 	verifyURL := fmt.Sprintf("%s/%s", verifyBaseURL, hex.EncodeToString(tk.Udi.Bytes))
 
 	if showURLOnly {
@@ -64,7 +67,7 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 		p := path.Join(baseDir, hex.EncodeToString(tk.Udi.Bytes))
 		verification, err = verificationFromFile(p)
 		if err != nil {
-			le.Printf("verificationFromFile failed: %s\n", err)
+			commFailed(err.Error())
 			exit(1)
 		}
 	} else {
@@ -74,7 +77,7 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 
 		verification, err = verificationFromURL(verifyURL)
 		if err != nil {
-			le.Printf("verificationFromURL failed: %s\n", err)
+			commFailed(err.Error())
 			exit(1)
 		}
 	}
@@ -84,37 +87,37 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 	}
 
 	if verification.AppTag == "" {
-		le.Printf("apptag in verification data is empty\n")
+		parseFailure("app tag empty")
 		exit(1)
 	}
 
 	_, err = hex.DecodeString(verification.AppHash)
 	if err != nil {
-		le.Printf("decode apphash hex \"%s\" in verification data failed: %s\n", verification.AppHash, err)
+		parseFailure("hex decode error")
 		exit(1)
 	}
 
 	appBin, err := appBins.Get(verification.AppHash)
 	if err != nil {
-		le.Printf("Getting embedded verisigner-app failed: %s\n", err)
+		notFound("upstream app digest unknown")
 		exit(1)
 	}
 
 	pubKey, err := tk.LoadSigner(appBin.Bin)
 	if err != nil {
-		le.Printf("Couldn't load device app: %v\n", err)
+		commFailed(err.Error())
 		exit(1)
 	}
 
 	expectedFw, err := firmwares.GetFirmware(tk.Udi)
 	if err != nil {
-		le.Printf("")
+		notFound("no known firmware for UDI")
 		exit(1)
 	}
 
 	fw, err := verifyFirmwareHash(*expectedFw, *tk)
 	if err != nil {
-		le.Printf("verifyFirmwareHash failed for TKey with UDI: %s, %v\n", tk.Udi.String(), err)
+		verificationFailed("unexpected firmware")
 		exit(1)
 	}
 	if verbose {
@@ -123,7 +126,7 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 
 	vSignature, err := hex.DecodeString(verification.Signature)
 	if err != nil {
-		le.Printf("Couldn't decode signature: %s", err)
+		parseFailure(err.Error())
 		exit(1)
 	}
 
@@ -132,11 +135,12 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 	vendorPubKey := vendorKeys.Current().PubKey
 	msg, err := buildMessage(tk.Udi.Bytes, fw.Hash[:], pubKey)
 	if err != nil {
-		le.Printf("buildMessage failed: %s", err)
+		parseFailure(err.Error())
 		exit(1)
 	}
+
 	if !ed25519.Verify(vendorPubKey[:], msg, vSignature) {
-		le.Printf("Vendor signature FAILED verification!")
+		verificationFailed("vendor signature not verified")
 		exit(1)
 	}
 
@@ -149,19 +153,53 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 
 	signature, err := tk.Sign(challenge)
 	if err != nil {
-		le.Printf("tkey.Sign failed: %s", err)
+		commFailed(err.Error())
 		exit(1)
 	}
 
 	// Verify device signature against device public key
 	if !ed25519.Verify(pubKey, challenge, signature) {
-		le.Printf("Signature by TKey failed verification!")
+		verificationFailed("challenge not verified")
 		exit(1)
 	}
 
 	fmt.Printf("TKey is genuine!\n")
 
 	exit(0)
+}
+
+// commFailed describes an I/O failure of some kind, perhaps between
+// the client and the TKey, an HTTP request that didn't succeed, or
+// perhaps reading a file.
+func commFailed(msg string) {
+	fmt.Printf("I/O FAILED: %s\n", msg)
+}
+
+// parseFailure describes an error where we have tried to parse
+// something from external sources but failed.
+func parseFailure(msg string) {
+	fmt.Printf("PARSE ERROR: %s\n", msg)
+}
+
+// missing describes an error where something is missing from the
+// binary to even complete a verification.
+func missing(msg string) {
+	fmt.Printf("MISSING IN PROGRAM: %s\n", msg)
+	fmt.Printf("It seems tkey-verification is not built correctly.\n")
+}
+
+// notFound describes an error where we with data from external source
+// can't find something, perhaps not finding something on a web
+// server, or not finding the device app digest.
+func notFound(msg string) {
+	fmt.Printf("NOT FOUND: %s\n", msg)
+}
+
+// verificationFailed describes a real problem with a manipulated
+// TKey.
+func verificationFailed(msg string) {
+	fmt.Printf("VERIFICATION FAILED: %s\n", msg)
+	fmt.Printf("Please visit %s to understand what this might mean.\n", verifyInfoURL)
 }
 
 func verificationFromURL(verifyURL string) (Verification, error) {
