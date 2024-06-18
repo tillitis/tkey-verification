@@ -5,7 +5,7 @@
 .nh
 .ad l
 .\" Begin generated content:
-.TH "tkey-verification" "1" "2024-06-05"
+.TH "tkey-verification" "1" "2024-06-18"
 .P
 .SH NAME
 .P
@@ -265,6 +265,8 @@ Verifying the identity of a Tillitis TKey using a networked computer.\&
 .nf
 .RS 4
 $ tkey-verification verify
+TKey UDI: 0x0133708100000002(BE) VendorID: 0x1337 ProductID: 2 ProductRev: 1
+TKey is genuine!
 .fi
 .RE
 .P
@@ -283,6 +285,9 @@ Unique Device Identifier.\& and run:
 .nf
 .RS 4
 $ tkey-verification verify -d=\&.
+TKey UDI: 0x0133708100000002(BE) VendorID: 0x1337 ProductID: 2 ProductRev: 1
+Reading verification data from file \&./0133708100000002 \&.\&.\&.
+TKey is genuine!
 .fi
 .RE
 .P
