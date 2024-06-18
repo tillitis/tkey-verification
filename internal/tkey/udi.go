@@ -20,7 +20,7 @@ type UDI struct {
 }
 
 func (u *UDI) String() string {
-	return fmt.Sprintf("0x%s(BE) VendorID:0x%04x ProductID:%d ProductRev:%d", hex.EncodeToString(u.Bytes), u.VendorID, u.ProductID, u.ProductRev)
+	return fmt.Sprintf("0x%s(BE) VendorID: 0x%04x ProductID: %d ProductRev: %d", hex.EncodeToString(u.Bytes), u.VendorID, u.ProductID, u.ProductRev)
 }
 
 // fromRawLE parses the 2 Little Endian uint32s of the Unique Device
