@@ -12,8 +12,6 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-var MessageLen = tkey.UDISize + sha512.Size + ed25519.PublicKeySize
-
 func buildMessage(udiBE, fwHash, pubKey []byte) ([]byte, error) {
 	var buf bytes.Buffer
 
