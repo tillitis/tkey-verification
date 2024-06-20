@@ -95,10 +95,6 @@ func NewVendorKeys(appBins AppBins, currentVendorHash string) (VendorKeys, error
 		}
 	}
 
-	if l := len(vendorKeys.Keys); l > 1 {
-		return vendorKeys, fmt.Errorf("We currently only support 1 vendor signing public key, but found %d", l)
-	}
-
 	if _, ok := vendorKeys.Keys[currentVendorHash]; ok {
 		vendorKeys.CurrentAppHash = currentVendorHash
 	} else {

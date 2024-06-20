@@ -130,16 +130,25 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 		exit(1)
 	}
 
-	// Verify vendor's signature over known message. Note: we
-	// currently only support 1 single vendor signing pubkey
-	vendorPubKey := vendorKeys.Current().PubKey
+	// Verify vendor's signature over known message.
 	msg, err := buildMessage(tk.Udi.Bytes, fw.Hash[:], pubKey)
 	if err != nil {
 		parseFailure(err.Error())
 		exit(1)
 	}
 
-	if !ed25519.Verify(vendorPubKey[:], msg, vSignature) {
+	// We allow for any of the known vendor keys.
+	var verified = false
+
+	for _, vendorPubKey := range vendorKeys.Keys {
+		if ed25519.Verify(vendorPubKey.PubKey[:], msg, vSignature) {
+			le.Printf("Verified with vendor key %x\n", vendorPubKey.PubKey)
+			verified = true
+			break
+		}
+	}
+
+	if !verified {
 		verificationFailed("vendor signature not verified")
 		exit(1)
 	}
