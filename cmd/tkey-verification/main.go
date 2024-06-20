@@ -112,7 +112,6 @@ func main() {
 			configFile = defaultConfigFile
 		}
 		server := loadRemoteSignConfig(configFile)
-		fmt.Printf("server: %#v\n", server)
 
 		if checkConfigOnly {
 			os.Exit(0)
