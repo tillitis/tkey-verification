@@ -48,7 +48,7 @@ func serveSigner(conf Config, devPath string, verbose bool, checkConfigOnly bool
 
 	vendorKeys, err := NewVendorKeys(appBins, currentVendorHash)
 	if err != nil {
-		le.Printf("Found no usable embedded vendor signing public key\n")
+		le.Printf("Found no usable embedded vendor signing public key: %v\n", err)
 		os.Exit(1)
 	}
 
