@@ -64,7 +64,7 @@ func signChallenge(devPath string, verbose bool) (AppBin, *tkey.UDI, []byte, Fir
 
 	expectfw, err := firmwares.GetFirmware(tk.Udi)
 	if err != nil {
-		return appBin, nil, nil, fw, fmt.Errorf("couldn't find firmware for UDI %s: %w", tk.Udi.String(), err)
+		return appBin, nil, nil, fw, MissingError{what: "couldn't find firmware for UDI"}
 	}
 
 	fw, err = verifyFirmwareHash(*expectfw, *tk)
@@ -88,7 +88,7 @@ func signChallenge(devPath string, verbose bool) (AppBin, *tkey.UDI, []byte, Fir
 
 	// Verify the signature against the extracted public key
 	if !ed25519.Verify(pubKey, challenge, signature) {
-		return appBin, nil, nil, fw, fmt.Errorf("device signature failed verification")
+		return appBin, nil, nil, fw, ErrVerificationFailed
 	}
 
 	return appBin, &tk.Udi, pubKey, fw, nil
@@ -97,14 +97,14 @@ func signChallenge(devPath string, verbose bool) (AppBin, *tkey.UDI, []byte, Fir
 func vendorSign(server *Server, udi []byte, pubKey []byte, fw Firmware, appBin AppBin) error {
 	conn, err := tls.Dial("tcp", server.Addr, &server.TLSConfig)
 	if err != nil {
-		return fmt.Errorf("dial failed: %w", err)
+		return IOError{path: server.Addr, err: err}
 	}
 
 	client := rpc.NewClient(conn)
 
 	msg, err := buildMessage(udi, fw.Hash[:], pubKey)
 	if err != nil {
-		return fmt.Errorf("couldn't build message for vendor signing: %w", err)
+		return fmt.Errorf("building message to sign failed: %w", err)
 	}
 
 	args := Args{
@@ -116,7 +116,7 @@ func vendorSign(server *Server, udi []byte, pubKey []byte, fw Firmware, appBin A
 
 	err = client.Call("API.Sign", &args, nil)
 	if err != nil {
-		return fmt.Errorf("vendor signing: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil

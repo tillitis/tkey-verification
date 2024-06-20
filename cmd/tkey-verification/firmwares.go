@@ -33,7 +33,7 @@ func (f Firmwares) GetFirmware(udi tkey.UDI) (*Firmware, error) {
 	}
 	fw, ok := f.firmwares[*hw]
 	if !ok {
-		return nil, fmt.Errorf("unknown UDI")
+		return nil, ErrUDI
 	}
 
 	return &fw, nil
@@ -79,7 +79,7 @@ func NewFirmwares() (Firmwares, error) {
 	}
 
 	if len(fws.firmwares) == 0 {
-		return fws, fmt.Errorf("Got no firmwares from the embedded data")
+		return fws, MissingError{what: "no firmware"}
 	}
 
 	return fws, nil
@@ -95,10 +95,10 @@ func NewFirmwares() (Firmwares, error) {
 func (f *Firmwares) addFirmware(udi0BEhex string, vendorID uint16, productID uint8, productRev uint8, fwSize int, fwHashHex string) error {
 	udi0BE, err := hex.DecodeString(udi0BEhex)
 	if err != nil {
-		return fmt.Errorf("decode udi0BEhex \"%s\" failed: %w", udi0BEhex, err)
+		return ParseError{what: "UDI", err: err}
 	}
 	if l := len(udi0BE); l != tkey.UDISize/2 {
-		return fmt.Errorf("expected %d bytes udi0BE, got %d", tkey.UDISize/2, l)
+		return ErrWrongLen
 	}
 
 	hw, err := newHardware(vendorID, productID, productRev)
@@ -107,26 +107,29 @@ func (f *Firmwares) addFirmware(udi0BEhex string, vendorID uint16, productID uin
 	}
 
 	if fwSize < fwSizeMin {
-		return fmt.Errorf("expected fwSize >= %d, got %d", fwSizeMin, fwSize)
+		return ErrWrongLen
 	}
 	if fwSize > fwSizeMax {
-		return fmt.Errorf("expected fwSize <= %d, got %d", fwSizeMax, fwSize)
+		return ErrWrongLen
 	}
 
 	fwHash, err := hex.DecodeString(fwHashHex)
 	if err != nil {
-		return fmt.Errorf("decode fwHash hex \"%s\" failed: %w", fwHashHex, err)
+		return ParseError{what: "firmware hash", err: err}
 	}
 	if l := len(fwHash); l != sha512.Size {
-		return fmt.Errorf("expected %d bytes fwHash, got %d", sha512.Size, l)
+		return ErrWrongLen
 	}
 
+	// Safety check. We compare the passed UDI0 argument to what
+	// we computed from vendori ID, product ID, and product
+	// revision. If it's not the same, we bail.
 	if udi0BEhex != hw.toUDI0BEhex() {
-		return fmt.Errorf("udi0BEhex arg `%s` does not match `%s` calculated from hardware triple args", udi0BEhex, hw.toUDI0BEhex())
+		return EqualError{one: "udi0BEhex arg", two: "calculated"}
 	}
 
 	if _, ok := f.firmwares[*hw]; ok {
-		return fmt.Errorf("hardware with UDI0 0x%s already exists", hw.toUDI0BEhex())
+		return ExistError{what: "hardware with same UDI0"}
 	}
 
 	f.firmwares[*hw] = Firmware{
@@ -146,10 +149,10 @@ type hardware struct {
 func newHardware(vendorID uint16, productID uint8, productRev uint8) (*hardware, error) {
 	const sixBitsMax = 2*2*2*2*2*2 - 1
 	if productID > sixBitsMax {
-		return nil, fmt.Errorf("expected productID <= %d, got %d", sixBitsMax, productID)
+		return nil, RangeError{what: "product ID"}
 	}
 	if productRev > sixBitsMax {
-		return nil, fmt.Errorf("expected productRev <= %d, got %d", sixBitsMax, productRev)
+		return nil, RangeError{what: "product revision"}
 	}
 
 	return &hardware{

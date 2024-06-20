@@ -5,7 +5,6 @@ package main
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net"
 	"os"
 
@@ -30,7 +29,7 @@ type Config struct {
 func loadServeSignerConfig(fn string) Config {
 	conf, err := loadConfig(fn)
 	if err != nil {
-		le.Printf("%s\n", err)
+		le.Printf("loading config failed: %s\n", err)
 		os.Exit(1)
 	}
 	if conf.ClientCert != "" || conf.ClientKey != "" || conf.ServerAddr != "" {
@@ -77,12 +76,12 @@ func loadConfig(fn string) (Config, error) {
 
 	rawConfig, err := os.ReadFile(fn)
 	if err != nil {
-		return conf, fmt.Errorf("ReadFile failed: %w", err)
+		return conf, IOError{path: fn, err: err}
 	}
 
 	err = yaml.Unmarshal(rawConfig, &conf)
 	if err != nil {
-		return conf, fmt.Errorf("Unmarshal failed: %w", err)
+		return conf, ParseError{what: "config", err: err}
 	}
 
 	return conf, nil

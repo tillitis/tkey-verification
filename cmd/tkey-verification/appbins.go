@@ -41,7 +41,7 @@ func (a AppBins) GetByTagOnly(tag string) (AppBin, error) {
 			return appBin, nil
 		}
 	}
-	return AppBin{}, fmt.Errorf("app binary missing for tag:%s", tag)
+	return AppBin{}, MissingError{what: ""}
 }
 
 func (a AppBins) Get(hash string) (AppBin, error) {
@@ -49,7 +49,7 @@ func (a AppBins) Get(hash string) (AppBin, error) {
 		return val, nil
 	}
 
-	return AppBin{}, fmt.Errorf("not found")
+	return AppBin{}, ErrNotFound
 }
 
 //go:embed bins/*.bin bins/*.bin.sha512
@@ -80,7 +80,7 @@ func NewAppBins(latestHash string) (AppBins, error) {
 
 	entries, err := binsFS.ReadDir(binsDir)
 	if err != nil {
-		return AppBins{}, fmt.Errorf("ReadDir failed: %w", err)
+		return AppBins{}, IOError{path: binsDir, err: err}
 	}
 
 	for _, entry := range entries {
@@ -96,25 +96,26 @@ func NewAppBins(latestHash string) (AppBins, error) {
 		}
 
 		var info fs.FileInfo
+
 		if info, err = entry.Info(); err != nil {
-			return AppBins{}, fmt.Errorf("Info on %s failed: %w", binFn, err)
+			return AppBins{}, IOError{path: binFn, err: err}
 		} else if info.Size() == 0 {
-			return AppBins{}, fmt.Errorf("File %s is empty", binFn)
+			return AppBins{}, MissingError{what: binFn}
 		}
 
 		var bin []byte
 		if bin, err = binsFS.ReadFile(path.Join(binsDir, binFn)); err != nil {
-			return AppBins{}, fmt.Errorf("ReadFile failed: %w", err)
+			return AppBins{}, IOError{path: binFn, err: err}
 		}
 
 		// Require accompanying sha512 file with matching hash
 		hashFn := binFn + ".sha512"
 		var hash []byte
 		if hash, err = binsFS.ReadFile(path.Join(binsDir, hashFn)); err != nil {
-			return AppBins{}, fmt.Errorf("ReadFile failed: %w", err)
+			return AppBins{}, IOError{path: binFn, err: err}
 		}
 		if hash, err = hex.DecodeString(string(hash[:sha512.Size*2])); err != nil {
-			return AppBins{}, fmt.Errorf("decode hex in file %s failed: %w", hashFn, err)
+			return AppBins{}, IOError{path: hashFn, err: err}
 		}
 
 		appBin := AppBin{
@@ -123,7 +124,7 @@ func NewAppBins(latestHash string) (AppBins, error) {
 		}
 
 		if !bytes.Equal(appBin.Hash(), hash) {
-			return AppBins{}, fmt.Errorf("Hash of %s does not match hash in %s", binFn, hashFn)
+			return AppBins{}, EqualError{one: binFn, two: hashFn}
 		}
 
 		appBins.Bins[hex.EncodeToString(hash)] = appBin
@@ -132,7 +133,7 @@ func NewAppBins(latestHash string) (AppBins, error) {
 	if _, ok := appBins.Bins[latestHash]; ok {
 		appBins.latest = latestHash
 	} else {
-		return AppBins{}, fmt.Errorf("Requested latest hash binary not found: %v", latestHash)
+		return AppBins{}, MissingError{what: "latest app"}
 	}
 
 	return appBins, nil
