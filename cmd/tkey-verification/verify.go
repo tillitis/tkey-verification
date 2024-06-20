@@ -208,21 +208,22 @@ func verificationFromURL(verifyURL string) (Verification, error) {
 	client := http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(verifyURL) // #nosec G107
 	if err != nil {
-		return verification, fmt.Errorf("http.Get failed: %w", err)
+		return verification, IOError{path: verifyURL, err: err}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return verification, fmt.Errorf("HTTP GET status code: %d (%s)", resp.StatusCode, resp.Status)
+		le.Printf("HTTP GET status code: %d (%s)", resp.StatusCode, resp.Status)
+		return verification, ErrIO
 	}
 
 	verificationJSON, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return verification, fmt.Errorf("io.ReadAll failed: %w", err)
+		return verification, IOError{path: verifyURL, err: err}
 	}
 
 	if err = json.Unmarshal(verificationJSON, &verification); err != nil {
-		return verification, fmt.Errorf("Unmarshal failed: %w", err)
+		return verification, ParseError{what: "JSON Unmarshal", err: err}
 	}
 
 	return verification, nil
@@ -234,11 +235,11 @@ func verificationFromFile(fn string) (Verification, error) {
 	le.Printf("Reading verification data from file %s ...\n", fn)
 	verificationJSON, err := os.ReadFile(fn)
 	if err != nil {
-		return verification, fmt.Errorf("ReadFile failed: %w", err)
+		return verification, IOError{path: fn, err: err}
 	}
 
 	if err = json.Unmarshal(verificationJSON, &verification); err != nil {
-		return verification, fmt.Errorf("Unmarshal failed: %w", err)
+		return verification, ParseError{what: "JSON unmarshal", err: err}
 	}
 
 	return verification, nil

@@ -17,23 +17,6 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-type constError string
-
-func (err constError) Error() string {
-	return string(err)
-}
-
-const (
-	ErrUDI                = constError("erroneous UDI")
-	ErrNoTag              = constError("empty tag")
-	ErrWrongDigest        = constError("erroneous app digest")
-	ErrWrongLen           = constError("wrong message length")
-	ErrSignFailed         = constError("signing failed")
-	ErrVerificationFailed = constError("vendor signature failed verification")
-	ErrSigExist           = constError("vendor signature already exist")
-	ErrInternal           = constError("internal error")
-)
-
 const MessageLen = tkey.UDISize + sha512.Size + ed25519.PublicKeySize
 
 type API struct {
