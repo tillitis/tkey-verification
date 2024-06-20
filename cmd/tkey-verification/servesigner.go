@@ -11,8 +11,6 @@ import (
 	"net"
 	"net/rpc"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
@@ -82,41 +80,29 @@ func serveSigner(conf Config, devPath string, verbose bool, checkConfigOnly bool
 	}
 	le.Printf("Found signing TKey with the expected public key and UDI: %s\n", tk.Udi.String())
 
-	if err := os.MkdirAll(signaturesDir, 0o755); err != nil {
+	if err = os.MkdirAll(signaturesDir, 0o755); err != nil {
 		le.Printf("MkdirAll failed: %s\n", err)
 		exit(1)
 	}
 
-	go serve(conf.ListenAddr, vendorPubKey.PubKey[:], *tk, &tlsConfig)
-
-	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
-	<-signalCh
-
-	le.Printf("Exiting on signal\n")
-
-	exit(0)
-}
-
-func serve(listenAddr string, vendorPubKey []byte, tk tkey.TKey, tlsConfig *tls.Config) {
-	if err := rpc.Register(NewAPI(vendorPubKey, tk)); err != nil {
+	if err = rpc.Register(NewAPI(vendorPubKey.PubKey[:], *tk)); err != nil {
 		le.Printf("Register failed: %s\n", err)
-		os.Exit(1)
+		exit(1)
 	}
 
-	listener, err := tls.Listen("tcp", listenAddr, tlsConfig)
+	listener, err := tls.Listen("tcp", conf.ListenAddr, &tlsConfig)
 	if err != nil {
 		le.Printf("Listen failed: %s\n", err)
-		os.Exit(1)
+		exit(1)
 	}
 
-	le.Printf("Listening on %s...\n", listenAddr)
+	le.Printf("Listening on %s...\n", conf.ListenAddr)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
 			le.Printf("Accept failed: %s\n", err)
 			// Note: is this really fatal, should we exit?
-			os.Exit(1)
+			exit(1)
 		}
 		le.Printf("Client from %s\n", conn.RemoteAddr())
 		go func() {
