@@ -78,13 +78,13 @@ func serveSigner(conf Config, devPath string, verbose bool, checkConfigOnly bool
 	}
 	if bytes.Compare(vendorPubKey.PubKey[:], foundPubKey) != 0 {
 		le.Printf("The public key of the found TKey (\"%s\") does not match the embedded vendor signing public key in use\n", hex.EncodeToString(foundPubKey))
-		os.Exit(1)
+		exit(1)
 	}
 	le.Printf("Found signing TKey with the expected public key and UDI: %s\n", tk.Udi.String())
 
 	if err := os.MkdirAll(signaturesDir, 0o755); err != nil {
 		le.Printf("MkdirAll failed: %s\n", err)
-		os.Exit(1)
+		exit(1)
 	}
 
 	go serve(conf.ListenAddr, vendorPubKey.PubKey[:], *tk, &tlsConfig)
@@ -95,7 +95,7 @@ func serveSigner(conf Config, devPath string, verbose bool, checkConfigOnly bool
 
 	le.Printf("Exiting on signal\n")
 
-	os.Exit(0)
+	exit(0)
 }
 
 func serve(listenAddr string, vendorPubKey []byte, tk tkey.TKey, tlsConfig *tls.Config) {
