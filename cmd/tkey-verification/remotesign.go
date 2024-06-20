@@ -97,7 +97,7 @@ func signChallenge(devPath string, verbose bool) (AppBin, *tkey.UDI, []byte, Fir
 func vendorSign(server *Server, udi []byte, pubKey []byte, fw Firmware, appBin AppBin) error {
 	conn, err := tls.Dial("tcp", server.Addr, &server.TLSConfig)
 	if err != nil {
-		return IOError{path: server.Addr, err: err}
+		return fmt.Errorf("%w", err)
 	}
 
 	client := rpc.NewClient(conn)
