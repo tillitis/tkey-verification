@@ -16,8 +16,8 @@ import (
 )
 
 type AppBin struct {
-	Tag string
-	Bin []byte
+	Tag string // Name and tag of device app
+	Bin []byte // Actual binary of device app
 }
 
 func (a *AppBin) String() string {
@@ -44,6 +44,7 @@ func (a AppBins) GetByTagOnly(tag string) (AppBin, error) {
 	return AppBin{}, MissingError{what: ""}
 }
 
+// Get returns an AppBin indexed by the app hash digest.
 func (a AppBins) Get(hash string) (AppBin, error) {
 	if val, ok := a.Bins[hash]; ok {
 		return val, nil
@@ -69,10 +70,15 @@ func (a AppBins) Tags() []string {
 	return tags
 }
 
+// Latest returns the currently used device app for device signing
+// during provisioning.
 func (a AppBins) Latest() AppBin {
 	return a.Bins[a.latest]
 }
 
+// NewAppBins initializes the embedded device apps. It expects the
+// hash digest of the latest device app as latestHash. This is used
+// for device signature during provisioning.
 func NewAppBins(latestHash string) (AppBins, error) {
 	var appBins = AppBins{
 		Bins: map[string]AppBin{},
