@@ -19,24 +19,33 @@ import (
 var pubKeysData []byte
 
 type PubKey struct {
-	PubKey [ed25519.PublicKeySize]byte
-	Tag    string
-	AppBin AppBin
+	PubKey [ed25519.PublicKeySize]byte // Vendor public key
+	Tag    string                      // Name and tag of the device app
+	AppBin AppBin                      // The actual device app binary
 }
 
 func (p *PubKey) String() string {
 	return fmt.Sprintf("pubkey:%0x… %s", p.PubKey[:16], p.AppBin.String())
 }
 
+// VendorKeys is a built-in database of vendor PubKeys
 type VendorKeys struct {
 	Keys           map[string]PubKey
 	CurrentAppHash string
 }
 
+// Current returns the currently used vendor PubKey needed for vendor
+// signing.
 func (v VendorKeys) Current() PubKey {
 	return v.Keys[v.CurrentAppHash]
 }
 
+// NewVendorKeys initializes all the known vendor public keys. It
+// needs to know the existing device applications (get them with
+// NewAppBins()) and the app hash digest of the currently used device
+// app for vendor signing.
+//
+// It returns the vendor public keys and any error.
 func NewVendorKeys(appBins AppBins, currentVendorHash string) (VendorKeys, error) {
 	lines := strings.Split(strings.Trim(strings.ReplaceAll(string(pubKeysData), "\r\n", "\n"), "\n"), "\n")
 
