@@ -38,7 +38,7 @@ func serveSigner(conf Config, devPath string, verbose bool, checkConfigOnly bool
 		os.Exit(1)
 	}
 
-	appBins, err := NewAppBins(latestAppHash)
+	appBins, err := NewAppBins(currentAppHash)
 	if err != nil {
 		fmt.Printf("Failed to init embedded device apps: %v\n", err)
 		os.Exit(1)

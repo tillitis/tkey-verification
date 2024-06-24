@@ -33,13 +33,13 @@ func remoteSign(server *Server, devPath string, verbose bool) {
 // Returns the currently used device app, UDI, pubkey, expected
 // firmware, and any error
 func signChallenge(devPath string, verbose bool) (AppBin, *tkey.UDI, []byte, Firmware, error) {
-	appBins, err := NewAppBins(latestAppHash)
+	appBins, err := NewAppBins(currentAppHash)
 	if err != nil {
 		fmt.Printf("Failed to init embedded device apps: %v\n", err)
 		os.Exit(1)
 	}
 
-	appBin := appBins.Latest()
+	appBin := appBins.Current()
 
 	firmwares, err := NewFirmwares()
 	if err != nil {
