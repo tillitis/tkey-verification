@@ -17,7 +17,7 @@ const currentVendorHash = "f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935ea
 
 // Hash digest of signing device app for device signature during
 // provisioning.
-const latestAppHash = "cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4"
+const currentAppHash = "cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4"
 
 const progname = "tkey-verification"
 

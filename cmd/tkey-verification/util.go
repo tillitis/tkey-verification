@@ -28,13 +28,13 @@ func readBuildInfo() string {
 }
 
 func builtWith() {
-	appBins, err := NewAppBins(latestAppHash)
+	appBins, err := NewAppBins(currentAppHash)
 	if err != nil {
 		fmt.Printf("Failed to init embedded device apps: %v\n", err)
 		os.Exit(1)
 	}
 
-	deviceSignAppBin := appBins.Latest()
+	deviceSignAppBin := appBins.Current()
 
 	vendorKeys, err := NewVendorKeys(appBins, currentVendorHash)
 	if err != nil {
