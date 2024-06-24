@@ -30,7 +30,7 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 
 	vendorKeys, err := NewVendorKeys(appBins, currentVendorHash)
 	if err != nil {
-		missing("no vendor signing public key")
+		missing(fmt.Sprintf("no vendor signing public key: %v", err))
 		os.Exit(1)
 	}
 

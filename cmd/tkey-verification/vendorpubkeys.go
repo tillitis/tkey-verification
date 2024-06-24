@@ -87,6 +87,10 @@ func NewVendorKeys(appBins AppBins, currentVendorHash string) (VendorKeys, error
 		var appBin AppBin
 		if _, ok := appBins.Bins[appHashHex]; ok {
 			appBin = appBins.Bins[appHashHex]
+			if appBin.Tag != tag {
+				return vendorKeys, EqualError{"embedded app tag", "vendor signing app tag"}
+			}
+
 		} else {
 			return vendorKeys, ErrNotFound
 		}
