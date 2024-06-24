@@ -34,16 +34,6 @@ type AppBins struct {
 	latest string
 }
 
-// Only used by show-pubkey cmd
-func (a AppBins) GetByTagOnly(tag string) (AppBin, error) {
-	for _, appBin := range a.Bins {
-		if appBin.Tag == tag {
-			return appBin, nil
-		}
-	}
-	return AppBin{}, MissingError{what: ""}
-}
-
 // Get returns an AppBin indexed by the app hash digest.
 func (a AppBins) Get(hash string) (AppBin, error) {
 	if val, ok := a.Bins[hash]; ok {
