@@ -114,6 +114,9 @@ yourself.
 
 ## Maintainance
 
+See [Implementation notes](doc/implementation-notes.md) for more
+in-depth notes on the program.
+
 - `tkey-verification` contains an in-code database mapping known
   hardware revisions (first half of the Unique Device Identifier) to
   their expected firmware size and hash. This needs to be maintained

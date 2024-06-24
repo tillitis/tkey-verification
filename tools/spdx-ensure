@@ -44,6 +44,7 @@ release-builds/tkey-verification_0.0.3_macos-amd64.sha512
 release-builds/tkey-verification_0.0.3_macos-arm64.sha512
 release-builds/tkey-verification_0.0.3_macos-universal.sha512
 release-builds/tkey-verification_0.0.3_windows-amd64.exe.sha512
+doc/implementation-notes.md
 doc/tkey-verification.1
 doc/tkey-verification.scd
 test-vendor-signing-pubkeys.txt
