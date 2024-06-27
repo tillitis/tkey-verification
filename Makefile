@@ -4,10 +4,11 @@ CGO = 0
 .PHONY: all
 all: tkey-verification
 
+APP_VERSION ?= $(shell git describe --dirty --always | sed -n "s/^v\(.*\)/\1/p")
 # .PHONY to let go-build handle deps and rebuilds
 .PHONY: tkey-verification
 tkey-verification:
-	CGO_ENABLED=$(CGO) go build -trimpath -buildvcs=false ./cmd/tkey-verification
+	CGO_ENABLED=$(CGO) go build -ldflags "-X main.version=$(APP_VERSION)" -trimpath -buildvcs=false ./cmd/tkey-verification
 	./tkey-verification --version
 
 .PHONY: podman
