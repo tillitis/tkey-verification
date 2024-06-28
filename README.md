@@ -5,8 +5,8 @@ verifying that it still has the same identity as it did when it was
 provisioned, typically by [Tillitis](https://tillitis.se/) the
 original vendor.
 
-*Note well*: If your TKey has been provisioned by someone else, like
-your IT department, you will need to run their version of the
+*Note well*: If your TKey has been provisioned by you or someone else,
+like your IT department, you will need to run their version of the
 `tkey-verification` program instead of this one.
 
 ## Installation
@@ -38,7 +38,7 @@ you won't get the tag in `--version`.
   TKeys. The 1st half identifies the revision of the hardware, the 2nd
   half is a serial number.
 - "signing server": An HSM-like machine providing signatures over
-  messages and producing files to be uploaded later.
+  messages and producing files to be uploaded to some database.
 - "signer": A device app used for confirming the TKey's identity,
   right now either verisigner (source in older versions in this
   repository, look for verisigner tags) or
@@ -57,43 +57,43 @@ you won't get the tag in `--version`.
 3. Retrieve signer public key from the device under verification.
 4. Ask signer to sign a random challenge.
 5. Verify the signature of the random challenge with the retrieved
-   public key to make sure signing works and the device proves that it
-   has the corresponding private key.
-6. Ask signer for a digest of the firmware binary (in ROM). Consult the
-   internal firmware database to verify that the TKey, according to
-   its hardware revision, is running the expected firmware.
+   public key to let the device prove that it has the corresponding
+   private key.
+6. Ask signer for a digest of the firmware binary (in ROM). Consult
+   the internal firmware database to verify that the TKey, according
+   to its hardware revision, is running the expected firmware.
 7. Sign a message consisting of the UDI, firmware digest, and signer
    public key, with a vendor signature.
-8. Publish the UDI, the tag of the signer program used, the hash
-   digest of the binary of the same signer program, the vendor
+8. Publish the [Verification file](#verification-file), which includes
+   the UDI, the tag and digest of the signer program used, the vendor
    signature, and the timestamp when signature was made.
 
 ### Verifying
 
 1. Retrieve the UDI from the device under verification.
-2. Get the vendor signature and signer tag and digest for this UDI.
-3. Run the signer with the same tag and hash on the device under
+2. Get the [Verification file](#verification-file) with the vendor
+   signature, signer tag and digest for this UDI.
+3. Run the signer with the same tag and digest on the device under
    verification.
 4. Retrive the signer public key.
 5. Ask signer to sign a random challenge.
 6. Verify the signature of the random challenge with the signer public
-   key thus proving that device under verification has access to the
+   key thus proving that the device under verification has access to the
    corresponding private key.
-7. Ask signer for a hash digest of the firmware binary (in ROM).
-   Consult the internal firmware database to verify that the TKey,
-   according to its hardware revision, is running the expected
-   firmware.
-8. Recreate the message of UDI, firmware digest, signer public key.
+7. Ask signer for a digest of the firmware binary (in ROM). Consult
+   the internal firmware database to verify that the TKey, according
+   to its hardware revision, is running the expected firmware.
+8. Recreate the message of UDI, firmware digest and signer public key.
    Verify the vendor signature of the message, thus proving that the
    UDI, the firmware, and this private/public key pair was the same
    during vendor signing.
 
 Note that the exact same signer binary that was used for producing the
 signer signature during provisioning *must* be used when verifying it.
-If a different signer is used then the device public key will not
-match even if the TKey is the same. A verifier must check the "tag"
-and "hash" field and complain if it does not have a signer binary
-built from this tag, and with the same hash digest.
+If a different signer is used then the device private/public key will
+not match, even if the TKey is the same. A verifier must check the
+"hash" field and complain if it does not have a signer binary with the
+same digest.
 
 ## Building tkey-verification
 
@@ -250,11 +250,12 @@ $ cat other-pubkey.txt >> cmd/tkey-verification/vendor-signing-pubkeys.txt
 $ make
 ```
 
-## Signed metadata
+## Verification file
 
 The computer running `tkey-verification serve-sign` generates files
 in a directory `signatures/` which is named after the Unique Device
-Identifier (in hex), for example `signatures/0133704100000015`.
+Identifier (in hex), for example `signatures/0133704100000015`. This
+file is needed in order to be able to verify a TKey.
 
 The file contains:
 
