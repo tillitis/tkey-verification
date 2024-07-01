@@ -12,11 +12,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// Define this to point to the current vendor signing public
-// key by setting it to the hash of the binary that was used
-// for signatures.
-const currentVendorHash = "f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142"
-
 // Hash of latest signer, to be used for new vendor signing
 const currentAppHash = "cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4"
 

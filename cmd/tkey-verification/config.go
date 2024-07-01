@@ -17,13 +17,14 @@ type Server struct {
 }
 
 type Config struct {
-	CACert     string `yaml:"cacert"`
-	ServerCert string `yaml:"servercert"`
-	ServerKey  string `yaml:"serverkey"`
-	ClientCert string `yaml:"clientcert"`
-	ClientKey  string `yaml:"clientkey"`
-	ListenAddr string `yaml:"listen"`
-	ServerAddr string `yaml:"server"`
+	CACert               string `yaml:"cacert"`
+	ServerCert           string `yaml:"servercert"`
+	ServerKey            string `yaml:"serverkey"`
+	ClientCert           string `yaml:"clientcert"`
+	ClientKey            string `yaml:"clientkey"`
+	ListenAddr           string `yaml:"listen"`
+	ServerAddr           string `yaml:"server"`
+	VendorSigningAppHash string `yaml:"vendorapphash"`
 }
 
 func loadServeSignerConfig(fn string) Config {

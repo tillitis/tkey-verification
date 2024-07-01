@@ -124,9 +124,6 @@ in-depth notes on the program.
   [cmd/tkey-verification/firmwares.go](cmd/tkey-verification/firmwares.go)
   in `NewFirmwares()`.
 
-- The digests of the vendor signing app needs to be maintained. It's
-  at `currentVendorHash` in `main.go`.
-
 - The digest of the device app for device signature during
   provisioning is `latestHashApp` in `main.go`.
 

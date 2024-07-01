@@ -36,13 +36,11 @@ func builtWith() {
 
 	deviceSignAppBin := appBins.Current()
 
-	vendorKeys, err := NewVendorKeys(appBins, currentVendorHash)
+	vendorKeys, err := NewVendorKeys(appBins)
 	if err != nil {
 		le.Printf("Found no usable embedded vendor signing public key\n")
 		os.Exit(1)
 	}
-
-	vendorPubKey := vendorKeys.Current()
 
 	firmwares, err := NewFirmwares()
 	if err != nil {
@@ -55,14 +53,14 @@ Supported verisigner-app tags:
   %s
 Device signing using:
   %s
-Vendor signing:
+Known vendor signing keys:
   %s
 Known firmwares:
   %s
 `,
 		strings.Join(appBins.Tags(), " \n  "),
 		deviceSignAppBin.String(),
-		vendorPubKey.String(),
+		vendorKeys.String(),
 		strings.Join(firmwares.List(), " \n  "))
 
 }

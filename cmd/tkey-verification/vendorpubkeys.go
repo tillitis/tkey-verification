@@ -30,28 +30,29 @@ func (p *PubKey) String() string {
 
 // VendorKeys is a built-in database of vendor PubKeys
 type VendorKeys struct {
-	Keys           map[string]PubKey
-	CurrentAppHash string
+	Keys map[string]PubKey
 }
 
-// Current returns the currently used vendor PubKey needed for vendor
-// signing.
-func (v VendorKeys) Current() PubKey {
-	return v.Keys[v.CurrentAppHash]
+func (v *VendorKeys) String() string {
+	var sb strings.Builder
+
+	for _, k := range v.Keys {
+		sb.WriteString(k.String())
+	}
+
+	return sb.String()
 }
 
 // NewVendorKeys initializes all the known vendor public keys. It
 // needs to know the existing device applications (get them with
-// NewAppBins()) and the app hash digest of the currently used device
-// app for vendor signing.
+// NewAppBins())
 //
 // It returns the vendor public keys and any error.
-func NewVendorKeys(appBins AppBins, currentVendorHash string) (VendorKeys, error) {
+func NewVendorKeys(appBins AppBins) (VendorKeys, error) {
 	lines := strings.Split(strings.Trim(strings.ReplaceAll(string(pubKeysData), "\r\n", "\n"), "\n"), "\n")
 
 	var vendorKeys = VendorKeys{
 		map[string]PubKey{},
-		"",
 	}
 
 	for _, line := range lines {
@@ -106,12 +107,6 @@ func NewVendorKeys(appBins AppBins, currentVendorHash string) (VendorKeys, error
 			Tag:    tag,
 			AppBin: appBin,
 		}
-	}
-
-	if _, ok := vendorKeys.Keys[currentVendorHash]; ok {
-		vendorKeys.CurrentAppHash = currentVendorHash
-	} else {
-		return VendorKeys{}, ErrNotFound
 	}
 
 	return vendorKeys, nil
