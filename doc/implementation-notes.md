@@ -47,7 +47,7 @@ Example content:
 In use, it's initialized like this:
 
 ```go
-appBins, err := NewAppBins(latestAppHash)
+appBins, err := NewAppBins()
 vendorKeys, err := NewVendorKeys()
 ```
 
@@ -88,8 +88,8 @@ Defined in `remotesign.go`.
 
 - Sets up its assets using `NewAppBins()` and `NewFirmwares()`.
 
-- Connects to a TKey during provisioning and loads the current device
-  app for use during provisioning.
+- Connects to a TKey during provisioning and loads built-in device app
+  indicated by the configuration in `signingapphash`.
 
 - Extracts the public key.
 

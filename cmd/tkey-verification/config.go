@@ -5,7 +5,6 @@ package main
 
 import (
 	"crypto/tls"
-	"net"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -16,64 +15,40 @@ type Server struct {
 	TLSConfig tls.Config
 }
 
-type Config struct {
+type ServerConfig struct {
 	CACert               string `yaml:"cacert"`
 	ServerCert           string `yaml:"servercert"`
 	ServerKey            string `yaml:"serverkey"`
-	ClientCert           string `yaml:"clientcert"`
-	ClientKey            string `yaml:"clientkey"`
 	ListenAddr           string `yaml:"listen"`
-	ServerAddr           string `yaml:"server"`
 	VendorSigningAppHash string `yaml:"vendorapphash"`
 }
 
-func loadServeSignerConfig(fn string) Config {
-	conf, err := loadConfig(fn)
-	if err != nil {
-		le.Printf("loading config failed: %s\n", err)
-		os.Exit(1)
-	}
-	if conf.ClientCert != "" || conf.ClientKey != "" || conf.ServerAddr != "" {
-		le.Printf("Command is \"serve-signer\", but found clientcert/clientkey/server in config file.\n")
-		os.Exit(1)
-	}
-	return conf
+type ProvConfig struct {
+	CACert         string `yaml:"cacert"`
+	ClientCert     string `yaml:"clientcert"`
+	ClientKey      string `yaml:"clientkey"`
+	ServerAddr     string `yaml:"server"`
+	SigningAppHash string `yaml:"signingapphash"`
 }
 
-func loadRemoteSignConfig(fn string) *Server {
-	conf, err := loadConfig(fn)
+func loadServeSignerConfig(fn string) (ServerConfig, error) {
+	var conf ServerConfig
+
+	rawConfig, err := os.ReadFile(fn)
 	if err != nil {
-		le.Printf("%s\n", err)
-		os.Exit(1)
-	}
-	if conf.ServerCert != "" || conf.ServerKey != "" || conf.ListenAddr != "" {
-		le.Printf("Command is \"remote-sign\", but found servercert/serverkey/listen in config file.\n")
-		os.Exit(1)
+		return conf, IOError{path: fn, err: err}
 	}
 
-	var server Server
-
-	server.TLSConfig = tls.Config{
-		Certificates: []tls.Certificate{
-			loadCert(conf.ClientCert, conf.ClientKey),
-		},
-		RootCAs:    loadCA(conf.CACert),
-		MinVersion: tls.VersionTLS13,
-	}
-
-	_, _, err = net.SplitHostPort(conf.ServerAddr)
+	err = yaml.Unmarshal(rawConfig, &conf)
 	if err != nil {
-		le.Printf("Config server: %s", err)
-		os.Exit(1)
+		return conf, ParseError{what: "config", err: err}
 	}
 
-	server.Addr = conf.ServerAddr
-
-	return &server
+	return conf, nil
 }
 
-func loadConfig(fn string) (Config, error) {
-	var conf Config
+func loadRemoteSignConfig(fn string) (ProvConfig, error) {
+	var conf ProvConfig
 
 	rawConfig, err := os.ReadFile(fn)
 	if err != nil {

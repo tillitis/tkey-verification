@@ -30,8 +30,7 @@ func (a *AppBin) Hash() []byte {
 }
 
 type AppBins struct {
-	Bins    map[string]AppBin
-	current string
+	Bins map[string]AppBin
 }
 
 // Get returns an AppBin indexed by the app hash digest.
@@ -60,16 +59,8 @@ func (a AppBins) Tags() []string {
 	return tags
 }
 
-// Current returns the currently used device app for device signing
-// during provisioning.
-func (a AppBins) Current() AppBin {
-	return a.Bins[a.current]
-}
-
-// NewAppBins initializes the embedded device apps. It expects the
-// hash digest of the latest device app as latestHash. This is used
-// for device signature during provisioning.
-func NewAppBins(latestHash string) (AppBins, error) {
+// NewAppBins initializes the embedded device apps.
+func NewAppBins() (AppBins, error) {
 	var appBins = AppBins{
 		Bins: map[string]AppBin{},
 	}
@@ -124,12 +115,6 @@ func NewAppBins(latestHash string) (AppBins, error) {
 		}
 
 		appBins.Bins[hex.EncodeToString(hash)] = appBin
-	}
-
-	if _, ok := appBins.Bins[latestHash]; ok {
-		appBins.current = latestHash
-	} else {
-		return AppBins{}, MissingError{what: "latest app"}
 	}
 
 	return appBins, nil

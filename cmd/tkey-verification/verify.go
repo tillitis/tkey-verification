@@ -21,7 +21,7 @@ import (
 const verifyInfoURL = "https://www.tillitis.se/verify"
 
 func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, verifyBaseURL string) {
-	appBins, err := NewAppBins(currentAppHash)
+	appBins, err := NewAppBins()
 	if err != nil {
 		missing(fmt.Sprintf("no embedded device apps: %v", err))
 		os.Exit(1)

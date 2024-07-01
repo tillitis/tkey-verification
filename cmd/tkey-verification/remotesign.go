@@ -8,20 +8,38 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/rpc"
 	"os"
 
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-func remoteSign(server *Server, devPath string, verbose bool) {
-	appBin, udi, pubKey, fw, err := signChallenge(devPath, verbose)
+func remoteSign(conf ProvConfig, devPath string, verbose bool) {
+	_, _, err := net.SplitHostPort(conf.ServerAddr)
+	if err != nil {
+		le.Printf("SplitHostPort failed: %s", err)
+		os.Exit(1)
+	}
+
+	server := Server{
+		Addr: conf.ServerAddr,
+		TLSConfig: tls.Config{
+			Certificates: []tls.Certificate{
+				loadCert(conf.ClientCert, conf.ClientKey),
+			},
+			RootCAs:    loadCA(conf.CACert),
+			MinVersion: tls.VersionTLS13,
+		},
+	}
+
+	appBin, udi, pubKey, fw, err := signChallenge(conf, devPath, verbose)
 	if err != nil {
 		le.Printf("Couldn't sign challenge: %s\n", err)
 		os.Exit(1)
 	}
 
-	err = vendorSign(server, udi.Bytes, pubKey, fw, appBin)
+	err = vendorSign(&server, udi.Bytes, pubKey, fw, appBin)
 	if err != nil {
 		le.Printf("Couldn't get a vendor signature: %s\n", err)
 		os.Exit(1)
@@ -32,14 +50,22 @@ func remoteSign(server *Server, devPath string, verbose bool) {
 
 // Returns the currently used device app, UDI, pubkey, expected
 // firmware, and any error
-func signChallenge(devPath string, verbose bool) (AppBin, *tkey.UDI, []byte, Firmware, error) {
-	appBins, err := NewAppBins(currentAppHash)
+func signChallenge(conf ProvConfig, devPath string, verbose bool) (AppBin, *tkey.UDI, []byte, Firmware, error) {
+	appBins, err := NewAppBins()
 	if err != nil {
 		fmt.Printf("Failed to init embedded device apps: %v\n", err)
 		os.Exit(1)
 	}
 
-	appBin := appBins.Current()
+	// Do we have the configured device app to use for device signature?
+	var appBin AppBin
+
+	if aBin, ok := appBins.Bins[conf.SigningAppHash]; ok {
+		appBin = aBin
+	} else {
+		fmt.Printf("Compiled in device signing app corresponding to hash %v (signingapphash) not found\n", conf.SigningAppHash)
+		os.Exit(1)
+	}
 
 	firmwares, err := NewFirmwares()
 	if err != nil {
