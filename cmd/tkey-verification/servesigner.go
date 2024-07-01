@@ -22,7 +22,7 @@ type Verification struct {
 	Signature string `json:"signature"`
 }
 
-func serveSigner(conf Config, devPath string, verbose bool, checkConfigOnly bool) {
+func serveSigner(conf ServerConfig, devPath string, verbose bool, checkConfigOnly bool) {
 	tlsConfig := tls.Config{
 		Certificates: []tls.Certificate{
 			loadCert(conf.ServerCert, conf.ServerKey),
@@ -38,7 +38,7 @@ func serveSigner(conf Config, devPath string, verbose bool, checkConfigOnly bool
 		os.Exit(1)
 	}
 
-	appBins, err := NewAppBins(currentAppHash)
+	appBins, err := NewAppBins()
 	if err != nil {
 		fmt.Printf("Failed to init embedded device apps: %v\n", err)
 		os.Exit(1)

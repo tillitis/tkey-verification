@@ -124,9 +124,6 @@ in-depth notes on the program.
   [cmd/tkey-verification/firmwares.go](cmd/tkey-verification/firmwares.go)
   in `NewFirmwares()`.
 
-- The digest of the device app for device signature during
-  provisioning is `latestHashApp` in `main.go`.
-
 ## Building included device apps
 
 The device apps used for signing is included in binary form under

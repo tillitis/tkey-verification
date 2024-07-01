@@ -12,9 +12,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// Hash of latest signer, to be used for new vendor signing
-const currentAppHash = "cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4"
-
 const progname = "tkey-verification"
 
 const signaturesDir = "signatures"
@@ -100,30 +97,24 @@ func main() {
 	// Command funcs exit to OS themselves for now
 	switch cmd {
 	case "serve-signer":
-		conf := loadServeSignerConfig(configFile)
+		conf, err := loadServeSignerConfig(configFile)
+		if err != nil {
+			le.Printf("Couldn't load config: %v\n", err)
+		}
+
 		serveSigner(conf, devPath, verbose, checkConfigOnly)
 
 	case "remote-sign":
-		if configFile == "" {
-			configFile = defaultConfigFile
+		conf, err := loadRemoteSignConfig(configFile)
+		if err != nil {
+			le.Printf("Couldn't load config: %v\n", err)
 		}
-		server := loadRemoteSignConfig(configFile)
 
 		if checkConfigOnly {
 			os.Exit(0)
 		}
 
-		remoteSign(server, devPath, verbose)
-
-	case "sign-challenge":
-		_, udi, pubKey, _, err := signChallenge(devPath, verbose)
-		if err != nil {
-			le.Printf("Couldn't sign challenge: %v\n", err)
-			os.Exit(2)
-		}
-
-		le.Printf("TKey UDI: %s\n", udi.String())
-		le.Printf("Device app public key: %x\n", pubKey)
+		remoteSign(conf, devPath, verbose)
 
 	case "verify":
 		if baseDir != "" && (showURLOnly || pflag.CommandLine.Lookup("base-url").Changed) {

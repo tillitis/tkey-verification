@@ -28,13 +28,11 @@ func readBuildInfo() string {
 }
 
 func builtWith() {
-	appBins, err := NewAppBins(currentAppHash)
+	appBins, err := NewAppBins()
 	if err != nil {
 		fmt.Printf("Failed to init embedded device apps: %v\n", err)
 		os.Exit(1)
 	}
-
-	deviceSignAppBin := appBins.Current()
 
 	vendorKeys, err := NewVendorKeys(appBins)
 	if err != nil {
@@ -51,15 +49,12 @@ func builtWith() {
 	fmt.Printf(`Built with:
 Supported verisigner-app tags:
   %s
-Device signing using:
-  %s
 Known vendor signing keys:
   %s
 Known firmwares:
   %s
 `,
 		strings.Join(appBins.Tags(), " \n  "),
-		deviceSignAppBin.String(),
 		vendorKeys.String(),
 		strings.Join(firmwares.List(), " \n  "))
 
@@ -71,8 +66,6 @@ func usage() {
 
 Commands:
   serve-signer  Run the server that offers an API for creating vendor signatures.
-
-  sign-challenge Sign a random challenge and verify it against the reported public key
 
   remote-sign   Call the remote signing server to sign for a local TKey.
 
