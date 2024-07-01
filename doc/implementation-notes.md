@@ -28,8 +28,7 @@ Actual binaries are located in the `bins` directory stored like this:
 ### Vendor public keys
 
 Initialized by calling `vendorpubkeys.go:NewVendorKeys()`. Needs to
-know the appbins (see above) and the current hash digest of the app to
-run as the device app to perform signing.
+know the appbins (see above).
 
 The actual vendor keys are defined in the text file
 `vendor-signing-pubkeys.txt`, which is embedded in the binary at build
@@ -49,13 +48,7 @@ In use, it's initialized like this:
 
 ```go
 appBins, err := NewAppBins(latestAppHash)
-vendorKeys, err := NewVendorKeys(appBins, currentVendorHash)
-```
-
-The current public key can be accessed with:
-
-```go
-vendorKeys.Current()
+vendorKeys, err := NewVendorKeys()
 ```
 
 ### Known firmwares
@@ -73,8 +66,8 @@ Defined in `servesigner.go`.
 
 - Initialises its assets using `NewAppBins()` and `NewVendorKeys()`.
 
-- Connects to a vendor TKey, loads the current vendor signing device
-  app.
+- Connects to a vendor TKey, loads the built-in vendor signing device
+  app indicated by the configuration in `vendorapphash`.
 
 - Sets up a HTTPS server exposing a simple API through "net/rpc". The
   RPC commands are in `api.go`.

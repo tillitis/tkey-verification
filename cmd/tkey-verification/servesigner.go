@@ -44,13 +44,21 @@ func serveSigner(conf Config, devPath string, verbose bool, checkConfigOnly bool
 		os.Exit(1)
 	}
 
-	vendorKeys, err := NewVendorKeys(appBins, currentVendorHash)
+	vendorKeys, err := NewVendorKeys(appBins)
 	if err != nil {
 		le.Printf("Found no usable embedded vendor signing public key: %v\n", err)
 		os.Exit(1)
 	}
 
-	vendorPubKey := vendorKeys.Current()
+	// Do we have the configured pubkey to use for vendor signing?
+	var vendorPubKey PubKey
+
+	if pubkey, ok := vendorKeys.Keys[conf.VendorSigningAppHash]; ok {
+		vendorPubKey = pubkey
+	} else {
+		fmt.Printf("Compiled in vendor key corresponding to signing app hash %v not found\n", conf.VendorSigningAppHash)
+		os.Exit(1)
+	}
 
 	if checkConfigOnly {
 		os.Exit(0)
