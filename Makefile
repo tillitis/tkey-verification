@@ -8,7 +8,6 @@ APP_VERSION ?= $(shell git describe --dirty --always | sed -n "s/^v\(.*\)/\1/p")
 # .PHONY to let go-build handle deps and rebuilds
 .PHONY: tkey-verification
 tkey-verification:
-	cp -af vendor-signing-pubkeys.txt ./cmd/tkey-verification/vendor-signing-pubkeys.txt
 	CGO_ENABLED=$(CGO) go build -ldflags "-X main.version=$(APP_VERSION)" -trimpath -buildvcs=false ./cmd/tkey-verification
 	./tkey-verification --version
 
@@ -25,7 +24,6 @@ check-digests:
 .PHONY: clean
 clean:
 	make -C apps clean
-	rm -f cmd/tkey-verification/vendor-signing-pubkeys.txt
 	rm -f tkey-verification
 
 .PHONY: lint
