@@ -1,4 +1,5 @@
 shasum = sha512sum
+CGO = 0
 
 .PHONY: all
 all: tkey-verification
@@ -8,7 +9,7 @@ APP_VERSION ?= $(shell git describe --dirty --always | sed -n "s/^v\(.*\)/\1/p")
 .PHONY: tkey-verification
 tkey-verification:
 	cp -af vendor-signing-pubkeys.txt ./cmd/tkey-verification/vendor-signing-pubkeys.txt
-	CGO_ENABLED=0 go build -ldflags "-X main.version=$(APP_VERSION)" -trimpath -buildvcs=false ./cmd/tkey-verification
+	CGO_ENABLED=$(CGO) go build -ldflags "-X main.version=$(APP_VERSION)" -trimpath -buildvcs=false ./cmd/tkey-verification
 	./tkey-verification --version
 
 .PHONY: podman
