@@ -1,4 +1,4 @@
-// Copyright (C) Tillitis AB
+// Copyright (C) 2024 - Tillitis AB
 // SPDX-License-Identifier: GPL-2.0-only
 
 package main
