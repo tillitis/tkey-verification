@@ -14,8 +14,8 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-func showPubkey(binPath string, devPath string, verbose bool) {
-	tk, err := tkey.NewTKey(devPath, verbose)
+func showPubkey(binPath string, dev Device, verbose bool) {
+	tk, err := tkey.NewTKey(dev.Path, dev.Speed, verbose)
 	if err != nil {
 		le.Printf("Couldn't connect to TKey: %v\n", err)
 		os.Exit(1)

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
+	"github.com/tillitis/tkeyclient"
 )
 
 const progname = "tkey-verification"
@@ -26,8 +27,14 @@ var version string
 // Use when printing err/diag msgs
 var le = log.New(os.Stderr, "", 0)
 
+type Device struct {
+	Path  string
+	Speed int
+}
+
 func main() {
-	var devPath, baseURL, baseDir, configFile, binPath string
+	var dev Device
+	var baseURL, baseDir, configFile, binPath string
 	var checkConfigOnly, verbose, showURLOnly, versionOnly, build, helpOnly bool
 
 	if version == "" {
@@ -36,8 +43,10 @@ func main() {
 
 	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.CommandLine.SortFlags = false
-	pflag.StringVar(&devPath, "port", "",
+	pflag.StringVar(&dev.Path, "port", "",
 		"Set serial port device `PATH`. If this is not passed, auto-detection will be attempted.")
+	pflag.IntVarP(&dev.Speed, "speed", "s", tkeyclient.SerialSpeed,
+		"Set serial port `speed` in bits per second.")
 	pflag.BoolVar(&verbose, "verbose", false,
 		"Enable verbose output.")
 	pflag.StringVar(&configFile, "config", defaultConfigFile,
@@ -102,7 +111,7 @@ func main() {
 			le.Printf("Couldn't load config: %v\n", err)
 		}
 
-		serveSigner(conf, devPath, verbose, checkConfigOnly)
+		serveSigner(conf, dev, verbose, checkConfigOnly)
 
 	case "remote-sign":
 		conf, err := loadRemoteSignConfig(configFile)
@@ -114,7 +123,7 @@ func main() {
 			os.Exit(0)
 		}
 
-		remoteSign(conf, devPath, verbose)
+		remoteSign(conf, dev, verbose)
 
 	case "verify":
 		if baseDir != "" && (showURLOnly || pflag.CommandLine.Lookup("base-url").Changed) {
@@ -122,14 +131,14 @@ func main() {
 			os.Exit(2)
 		}
 
-		verify(devPath, verbose, showURLOnly, baseDir, baseURL)
+		verify(dev, verbose, showURLOnly, baseDir, baseURL)
 
 	case "show-pubkey":
 		if binPath == "" {
 			le.Printf("Needs the path to an app, use `--app PATH`\n")
 			os.Exit(2)
 		}
-		showPubkey(binPath, devPath, verbose)
+		showPubkey(binPath, dev, verbose)
 
 	default:
 		le.Printf("%s is not a valid command.\n", cmd)

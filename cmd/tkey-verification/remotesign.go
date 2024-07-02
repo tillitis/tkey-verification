@@ -15,7 +15,7 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-func remoteSign(conf ProvConfig, devPath string, verbose bool) {
+func remoteSign(conf ProvConfig, dev Device, verbose bool) {
 	_, _, err := net.SplitHostPort(conf.ServerAddr)
 	if err != nil {
 		le.Printf("SplitHostPort failed: %s", err)
@@ -33,7 +33,7 @@ func remoteSign(conf ProvConfig, devPath string, verbose bool) {
 		},
 	}
 
-	appBin, udi, pubKey, fw, err := signChallenge(conf, devPath, verbose)
+	appBin, udi, pubKey, fw, err := signChallenge(conf, dev, verbose)
 	if err != nil {
 		le.Printf("Couldn't sign challenge: %s\n", err)
 		os.Exit(1)
@@ -50,7 +50,7 @@ func remoteSign(conf ProvConfig, devPath string, verbose bool) {
 
 // Returns the currently used device app, UDI, pubkey, expected
 // firmware, and any error
-func signChallenge(conf ProvConfig, devPath string, verbose bool) (AppBin, *tkey.UDI, []byte, Firmware, error) {
+func signChallenge(conf ProvConfig, dev Device, verbose bool) (AppBin, *tkey.UDI, []byte, Firmware, error) {
 	appBins, err := NewAppBins()
 	if err != nil {
 		fmt.Printf("Failed to init embedded device apps: %v\n", err)
@@ -74,7 +74,7 @@ func signChallenge(conf ProvConfig, devPath string, verbose bool) (AppBin, *tkey
 	}
 
 	var fw Firmware
-	tk, err := tkey.NewTKey(devPath, verbose)
+	tk, err := tkey.NewTKey(dev.Path, dev.Speed, verbose)
 	if err != nil {
 		return appBin, nil, nil, fw, fmt.Errorf("%w", err)
 	}

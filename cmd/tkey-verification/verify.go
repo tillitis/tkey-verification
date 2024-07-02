@@ -20,7 +20,7 @@ import (
 
 const verifyInfoURL = "https://www.tillitis.se/verify"
 
-func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, verifyBaseURL string) {
+func verify(dev Device, verbose bool, showURLOnly bool, baseDir string, verifyBaseURL string) {
 	appBins, err := NewAppBins()
 	if err != nil {
 		missing(fmt.Sprintf("no embedded device apps: %v", err))
@@ -39,7 +39,7 @@ func verify(devPath string, verbose bool, showURLOnly bool, baseDir string, veri
 		os.Exit(1)
 	}
 
-	tk, err := tkey.NewTKey(devPath, verbose)
+	tk, err := tkey.NewTKey(dev.Path, dev.Speed, verbose)
 	if err != nil {
 		commFailed(err.Error())
 		os.Exit(1)

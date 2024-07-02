@@ -8,13 +8,15 @@ A program to sign or verify the identity of a Tillitis TKey.
 
 *tkey-verification* -h/--help
 
-*tkey-verification* remote-sign [--port port]
+*tkey-verification* remote-sign [--port port] [--speed speed]
 
-*tkey-verification* serve-signer [--config path] [--check-config] [--port port]
+*tkey-verification* serve-signer [--config path] [--check-config] [--port
+port] [--speed speed]
 
-*tkey-verification* show-pubkey [--port port]
+*tkey-verification* show-pubkey [--port port] [--speed speed]
 
-*tkey-verification* verify [--base-url url] [-d | --base-dir] [--port port] [-u | --show-url]
+*tkey-verification* verify [--base-url url] [-d | --base-dir] [--port
+port] [-u | --show-url] [--speed speed]
 
 # DESCRIPTION
 
@@ -41,6 +43,10 @@ The commands are as follows:
 		Path to the TKey device port. If not given, autodetection will be
 		attempted.
 
+	*--speed* speed
+
+		Speed in bit/s of the TKey device port.
+
 *serve-signer*
 
 	Provide a signing server with its own TKey, the vendor key.
@@ -62,6 +68,10 @@ The commands are as follows:
 
 		Path to the TKey device port. If not given, autodetection will be
 		attempted.
+
+	*--speed* speed
+
+		Speed in bit/s of the TKey device port.
 
 *show-pubkey*
 
@@ -85,6 +95,10 @@ The commands are as follows:
 
 		Path to the TKey device port. If not given, autodetection will be
 		attempted.
+
+	*--speed* speed
+
+		Speed in bit/s of the TKey device port.
 
 *verify*
 
@@ -116,6 +130,10 @@ The commands are as follows:
 
 		Only output the URL to the verification data that should be
 		downloaded, then exit.
+
+	*--speed* speed
+
+		Speed in bit/s of the TKey device port.
 
 ## Verification on a machine without network
 
