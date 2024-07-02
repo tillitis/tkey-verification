@@ -22,7 +22,7 @@ type Verification struct {
 	Signature string `json:"signature"`
 }
 
-func serveSigner(conf ServerConfig, devPath string, verbose bool, checkConfigOnly bool) {
+func serveSigner(conf ServerConfig, dev Device, verbose bool, checkConfigOnly bool) {
 	tlsConfig := tls.Config{
 		Certificates: []tls.Certificate{
 			loadCert(conf.ServerCert, conf.ServerKey),
@@ -64,7 +64,7 @@ func serveSigner(conf ServerConfig, devPath string, verbose bool, checkConfigOnl
 		os.Exit(0)
 	}
 
-	tk, err := tkey.NewTKey(devPath, verbose)
+	tk, err := tkey.NewTKey(dev.Path, dev.Speed, verbose)
 	if err != nil {
 		le.Printf("Couldn't connect to TKey: %v\n", err)
 		os.Exit(1)

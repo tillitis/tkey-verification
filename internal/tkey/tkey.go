@@ -39,7 +39,7 @@ type TKey struct {
 	verbose bool
 }
 
-func NewTKey(devPath string, verbose bool) (*TKey, error) {
+func NewTKey(devPath string, speed int, verbose bool) (*TKey, error) {
 	if !verbose {
 		tkeyclient.SilenceLogging()
 	}
@@ -64,7 +64,7 @@ func NewTKey(devPath string, verbose bool) (*TKey, error) {
 		le.Printf("Connecting to device on serial port %s ...\n", devPath)
 	}
 
-	if err := tkey.client.Connect(devPath); err != nil {
+	if err := tkey.client.Connect(devPath, tkeyclient.WithSpeed(speed)); err != nil {
 		return nil, ConnError{devPath: devPath, err: err}
 	}
 
