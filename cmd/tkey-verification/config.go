@@ -4,59 +4,60 @@
 package main
 
 import (
-	"fmt"
+	"crypto/tls"
 	"os"
 
 	"gopkg.in/yaml.v2"
 )
 
-type Config struct {
-	CACert     string `yaml:"cacert"`
-	ServerCert string `yaml:"servercert"`
-	ServerKey  string `yaml:"serverkey"`
-	ClientCert string `yaml:"clientcert"`
-	ClientKey  string `yaml:"clientkey"`
-	ListenAddr string `yaml:"listen"`
-	ServerAddr string `yaml:"server"`
+type Server struct {
+	Addr      string
+	TLSConfig tls.Config
 }
 
-func loadServeSignerConfig(fn string) Config {
-	conf, err := loadConfig(fn)
-	if err != nil {
-		le.Printf("%s\n", err)
-		os.Exit(1)
-	}
-	if conf.ClientCert != "" || conf.ClientKey != "" || conf.ServerAddr != "" {
-		le.Printf("Command is \"serve-signer\", but found clientcert/clientkey/server in config file.\n")
-		os.Exit(1)
-	}
-	return conf
+type ServerConfig struct {
+	CACert               string `yaml:"cacert"`
+	ServerCert           string `yaml:"servercert"`
+	ServerKey            string `yaml:"serverkey"`
+	ListenAddr           string `yaml:"listen"`
+	VendorSigningAppHash string `yaml:"vendorapphash"`
 }
 
-func loadRemoteSignConfig(fn string) Config {
-	conf, err := loadConfig(fn)
-	if err != nil {
-		le.Printf("%s\n", err)
-		os.Exit(1)
-	}
-	if conf.ServerCert != "" || conf.ServerKey != "" || conf.ListenAddr != "" {
-		le.Printf("Command is \"remote-sign\", but found servercert/serverkey/listen in config file.\n")
-		os.Exit(1)
-	}
-	return conf
+type ProvConfig struct {
+	CACert         string `yaml:"cacert"`
+	ClientCert     string `yaml:"clientcert"`
+	ClientKey      string `yaml:"clientkey"`
+	ServerAddr     string `yaml:"server"`
+	SigningAppHash string `yaml:"signingapphash"`
 }
 
-func loadConfig(fn string) (Config, error) {
-	var conf Config
+func loadServeSignerConfig(fn string) (ServerConfig, error) {
+	var conf ServerConfig
 
 	rawConfig, err := os.ReadFile(fn)
 	if err != nil {
-		return conf, fmt.Errorf("ReadFile failed: %w", err)
+		return conf, IOError{path: fn, err: err}
 	}
 
 	err = yaml.Unmarshal(rawConfig, &conf)
 	if err != nil {
-		return conf, fmt.Errorf("Unmarshal failed: %w", err)
+		return conf, ParseError{what: "config", err: err}
+	}
+
+	return conf, nil
+}
+
+func loadRemoteSignConfig(fn string) (ProvConfig, error) {
+	var conf ProvConfig
+
+	rawConfig, err := os.ReadFile(fn)
+	if err != nil {
+		return conf, IOError{path: fn, err: err}
+	}
+
+	err = yaml.Unmarshal(rawConfig, &conf)
+	if err != nil {
+		return conf, ParseError{what: "config", err: err}
 	}
 
 	return conf, nil

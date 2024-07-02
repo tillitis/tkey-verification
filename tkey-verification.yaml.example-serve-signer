@@ -3,3 +3,6 @@ cacert: "certs/tillitis.crt"
 servercert: "certs/server.crt"
 serverkey: "certs/server.key"
 listen: "localhost:1337"
+
+# SHA-512 digest of the app used for vendor signing
+vendorapphash: "f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142"

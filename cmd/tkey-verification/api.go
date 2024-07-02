@@ -5,6 +5,7 @@ package main
 
 import (
 	"crypto/ed25519"
+	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -16,22 +17,25 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
+const MessageLen = tkey.UDISize + sha512.Size + ed25519.PublicKeySize
+
 type API struct {
 	mu           sync.Mutex
 	vendorPubKey []byte
-	devPath      string
+	tk           tkey.TKey
 }
 
-func NewAPI(vendorPubKey []byte, devPath string) *API {
+func NewAPI(vendorPubKey []byte, tk tkey.TKey) *API {
 	return &API{
 		mu:           sync.Mutex{},
 		vendorPubKey: vendorPubKey,
-		devPath:      devPath,
+		tk:           tk,
 	}
 }
 
 func (*API) Ping(_ *struct{}, _ *struct{}) error {
 	le.Printf("Got Ping\n")
+
 	return nil
 }
 
@@ -49,42 +53,50 @@ func (api *API) Sign(args *Args, _ *struct{}) error {
 	le.Printf("Going to sign for TKey with UDI:%s(BE) apptag:%s apphash:%0x…\n", hex.EncodeToString(args.UDIBE), args.AppTag, args.AppHash[:16])
 
 	if l := len(args.UDIBE); l != tkey.UDISize {
-		err := fmt.Errorf("Expected %d bytes UDIBE, got %d", tkey.UDISize, l)
-		le.Printf("%s\n", err)
-		return err
+		le.Printf("Expected %d bytes UDIBE, got %d", tkey.UDISize, l)
+
+		return ErrUDI
 	}
 
 	if args.AppTag == "" {
-		err := fmt.Errorf("Empty tag")
-		le.Printf("%s\n", err)
-		return err
+		le.Printf("No tag provided\n")
+
+		return ErrNoTag
+	}
+
+	// Not encoded as hex, so this is the best we can do, instead
+	// of trying to parse.
+	if l := len(args.AppHash); l != sha512.Size {
+		le.Printf("Expected %d bytes app digest, got %d\n", sha512.Size, l)
+
+		return ErrWrongDigest
 	}
 
 	if l := len(args.Message); l != MessageLen {
-		err := fmt.Errorf("Expected %d bytes message to sign, got %d", MessageLen, l)
-		le.Printf("%s\n", err)
-		return err
+		le.Printf("Expected %d bytes message to sign, got %d\n", MessageLen, l)
+
+		return ErrWrongLen
 	}
 
-	signature, err := tkey.Sign(api.devPath, api.vendorPubKey, args.Message)
+	signature, err := api.tk.Sign(args.Message)
 	if err != nil {
-		err = fmt.Errorf("tkey.Sign failed: %w", err)
-		le.Printf("%s\n", err)
-		return err
+		le.Printf("tkey.Sign failed: %v", err)
+
+		return ErrSignFailed
 	}
 
 	if !ed25519.Verify(api.vendorPubKey, args.Message, signature) {
-		err = fmt.Errorf("Vendor signature failed verification")
-		le.Printf("%s\n", err)
-		return err
+		le.Printf("Vendor signature failed verification\n")
+
+		return ErrVerificationFailed
 	}
 
 	// File named after the UDIBE in hex
 	fn := fmt.Sprintf("%s/%s", signaturesDir, hex.EncodeToString(args.UDIBE))
 	if _, err = os.Stat(fn); err == nil || !errors.Is(err, os.ErrNotExist) {
-		err = fmt.Errorf("%s already exists?", fn)
-		le.Printf("%s\n", err)
-		return err
+		le.Printf("Signature file %s already exists\n", fn)
+
+		return ErrSigExist
 	}
 
 	json, err := json.Marshal(Verification{
@@ -94,16 +106,16 @@ func (api *API) Sign(args *Args, _ *struct{}) error {
 		Signature: hex.EncodeToString(signature),
 	})
 	if err != nil {
-		err = fmt.Errorf("Marshal failed: %w", err)
-		le.Printf("%s\n", err)
-		return err
+		le.Printf("JSON Marshal failed: %v", err)
+
+		return ErrInternal
 	}
 
-	// #nosec G306
+	//nolint:gosec
 	if err = os.WriteFile(fn, append(json, '\n'), 0o644); err != nil {
-		err = fmt.Errorf("WriteFile %s failed: %w", fn, err)
-		le.Printf("%s\n", err)
-		return err
+		le.Printf("WriteFile %s failed: %v", fn, err)
+
+		return ErrInternal
 	}
 
 	le.Printf("Wrote %s\n", fn)
