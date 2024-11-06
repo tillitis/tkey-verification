@@ -13,8 +13,8 @@ Changes:
   it more idiomatic
 - Signer binaries are now checked in to the repo under
   cmd/tkey-verification/bins
-- Verisinger-0.0.3 is deprecated, but buildable from older tags
-- New singer app included, signer-v1.0.1, built from
+- Verisigner-0.0.3 is deprecated, but buildable from older tags
+- New signer app included, signer-v1.0.1, built from
   tkey-device-signer without touch
 - Support multiple vendor signing keys
 - Earlier `show-pubkey` program is now a command in tkey-verification
