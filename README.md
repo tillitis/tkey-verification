@@ -75,7 +75,7 @@ you won't get the tag in `--version`.
    signature, signer tag and digest for this UDI.
 3. Run the signer with the same tag and digest on the device under
    verification.
-4. Retrive the signer public key.
+4. Retrieve the signer public key.
 5. Ask signer to sign a random challenge.
 6. Verify the signature of the random challenge with the signer public
    key thus proving that the device under verification has access to the
@@ -112,7 +112,7 @@ The device apps used for signing is included in binary form under
 device apps](#building-included-device-apps) if you want to build them
 yourself.
 
-## Maintainance
+## Maintenance
 
 See [Implementation notes](doc/implementation-notes.md) for more
 in-depth notes on the program.
