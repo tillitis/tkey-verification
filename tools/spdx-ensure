@@ -29,6 +29,7 @@ go.mod
 go.sum
 gon.hcl
 .clang-format
+cmd/tkey-verification/bins/README.md
 cmd/tkey-verification/bins/signer-v1.0.1.bin
 cmd/tkey-verification/bins/signer-v1.0.1.bin.sha512
 cmd/tkey-verification/bins/verisigner-v0.0.3.bin
