@@ -12,8 +12,8 @@ github.com/stretchr/testify v1.8.0 h1:pSgiaMZlXftHpm5L7V1+rVB+AZJydKsMxsQBIJw4PK
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/tillitis/tkeyclient v1.1.0 h1:/RTIGMZGR8cZ6bUkgZLUmDvTNH5C7qSU2qaSDl3nxhA=
 github.com/tillitis/tkeyclient v1.1.0/go.mod h1:K3b/zU58CLtP5iaOMypc4c7PAAmNqyw7F3bs5iNYtG0=
-github.com/tillitis/tkeysign v1.0.0 h1:qB4UZQzIRsEsQg1hLZE1bhQmk37O4c2qTStn5CAuhlg=
-github.com/tillitis/tkeysign v1.0.0/go.mod h1:7byJbKOEwCjCcUT9lw8WARl+0xO1fFrq+QMJc4MYiqA=
+github.com/tillitis/tkeysign v1.0.1 h1:E+nycj/iv9247MOBval1PmWcZ68J7LUXhXdlW49+N08=
+github.com/tillitis/tkeysign v1.0.1/go.mod h1:C4gYuqI2HHJ86S0PoWlk30eFsKDnMvdEgIYIVyNfzvY=
 go.bug.st/serial v1.6.2 h1:kn9LRX3sdm+WxWKufMlIRndwGfPWsH1/9lCWXQCasq8=
 go.bug.st/serial v1.6.2/go.mod h1:UABfsluHAiaNI+La2iESysd9Vetq7VRdpxvjx7CmmOE=
 golang.org/x/crypto v0.28.0 h1:GBDwsMXVQi34v5CCYUm2jkJvu4cbtru2U4TN2PSyQnw=
