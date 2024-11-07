@@ -342,3 +342,6 @@ The current set of valid, predefined SPDX identifiers can be found on
 the SPDX License List at:
 
 https://spdx.org/licenses/
+
+We attempt to follow the [REUSE
+specification](https://reuse.software/).

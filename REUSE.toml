@@ -1,0 +1,65 @@
+# SPDX-FileCopyrightText: 2024 Tillitis AB <tillitis.se>
+# SPDX-License-Identifier: BSD-2-Clause
+version = 1
+
+[[annotations]]
+path = ".github/workflows/*"
+SPDX-FileCopyrightText = "2022 Tillitis AB <tillitis.se>"
+SPDX-License-Identifier = "BSD-2-Clause"
+
+[[annotations]]
+path = [
+     ".clang-format",
+     ".editorconfig",
+     ".gitignore",
+     ".golangci.yml",
+     ".goreleaser.yaml",
+     "Makefile",
+     "README.md",
+     "RELEASE.md",
+     "certs/client.crt",
+     "certs/client.csr",
+     "certs/client.key",
+     "certs/server.crt",
+     "certs/server.csr",
+     "certs/server.key",
+     "certs/tillitis.crl",
+     "certs/tillitis.crt",
+     "certs/tillitis.key",
+     "cmd/tkey-verification/bins/README.md",
+     "cmd/tkey-verification/bins/signer-v1.0.1.bin",
+     "cmd/tkey-verification/bins/signer-v1.0.1.bin.sha512",
+     "cmd/tkey-verification/bins/verisigner-v0.0.3.bin",
+     "cmd/tkey-verification/bins/verisigner-v0.0.3.bin.deps",
+     "cmd/tkey-verification/bins/verisigner-v0.0.3.bin.sha512",
+     "cmd/tkey-verification/vendor-signing-pubkeys.txt",
+     "doc/implementation-notes.md",
+     "doc/tkey-verification.1",
+     "doc/tkey-verification.scd",
+     "go.mod",
+     "go.sum",
+     "release-builds/tkey-verification_0.0.2_linux-amd64.sha512",
+     "release-builds/tkey-verification_0.0.2_macos-amd64.sha512",
+     "release-builds/tkey-verification_0.0.2_macos-arm64.sha512",
+     "release-builds/tkey-verification_0.0.2_macos-universal.sha512",
+     "release-builds/tkey-verification_0.0.2_windows-amd64.exe.sha512",
+     "release-builds/tkey-verification_0.0.3_linux-amd64.sha512",
+     "release-builds/tkey-verification_0.0.3_macos-amd64.sha512",
+     "release-builds/tkey-verification_0.0.3_macos-arm64.sha512",
+     "release-builds/tkey-verification_0.0.3_macos-universal.sha512",
+     "release-builds/tkey-verification_0.0.3_windows-amd64.exe.sha512",
+     "test-vendor-signing-pubkeys.txt",
+     "tkey-verification.yaml.example-remote-sign",
+     "tkey-verification.yaml.example-serve-signer"
+]
+SPDX-FileCopyrightText = "2022 Tillitis AB <tillitis.se>"
+SPDX-License-Identifier = "BSD-2-Clause"
+
+
+[[annotations]]
+path = [
+     "cmd/tkey-verification/bins/signer-v1.0.1.bin",
+     "cmd/tkey-verification/bins/verisigner-v0.0.3.bin",
+]
+SPDX-FileCopyrightText = "2022 Tillitis AB <tillitis.se>"
+SPDX-License-Identifier = "GPL-2.0-only"

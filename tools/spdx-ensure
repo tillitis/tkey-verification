@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2022 - Tillitis AB
+# SPDX-FileCopyrightText: 2022 Tillitis AB <tillitis.se>
 # SPDX-License-Identifier: BSD-2-Clause
 
 set -eu
@@ -15,6 +15,7 @@ tag="SPDX-License-Identifier:"
 
 missingok_dirs=(
     certs
+    LICENSES
 )
 
 missingok_files=(
@@ -28,6 +29,7 @@ LICENSE
 Makefile
 README.md
 RELEASE.md
+REUSE.toml
 go.mod
 go.sum
 gon.hcl
