@@ -1,6 +1,8 @@
+# SPDX-FileCopyrightText: 2024 Tillitis AB <tillitis.se>
+# SPDX-License-Identifier: BSD-2-Clause
 
 source = ["dist/tkey-verification_darwin_all/tkey-verification"]
-bundle_id = "com.tillitis.tkey-sign"
+bundle_id = "com.tillitis.tkey-verification"
 
 apple_id {
   username = "[email protected]"
