@@ -2,8 +2,10 @@
 
 `tkey-verification` is a tool used for signing a TKey identity and
 verifying that it still has the same identity as it did when it was
-provisioned, typically by [Tillitis](https://tillitis.se/) the
-original vendor.
+provisioned, typically by [Tillitis](https://tillitis.se/). This does
+not prove that the TKey hasn't been tampered with, only that the
+identity of an app running on it is the same and, to a lesser degree,
+that it still runs the same firmware.
 
 *Note well*: If your TKey has been provisioned by you or someone else,
 like your IT department, you will need to run their version of the
@@ -47,6 +49,82 @@ you won't get the tag in `--version`.
   under verification.
 - "vendor signature": A signature made by the signing server.
 
+## What is verified?
+
+What does verifying a TKey with `tkey-verification` prove?
+
+Remember that the base idea of the TKey is the unconditional
+measurement of a device app that creates a unique identity we call the
+Compound Device Identiy (CDI). The CDI is based on combining the
+Unique Device Secret embedded in the FPGA bitstream and the integrity
+of the device app running on the TKey (and an optional User Supplied
+Secret which is not used in this case):
+
+```
+CDI = blake2s(UDS, blake2s(application), USS)
+```
+
+CDI is always computed before starting an app. It can be said to be
+the identity of a device app running on a hardware device with this
+particular UDS.
+
+To verify that this identity is unchanged from provision to user the
+vendor can run a specific device app providing public key
+cryptographic signatures (signer). Signer will generate it's key pair
+based on the CDI, thus embedding the UDS from the hardware. The key
+pair is directly linked to that specific app running on a TKey with
+that UDS.
+
+The basic idea is:
+
+- The vendor creates a signed message that proves they ran this
+  particular app on a device with this particular Unique Device Secret
+  (UDS).
+
+  The message itself is not published, but the signature and some
+  metadata is (see [Verification file](#verification-file) for what is
+  published). The message can later be recreated by the verification.
+
+- When doing a verification, tkey-verification recreates the message,
+  including doing a challenge/response to the device under
+  verification to prove that it has the correct private key, checks
+  the vendor signature over the recreated message and can then
+  conclude that the device under verification has:
+
+  - the same Unique Device Identifier.
+  - the same app key pair.
+
+That the device has the same key pair proves that the Compund Device
+Identifer was the same, which in turn proves that it's the same app
+that was used during provisioning. This also means that the device
+during provisioning had the same Unique Device Secret (UDS) in
+hardware.
+
+**Proven**: It's now proven that this was a TKey with the same UDS
+running the same application.
+
+Less strongly shown:
+
+- The firmware check assumes that a hash digest over the part of
+  memory where the firmware is supposed to be suffices. In a
+  manipulated TKey the real firmware might be somewhere else.
+- The RISC-V softcore isn't proven at all, but it was at least able
+  to run the device app successfully.
+
+Not proved at all:
+
+- The rest of the FPGA design, except the UDS.
+- USB controller CH552 firmware.
+- PCB design.
+
+## Weaknesses
+
+- The entire device is not proven.
+- The distribution of the vendor public key is sensitive. It's right
+  now embedded in tkey-verification.
+- The distribution of the tkey-verification program is sensitive.
+  Reproducible builds if using pinned version of tools (not macOS).
+
 ## Security Protocol
 
 ### During provisioning
@@ -63,7 +141,7 @@ you won't get the tag in `--version`.
    the internal firmware database to verify that the TKey, according
    to its hardware revision, is running the expected firmware.
 7. Sign a message consisting of the UDI, firmware digest, and signer
-   public key, with a vendor signature.
+   public key with a vendor signature.
 8. Publish the [Verification file](#verification-file), which includes
    the UDI, the tag and digest of the signer program used, the vendor
    signature, and the timestamp when signature was made.
@@ -84,7 +162,7 @@ you won't get the tag in `--version`.
    the internal firmware database to verify that the TKey, according
    to its hardware revision, is running the expected firmware.
 8. Recreate the message of UDI, firmware digest and signer public key.
-   Verify the vendor signature of the message, thus proving that the
+9. Verify the vendor signature of the message, thus proving that the
    UDI, the firmware, and this private/public key pair was the same
    during vendor signing.
 
