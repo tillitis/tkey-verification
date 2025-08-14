@@ -1,21 +1,22 @@
 # Tillitis TKey Verification
 
 `tkey-verification` is a tool used for signing a TKey identity and
-verifying that it still has the same identity as it did when it was
-provisioned, typically by [Tillitis](https://tillitis.se/). This does
-not prove that the TKey hasn't been tampered with, only that the
-identity of an app running on it is the same and, to a lesser degree,
-that it still runs the same firmware.
+verifying that the same TKey still has the same identity later.
 
-*Note well*: If your TKey has been provisioned by you or someone else,
-like your IT department, you will need to run their version of the
+The verification of this identity does not prove that the TKey hasn't
+been tampered with, only that the identity of an app running on it is
+the same and, to a lesser degree, that it still runs the same
+firmware.
+
+*Note well*: If your TKey hasn't been provisioned by Tillitis, for
+example your IT department, you will need to run their version of the
 `tkey-verification` program instead of this one.
 
 ## Installation
 
 [Official
-instructions](https://tillitis.se/app/tkey-device-verification/) on
-Tillitis' web.
+instructions](https://www.tillitis.se/applications/tkey-device-verification/)
+on Tillitis' web.
 
 You can download a release of the tool at:
 
@@ -47,83 +48,114 @@ you won't get the tag in `--version`.
   [tkey-device-signer](https://github.com/tillitis/tkey-device-signer).
 - "signer public key": The public key of signer running on the device
   under verification.
+- "vendor public key": The public key of the vendor, typically
+  Tillitis, corresponding to a private key in a TKey in the signing
+  server.
 - "vendor signature": A signature made by the signing server.
 
 ## What is verified?
 
 What does verifying a TKey with `tkey-verification` prove?
 
-Remember that the base idea of the TKey is the unconditional
-measurement of a device app that creates a unique identity we call the
-Compound Device Identiy (CDI). The CDI is based on combining the
-Unique Device Secret embedded in the FPGA bitstream and the integrity
-of the device app running on the TKey (and an optional User Supplied
-Secret which is not used in this case):
+To explain the verification and what it proves, first we need a brief
+explanation on how the TKey works. The TKey uses measured boot. The
+measured boot guarantees that every app that starts on the TKey gets a
+unique identity called the Compound Device Identity (CDI).
+
+The CDI is a combination of:
+
+- a per-device unique secret embedded in the hardware, the Unique
+  Device Secret (UDS),
+  
+- the integrity of the software before it is started, as measured by
+  immutable and thefore trusted firmware, and,
+
+- an optional User Supplied Secret (not used in this case).
+
+The CDI is computed like this:
 
 ```
 CDI = blake2s(UDS, blake2s(application), USS)
 ```
 
-CDI is always computed before starting an app. It can be said to be
-the identity of a device app running on a hardware device with this
-particular UDS.
+where `blake2s` is the hash function BLAKE2s from [RFC
+7693](https://www.rfc-editor.org/info/rfc7693).
 
-To verify that this identity is unchanged from provision to user the
-vendor can run a specific device app providing public key
-cryptographic signatures (signer). Signer will generate it's key pair
-based on the CDI, thus embedding the UDS from the hardware. The key
-pair is directly linked to that specific app running on a TKey with
-that UDS.
+There are two parts to verifying a TKey. First what the vendor does
+during provisioning, then what the user does during verification:
 
-The basic idea is:
-
-- The vendor creates a signed message that proves they ran this
-  particular app on a device with this particular Unique Device Secret
-  (UDS).
+- Provisioning: The vendor signes a message containing the Unique
+  Device Identifier (UDI), a digest over the observed firmware, and
+  the signer's public key.
 
   The message itself is not published, but the signature and some
-  metadata is (see [Verification file](#verification-file) for what is
-  published). The message can later be recreated by the verification.
+  metadata is (see [Verification file](#verification-file) for
+  details). The message can later be recreated by the verification
+  process.
 
-- When doing a verification, tkey-verification recreates the message,
-  including doing a challenge/response to the device under
-  verification to prove that it has the correct private key, checks
-  the vendor signature over the recreated message and can then
-  conclude that the device under verification has:
+- Verification: `tkey-verification` first recreates the message (UDI,
+  firmware digest, signer's public key), checks the vendor signature
+  over the message, and finally does a challenge/response to prove
+  that the device under verification has the corresponding private
+  key.
 
-  - the same Unique Device Identifier.
-  - the same app key pair.
-
-That the device has the same key pair proves that the Compund Device
-Identifer was the same, which in turn proves that it's the same app
-that was used during provisioning. This also means that the device
-during provisioning had the same Unique Device Secret (UDS) in
-hardware.
-
-**Proven**: It's now proven that this was a TKey with the same UDS
-running the same application.
+**Proven**: It's now proven that the currently used TKey device,
+running this device app is the same as the TKey device (or at least a
+device with the exact same UDS) that was running the same device app
+during provisioning.
 
 Less strongly shown:
 
 - The firmware check assumes that a hash digest over the part of
   memory where the firmware is supposed to be suffices. In a
-  manipulated TKey the real firmware might be somewhere else.
-- The RISC-V softcore isn't proven at all, but it was at least able
-  to run the device app successfully.
+  manipulated TKey the real firmware might be somewhere else, with a
+  copy of the expected firmware in the right place in the memory map.
+- The authenticity of the RISC-V softcore isn't proven, but it was at
+  least able to run the device app successfully.
+- The rest of the FPGA design, except the UDS, but at least it worked
+  as expected with the loaded signer app.
 
 Not proved at all:
 
-- The rest of the FPGA design, except the UDS.
-- USB controller CH552 firmware.
+- USB controller CH552 firmware and hardware.
 - PCB design.
+
+## Why is the signed message not published?
+
+The message that is signed by the vendor key is not published. It is,
+instead, recreated when verifying a TKey. This makes it impossible for
+anyone else to verify the message, including for the vendor, if the
+vendor haven't stored the message somewhere else.
+
+When designing this system we were afraid that publishing, or even
+keeping, the signer public key in a way that ties it very strongly to
+a certain UDI would be bad for the user. 
+
+Since we're currently using the ordinary
+[signer](https://github.com/tillitis/tkey-device-signer) device app
+publishing the signer public key from this specific TKey would be
+equivalent of publishing the user's public SSH key (if they choose not
+to use an USS) to the entire world. We were not comfortable in doing
+that even if it would, in a way, be a way of doing hardware
+attestation of the TKey. We might need to revisit this.
+
+Note that we always recommend using an USS for all your own use of the
+TKey!
 
 ## Weaknesses
 
 - The entire device is not proven.
-- The distribution of the vendor public key is sensitive. It's right
-  now embedded in tkey-verification.
-- The distribution of the tkey-verification program is sensitive.
-  Reproducible builds if using pinned version of tools (not macOS).
+- The distribution of the vendor public key is sensitive. Since all
+  trust is placed in the vendor's signature, all fails if the end user
+  is tricked to use the wrong vendor public key. It's right now
+  embedded in tkey-verification.
+- The distribution of the tkey-verification client app is sensitive,
+  since if it is malicious it can just say "TKey is genuine!" without
+  actually doing much else.
+
+  However, the build of tkey-verification is reproducible if using
+  pinned versions of tools (but currently not the macOS binary). The
+  same verification can also be done independently by other tools.
 
 ## Security Protocol
 
@@ -142,9 +174,10 @@ Not proved at all:
    to its hardware revision, is running the expected firmware.
 7. Sign a message consisting of the UDI, firmware digest, and signer
    public key with a vendor signature.
-8. Publish the [Verification file](#verification-file), which includes
-   the UDI, the tag and digest of the signer program used, the vendor
-   signature, and the timestamp when signature was made.
+8. Publish the [Verification file](#verification-file) containing the
+   tag and digest of the signer program used, the vendor signature,
+   and the timestamp when signature was made. This should be indexed
+   by the UDI.
 
 ### Verifying
 
@@ -361,12 +394,12 @@ Example file content:
 `tkey-verification` is released with the help of GoReleaser, see
 `.goreleaser.yaml` in the root of the repo.
 
-Currently this has to be done on a computer running Darwin, at least
-for Tillitis' official releases. The reason is that `tkeyclient` needs
-CGO enabled for Darwin to enumerate USB-devices, and that the Darwin
-binary is signed with Tillitis' Apple Developer Certificate, which
-at the moment also needs to be done using Darwin. We are looking into
-solutions for both those points.
+Currently this has to be done on a computer running macOS/Darwin, at
+least for Tillitis' official releases. The reason is that `tkeyclient`
+needs CGO enabled for Darwin to enumerate USB-devices, and that the
+Darwin binary is signed with Tillitis' Apple Developer Certificate,
+which at the moment also needs to be done using Darwin. We are looking
+into solutions for both those points.
 
 You should be able to build a binary that is a exact copy of our
 release binaries if you use the same Go compiler, at least for the
