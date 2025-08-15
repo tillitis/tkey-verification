@@ -172,12 +172,13 @@ TKey!
 6. Ask signer for a digest of the firmware binary (in ROM). Consult
    the internal firmware database to verify that the TKey, according
    to its hardware revision, is running the expected firmware.
-7. Sign a message consisting of the UDI, firmware digest, and signer
-   public key with a vendor signature.
-8. Publish the [Verification file](#verification-file) containing the
-   tag and digest of the signer program used, the vendor signature,
-   and the timestamp when signature was made. This should be indexed
-   by the UDI.
+7. Sigsum sign a message consisting of the UDI, firmware digest, and
+   signer public key with a vendor signature, creating a Sigsum
+   request file.
+8. Submit the request file to the Sigsum log, collecting the proof.
+9. Build the Verification file, including the Sigsum proof.
+10. Publish the [Verification file](#verification-file), indexed by
+    the UDI.
 
 The following diagram contains an overview of how data flows during
 provisioning:
@@ -187,8 +188,8 @@ provisioning:
 ### Verifying
 
 1. Retrieve the UDI from the device under verification.
-2. Get the [Verification file](#verification-file) with the vendor
-   signature, signer tag and digest for this UDI.
+2. Get the [Verification file](#verification-file) with the Sigsum
+   proof, app tag, and app digest for this UDI.
 3. Run the signer with the same tag and digest on the device under
    verification.
 4. Retrieve the signer public key.
@@ -200,7 +201,7 @@ provisioning:
    the internal firmware database to verify that the TKey, according
    to its hardware revision, is running the expected firmware.
 8. Recreate the message of UDI, firmware digest and signer public key.
-9. Verify the vendor signature of the message, thus proving that the
+9. Verify the Sigsum proof of the message, thus proving that the
    UDI, the firmware, and this private/public key pair was the same
    during vendor signing.
 
@@ -366,12 +367,24 @@ $ cat other-pubkey.txt >> cmd/tkey-verification/vendor-signing-pubkeys.txt
 $ make
 ```
 
-## Verification file
+## Flow
 
 The computer running `tkey-verification serve-sign` generates files
 in a directory `signatures/` which is named after the Unique Device
-Identifier (in hex), for example `signatures/0133704100000015`. This
-file is needed in order to be able to verify a TKey.
+Identifier (in hex), for example `signatures/0133704100000015`.
+
+## Verification file
+
+The verification file is what the vendor should publish on a web
+server, indexed by the UDI. The canonical URL is:
+
+https://tkey.tillitis.se/verify/UDI-in-hex
+
+like:
+
+https://tkey.tillitis.se/verify/0133704100000015
+
+This file is needed in order to be able to verify a TKey.
 
 The file contains:
 
@@ -380,8 +393,8 @@ The file contains:
   verification,
 - apphash: The hash of the signer app binary used on the device under
   verification. Stored in hexadecimal.
-- signature: Vendor signature of the message (described above). Stored
-  in hexadecimal.
+- proof: Sigsum proof that the message (described above) has been
+  signed and logged.
 
 Example file content:
 
@@ -390,8 +403,65 @@ Example file content:
   "timestamp": "2023-03-03T09:31:51Z",
   "apptag": "verisigner-v0.0.1",
   "apphash": "9598910ec9ebe2504a5f894de6f8e0677dc94c156c7bd6f7e805a35354b3c85daa4ca66ab93f4d75221b501def457b4cafc933c6cdcf16d1eb8ccba6cccf6630",
-  "signature": "db4e7a72b720b33f6d4887df0f9dcdd6988ca8adb6b0042d8e8c92b5be3e4e39d908f166d093f3ab20880102d43a2b0c8e31178ab7cdb59977dcf7204116cc0c"
+  "proof": "version=1
+log=4e89cc51651f0d95f3c6127c15e1a42e3ddf7046c5b17b752689c402e773bb4d
+leaf=37a7 f3744a4d05231ceed5d704e7fcdd8ee436f2253d980cf5716ae34cc16c06f439 b7cde475555105f6d638d9b9c23b0e66f377a649c2ccbb0cf345adaecb91bbd99ea2193d02739c184c016917d94eff0432c74af94923f676032eab32a5d5fa0f
+
+size=4062
+root_hash=49978d3adbc02ec2236b14cd144f66cc9af9ab425805a5d94d0b841b97aefcb7
+signature=6e9bfaf3d510e7a633581d0d32779544e24d2fa9613623646bb840612b67988214e3e320ad4e718c909bd184659d084dd80139245af831c1667f40c22df0a40b
+cosignature=1c997261f16e6e81d13f420900a2542a4b6a049c2d996324ee5d82a90ca3360c 1755093398 929d20560672440355d20c4ec8100cfc68a3b7b03d3b4d28c9035be20a878ed56840aa7f09c02e12a7ffc750b38079533de30838d3692c86839e22e7ee854e02
+cosignature=70b861a010f25030de6ff6a5267e0b951e70c04b20ba4a3ce41e7fba7b9b7dfc 1755093398 1fb1d21df1c86bc715e755e1a7ec202d96f1cd50532a4ba2a05bcdf4ee63da9d38222481e1bc87460b149a6f422adba2bdd2df1a37f5d693c7415b1f7ad89b0b
+cosignature=b95ef35a9ffb3cf516f423a04128d37d3bffc74d4096bd5e967990c53d09678a 1755093398 79b6296cb16ff0f7c91a8bfdc01f6e21071dbb3b28147c7ffe0a836f3efe5c3362a3276d4b115556be18bd94d53d530e944a48fa3f47baccefe39bdd8d1aa50c
+cosignature=0d4f46a219ab309cea48cde9712e7d8486fc99802f873175eeab70fb84b4f5a4 1755093398 ccb980e1288afb9b5d5af638747659ac6e38158311a33e4ea5beae5970b24a4a02271d31311ae3f151a7d670febd485298a0f1c27b2d6da7f65da7237a0ef30b
+cosignature=49c4cd6124b7c572f3354d854d50b2a4b057a750f786cf03103c09de339c4ea3 1755093398 f43e218c43190614a4ad55607cd90bcbbdff4ddb03479a36d97e2e7110adb1b884da58ff0cb79cef34521af5e7d275550669b05e4f720b66409d7948d97da00b
+cosignature=42351ad474b29c04187fd0c8c7670656386f323f02e9a4ef0a0055ec061ecac8 1755093398 a1b99033b4c25c6928f1fe1f01139293b2ebe60389b666ebf70ce50a9f0482cb5430122f44428696cd627db53c6d3a3c47ce71d6bee837cca3f73d0eca01320f
+
+leaf_index=4060
+node_hash=8134a4b1064781ea4bcd2d1d52a55b28e1487135428efd796adf06e6d00dabb8
+node_hash=bbbe78c97a3239921223a28ad37fa32797b7bec3341d1c73f256b9b357ded247
+node_hash=c2a794d933464b45857d384f5b35856e52c5e6848313aacffc59b58e6d5401e9
+node_hash=0c39cd314a79e8448420ac0f34b0d40df7fdfdba17fe361c9064a64ff8412a8e
+node_hash=3122831be7d8ba0ec99668c54738b8179e9b2c38f2fdf90e0c976c37c188f59c
+node_hash=c6d62d0782909d3bca2d24c6cb9d7a79402c08f197fdf752da734b40aa9147ad
+node_hash=669f4a51ce90d6277f63228b31bf329bc4a302501353d4d8b1089615c6f28afb
+node_hash=50626559da5d62f538bb83a268b6e1c9207a084c3ec6505faed00b2ca166392e
+node_hash=f677460b20097baf3117a02e92cfad2ac951a43b213088f7494ba1fe7775b204
+node_hash=c83420a707810b251a145f460d4cb6191fd68910d68190a8685b7ce9bf4d5c5a"
 }
+```
+
+TODO: Decide on the format of the proof. Included like this? As a
+separate resource on another URL linked through the JSON file?
+
+Here's a proof included above, for reference:
+
+```
+version=1
+log=4e89cc51651f0d95f3c6127c15e1a42e3ddf7046c5b17b752689c402e773bb4d
+leaf=37a7 f3744a4d05231ceed5d704e7fcdd8ee436f2253d980cf5716ae34cc16c06f439 b7cde475555105f6d638d9b9c23b0e66f377a649c2ccbb0cf345adaecb91bbd99ea2193d02739c184c016917d94eff0432c74af94923f676032eab32a5d5fa0f
+
+size=4062
+root_hash=49978d3adbc02ec2236b14cd144f66cc9af9ab425805a5d94d0b841b97aefcb7
+signature=6e9bfaf3d510e7a633581d0d32779544e24d2fa9613623646bb840612b67988214e3e320ad4e718c909bd184659d084dd80139245af831c1667f40c22df0a40b
+cosignature=1c997261f16e6e81d13f420900a2542a4b6a049c2d996324ee5d82a90ca3360c 1755093398 929d20560672440355d20c4ec8100cfc68a3b7b03d3b4d28c9035be20a878ed56840aa7f09c02e12a7ffc750b38079533de30838d3692c86839e22e7ee854e02
+cosignature=70b861a010f25030de6ff6a5267e0b951e70c04b20ba4a3ce41e7fba7b9b7dfc 1755093398 1fb1d21df1c86bc715e755e1a7ec202d96f1cd50532a4ba2a05bcdf4ee63da9d38222481e1bc87460b149a6f422adba2bdd2df1a37f5d693c7415b1f7ad89b0b
+cosignature=b95ef35a9ffb3cf516f423a04128d37d3bffc74d4096bd5e967990c53d09678a 1755093398 79b6296cb16ff0f7c91a8bfdc01f6e21071dbb3b28147c7ffe0a836f3efe5c3362a3276d4b115556be18bd94d53d530e944a48fa3f47baccefe39bdd8d1aa50c
+cosignature=0d4f46a219ab309cea48cde9712e7d8486fc99802f873175eeab70fb84b4f5a4 1755093398 ccb980e1288afb9b5d5af638747659ac6e38158311a33e4ea5beae5970b24a4a02271d31311ae3f151a7d670febd485298a0f1c27b2d6da7f65da7237a0ef30b
+cosignature=49c4cd6124b7c572f3354d854d50b2a4b057a750f786cf03103c09de339c4ea3 1755093398 f43e218c43190614a4ad55607cd90bcbbdff4ddb03479a36d97e2e7110adb1b884da58ff0cb79cef34521af5e7d275550669b05e4f720b66409d7948d97da00b
+cosignature=42351ad474b29c04187fd0c8c7670656386f323f02e9a4ef0a0055ec061ecac8 1755093398 a1b99033b4c25c6928f1fe1f01139293b2ebe60389b666ebf70ce50a9f0482cb5430122f44428696cd627db53c6d3a3c47ce71d6bee837cca3f73d0eca01320f
+
+leaf_index=4060
+node_hash=8134a4b1064781ea4bcd2d1d52a55b28e1487135428efd796adf06e6d00dabb8
+node_hash=bbbe78c97a3239921223a28ad37fa32797b7bec3341d1c73f256b9b357ded247
+node_hash=c2a794d933464b45857d384f5b35856e52c5e6848313aacffc59b58e6d5401e9
+node_hash=0c39cd314a79e8448420ac0f34b0d40df7fdfdba17fe361c9064a64ff8412a8e
+node_hash=3122831be7d8ba0ec99668c54738b8179e9b2c38f2fdf90e0c976c37c188f59c
+node_hash=c6d62d0782909d3bca2d24c6cb9d7a79402c08f197fdf752da734b40aa9147ad
+node_hash=669f4a51ce90d6277f63228b31bf329bc4a302501353d4d8b1089615c6f28afb
+node_hash=50626559da5d62f538bb83a268b6e1c9207a084c3ec6505faed00b2ca166392e
+node_hash=f677460b20097baf3117a02e92cfad2ac951a43b213088f7494ba1fe7775b204
+node_hash=c83420a707810b251a145f460d4cb6191fd68910d68190a8685b7ce9bf4d5c5a
 ```
 
 ## Releases of tkey-verification and reproducible builds
