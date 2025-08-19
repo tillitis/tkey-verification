@@ -1,6 +1,8 @@
 module github.com/tillitis/tkey-verification
 
-go 1.21
+go 1.22
+
+toolchain go1.24.1
 
 require (
 	github.com/spf13/pflag v1.0.5
@@ -15,4 +17,5 @@ require (
 	go.bug.st/serial v1.6.2 // indirect
 	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/sys v0.26.0 // indirect
+	sigsum.org/sigsum-go v0.11.2 // indirect
 )
