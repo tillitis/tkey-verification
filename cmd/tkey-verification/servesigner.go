@@ -20,6 +20,7 @@ type Verification struct {
 	AppTag    string `json:"apptag"`
 	AppHash   string `json:"apphash"`
 	Signature string `json:"signature"`
+	Proof     string `json:"proof"`
 }
 
 func serveSigner(conf ServerConfig, dev Device, verbose bool, checkConfigOnly bool) {
