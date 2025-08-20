@@ -63,3 +63,10 @@ path = [
 ]
 SPDX-FileCopyrightText = "2022 Tillitis AB <tillitis.se>"
 SPDX-License-Identifier = "GPL-2.0-only"
+
+[[annotations]]
+path = [
+     "signing-procedure.svg",
+]
+SPDX-FileCopyrightText = "2025 Tillitis AB <tillitis.se>"
+SPDX-License-Identifier = "CC-BY-SA-4.0"

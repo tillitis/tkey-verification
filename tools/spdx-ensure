@@ -57,6 +57,7 @@ doc/tkey-verification.scd
 test-vendor-signing-pubkeys.txt
 tkey-verification.yaml.example-remote-sign
 tkey-verification.yaml.example-serve-signer
+signing-procedure.svg
 )
 
 is_missingok() {

@@ -179,6 +179,11 @@ TKey!
    and the timestamp when signature was made. This should be indexed
    by the UDI.
 
+The following diagram contains an overview of how data flows during
+provisioning:
+
+![Data flow during provisioning](/signing-procedure.svg)
+
 ### Verifying
 
 1. Retrieve the UDI from the device under verification.
