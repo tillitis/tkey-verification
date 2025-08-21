@@ -15,14 +15,6 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-type Verification struct {
-	Timestamp string `json:"timestamp"`
-	AppTag    string `json:"apptag"`
-	AppHash   string `json:"apphash"`
-	Signature string `json:"signature"`
-	Proof     string `json:"proof"`
-}
-
 func serveSigner(conf ServerConfig, dev Device, verbose bool, checkConfigOnly bool) {
 	tlsConfig := tls.Config{
 		Certificates: []tls.Certificate{

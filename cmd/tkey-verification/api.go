@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/tillitis/tkey-verification/internal/tkey"
+	"github.com/tillitis/tkey-verification/internal/verification"
 )
 
 const MessageLen = tkey.UDISize + sha512.Size + ed25519.PublicKeySize
@@ -99,7 +100,7 @@ func (api *API) Sign(args *Args, _ *struct{}) error {
 		return ErrSigExist
 	}
 
-	json, err := json.Marshal(Verification{
+	json, err := json.Marshal(verification.Verification{
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 		AppTag:    args.AppTag,
 		AppHash:   hex.EncodeToString(args.AppHash),

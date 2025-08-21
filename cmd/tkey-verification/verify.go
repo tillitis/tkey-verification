@@ -8,15 +8,12 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path"
-	"time"
 
 	"github.com/tillitis/tkey-verification/internal/tkey"
+	"github.com/tillitis/tkey-verification/internal/verification"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	sumcrypto "sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
@@ -75,12 +72,11 @@ func verify(dev Device, verbose bool, showURLOnly bool, baseDir string, verifyBa
 		exit(0)
 	}
 
-	var verification Verification
+	var verification verification.Verification
 
 	if baseDir != "" {
 		p := path.Join(baseDir, hex.EncodeToString(tk.Udi.Bytes))
-		verification, err = verificationFromFile(p)
-		if err != nil {
+		if err := verification.FromFile(p); err != nil {
 			commFailed(err.Error())
 			exit(1)
 		}
@@ -89,8 +85,7 @@ func verify(dev Device, verbose bool, showURLOnly bool, baseDir string, verifyBa
 			le.Printf("Fetching verification data from %s ...\n", verifyURL)
 		}
 
-		verification, err = verificationFromURL(verifyURL)
-		if err != nil {
+		if err := verification.FromURL(verifyURL); err != nil {
 			commFailed(err.Error())
 			exit(1)
 		}
@@ -105,8 +100,7 @@ func verify(dev Device, verbose bool, showURLOnly bool, baseDir string, verifyBa
 		exit(1)
 	}
 
-	_, err = hex.DecodeString(verification.AppHash)
-	if err != nil {
+	if _, err := hex.DecodeString(verification.AppHash); err != nil {
 		parseFailure("hex decode error")
 		exit(1)
 	}
@@ -255,49 +249,6 @@ func notFound(msg string) {
 func verificationFailed(msg string) {
 	fmt.Printf("VERIFICATION FAILED: %s\n", msg)
 	fmt.Printf("Please visit %s to understand what this might mean.\n", verifyInfoURL)
-}
-
-func verificationFromURL(verifyURL string) (Verification, error) {
-	var verification Verification
-
-	client := http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(verifyURL) // #nosec G107
-	if err != nil {
-		return verification, fmt.Errorf("couldn't access %v: %w", verifyURL, err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		le.Printf("HTTP GET status code: %d (%s)", resp.StatusCode, resp.Status)
-		return verification, ErrIO
-	}
-
-	verificationJSON, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return verification, fmt.Errorf("couldn't read body: %w", err)
-	}
-
-	if err = json.Unmarshal(verificationJSON, &verification); err != nil {
-		return verification, fmt.Errorf("couldn't parse JSON: %w", err)
-	}
-
-	return verification, nil
-}
-
-func verificationFromFile(fn string) (Verification, error) {
-	var verification Verification
-
-	le.Printf("Reading verification data from file %s ...\n", fn)
-	verificationJSON, err := os.ReadFile(fn)
-	if err != nil {
-		return verification, fmt.Errorf("couldn't read file %v: %w", fn, err)
-	}
-
-	if err = json.Unmarshal(verificationJSON, &verification); err != nil {
-		return verification, fmt.Errorf("couldn't parse JSON: %w", err)
-	}
-
-	return verification, nil
 }
 
 func mustParsePublicKey(ascii string) sumcrypto.PublicKey {
