@@ -5,6 +5,7 @@ package main
 
 import (
 	"crypto/tls"
+	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -36,12 +37,12 @@ func loadServeSignerConfig(fn string) (ServerConfig, error) {
 
 	rawConfig, err := os.ReadFile(fn)
 	if err != nil {
-		return conf, IOError{path: fn, err: err}
+		return conf, fmt.Errorf("couldn't read config file: %w", err)
 	}
 
 	err = yaml.Unmarshal(rawConfig, &conf)
 	if err != nil {
-		return conf, ParseError{what: "config", err: err}
+		return conf, fmt.Errorf("parse error in config file: %w", err)
 	}
 
 	return conf, nil
@@ -52,12 +53,12 @@ func loadRemoteSignConfig(fn string) (ProvConfig, error) {
 
 	rawConfig, err := os.ReadFile(fn)
 	if err != nil {
-		return conf, IOError{path: fn, err: err}
+		return conf, fmt.Errorf("couldn't read config file: %w", err)
 	}
 
 	err = yaml.Unmarshal(rawConfig, &conf)
 	if err != nil {
-		return conf, ParseError{what: "config", err: err}
+		return conf, fmt.Errorf("parse error in config file: %w", err)
 	}
 
 	return conf, nil

@@ -64,14 +64,14 @@ func NewVendorKeys(appBins AppBins) (VendorKeys, error) {
 		}
 
 		if len(fields) != 3 {
-			return vendorKeys, SimpleParseError{msg: "Expected 3 space-separated fields: pubkey in hex, signer-app tag, and its hash in hex"}
+			return vendorKeys, fmt.Errorf("Expected 3 space-separated fields: pubkey in hex, signer-app tag, and its hash in hex")
 		}
 
 		pubKeyHex, tag, appHashHex := fields[0], fields[1], fields[2]
 
 		pubKey, err := hex.DecodeString(pubKeyHex)
 		if err != nil {
-			return vendorKeys, ParseError{what: "public key hex", err: err}
+			return vendorKeys, fmt.Errorf("couldn't decode public key: %w", err)
 		}
 		if l := len(pubKey); l != ed25519.PublicKeySize {
 			return vendorKeys, ErrWrongLen
@@ -79,7 +79,7 @@ func NewVendorKeys(appBins AppBins) (VendorKeys, error) {
 
 		appHash, err := hex.DecodeString(appHashHex)
 		if err != nil {
-			return vendorKeys, ParseError{what: "app digest hex", err: err}
+			return vendorKeys, fmt.Errorf("couldn't decode app digest: %w", err)
 		}
 		if l := len(appHash); l != sha512.Size {
 			return vendorKeys, ErrWrongLen
@@ -89,7 +89,7 @@ func NewVendorKeys(appBins AppBins) (VendorKeys, error) {
 		if _, ok := appBins.Bins[appHashHex]; ok {
 			appBin = appBins.Bins[appHashHex]
 			if appBin.Tag != tag {
-				return vendorKeys, EqualError{"embedded app tag", "vendor signing app tag"}
+				return vendorKeys, fmt.Errorf("embedded app tag != vendor signing app tag")
 			}
 
 		} else {
@@ -98,7 +98,7 @@ func NewVendorKeys(appBins AppBins) (VendorKeys, error) {
 
 		for _, pk := range vendorKeys.Keys {
 			if bytes.Compare(pubKey, pk.PubKey[:]) == 0 {
-				return vendorKeys, ExistError{what: "public key"}
+				return vendorKeys, fmt.Errorf("public key already exists")
 			}
 		}
 

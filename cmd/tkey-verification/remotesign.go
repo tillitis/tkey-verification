@@ -90,7 +90,7 @@ func signChallenge(conf ProvConfig, dev Device, verbose bool) (AppBin, *tkey.UDI
 
 	expectfw, err := firmwares.GetFirmware(tk.Udi)
 	if err != nil {
-		return appBin, nil, nil, fw, MissingError{what: "couldn't find firmware for UDI"}
+		return appBin, nil, nil, fw, fmt.Errorf("couldn't find firmware for UDI")
 	}
 
 	fw, err = verifyFirmwareHash(*expectfw, *tk)

@@ -67,7 +67,7 @@ func NewAppBins() (AppBins, error) {
 
 	entries, err := binsFS.ReadDir(binsDir)
 	if err != nil {
-		return AppBins{}, IOError{path: binsDir, err: err}
+		return AppBins{}, fmt.Errorf("error when reading %v: %w", err)
 	}
 
 	for _, entry := range entries {
@@ -85,24 +85,24 @@ func NewAppBins() (AppBins, error) {
 		var info fs.FileInfo
 
 		if info, err = entry.Info(); err != nil {
-			return AppBins{}, IOError{path: binFn, err: err}
+			return AppBins{}, fmt.Errorf("couldn't stat %v: %w", binFn, err)
 		} else if info.Size() == 0 {
-			return AppBins{}, MissingError{what: binFn}
+			return AppBins{}, fmt.Errorf("missing file %v", binFn)
 		}
 
 		var bin []byte
 		if bin, err = binsFS.ReadFile(path.Join(binsDir, binFn)); err != nil {
-			return AppBins{}, IOError{path: binFn, err: err}
+			return AppBins{}, fmt.Errorf("couldn't read %v: %w", binFn, err)
 		}
 
 		// Require accompanying sha512 file with matching hash
 		hashFn := binFn + ".sha512"
 		var hash []byte
 		if hash, err = binsFS.ReadFile(path.Join(binsDir, hashFn)); err != nil {
-			return AppBins{}, IOError{path: binFn, err: err}
+			return AppBins{}, fmt.Errorf("couldn't read %v: %w", path.Join(binsDir, hashFn), err)
 		}
 		if hash, err = hex.DecodeString(string(hash[:sha512.Size*2])); err != nil {
-			return AppBins{}, IOError{path: hashFn, err: err}
+			return AppBins{}, err
 		}
 
 		appBin := AppBin{
@@ -111,7 +111,7 @@ func NewAppBins() (AppBins, error) {
 		}
 
 		if !bytes.Equal(appBin.Hash(), hash) {
-			return AppBins{}, EqualError{one: binFn, two: hashFn}
+			return AppBins{}, fmt.Errorf("digests of %v != %v", binFn, hashFn)
 		}
 
 		appBins.Bins[hex.EncodeToString(hash)] = appBin
