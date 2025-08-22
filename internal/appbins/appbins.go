@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2023 Tillitis AB <tillitis.se>
 // SPDX-License-Identifier: BSD-2-Clause
 
-package main
+package appbins
 
 import (
 	"bytes"
@@ -39,7 +39,7 @@ func (a AppBins) Get(hash string) (AppBin, error) {
 		return val, nil
 	}
 
-	return AppBin{}, ErrNotFound
+	return AppBin{}, fmt.Errorf("couldn't find device app")
 }
 
 //go:embed bins/*.bin bins/*.bin.sha512

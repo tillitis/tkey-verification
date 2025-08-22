@@ -4,7 +4,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
@@ -12,46 +11,21 @@ import (
 	"os"
 	"path"
 
+	"github.com/tillitis/tkey-verification/internal/appbins"
 	"github.com/tillitis/tkey-verification/internal/tkey"
+	"github.com/tillitis/tkey-verification/internal/vendorkey"
 	"github.com/tillitis/tkey-verification/internal/verification"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	sumcrypto "sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
 	"sigsum.org/sigsum-go/pkg/policy"
-	"sigsum.org/sigsum-go/pkg/proof"
 )
 
 const verifyInfoURL = "https://www.tillitis.se/verify"
 
-func verify(dev Device, verbose bool, showURLOnly bool, baseDir string, verifyBaseURL string) {
-	appBins, err := NewAppBins()
-	if err != nil {
-		missing(fmt.Sprintf("no embedded device apps: %v", err))
-		os.Exit(1)
-	}
-
-	vendorKeys, err := NewVendorKeys(appBins)
-	if err != nil {
-		missing(fmt.Sprintf("no vendor signing public key: %v", err))
-		os.Exit(1)
-	}
-
-	submitKey := mustParsePublicKey("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIONFrsjCVeDB3KwJVsfr/kphaZZZ9Sypuu42ahZBjeya sigsum key")
-	witnessKey := mustParsePublicKey("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFw1KBko6do5a+7eXyKiJRpYnmrG3lKk3oXehjT/zK9t TKey")
-	logKey, err := sumcrypto.PublicKeyFromHex("4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6")
-	if err != nil {
-		panic(err)
-	}
-
-	sigsumKeys := map[crypto.Hash]crypto.PublicKey{crypto.HashBytes(submitKey[:]): submitKey}
-
-	firmwares, err := NewFirmwares()
-	if err != nil {
-		missing("no firmware digests")
-		os.Exit(1)
-	}
-
-	tk, err := tkey.NewTKey(dev.Path, dev.Speed, verbose)
+func verifyShowUrl(dev Device, verifyBaseURL string) {
+	// Connect to a TKey
+	tk, err := tkey.NewTKey(dev.Path, dev.Speed, false)
 	if err != nil {
 		commFailed(err.Error())
 		os.Exit(1)
@@ -66,11 +40,37 @@ func verify(dev Device, verbose bool, showURLOnly bool, baseDir string, verifyBa
 
 	verifyURL := fmt.Sprintf("%s/%s", verifyBaseURL, hex.EncodeToString(tk.Udi.Bytes))
 
-	if showURLOnly {
-		le.Printf("URL to verification data follows on stdout:\n")
-		fmt.Printf("%s\n", verifyURL)
-		exit(0)
+	le.Printf("URL to verification data follows on stdout:\n")
+	fmt.Printf("%s\n", verifyURL)
+	exit(0)
+}
+
+func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string) {
+	appBins, err := appbins.NewAppBins()
+	if err != nil {
+		missing(fmt.Sprintf("no embedded device apps: %v", err))
+		os.Exit(1)
 	}
+
+	firmwares, err := NewFirmwares()
+	if err != nil {
+		missing("no firmware digests")
+		os.Exit(1)
+	}
+
+	// Connect to a TKey
+	tk, err := tkey.NewTKey(dev.Path, dev.Speed, verbose)
+	if err != nil {
+		commFailed(err.Error())
+		os.Exit(1)
+	}
+
+	exit := func(code int) {
+		tk.Close()
+		os.Exit(code)
+	}
+
+	le.Printf("TKey UDI: %s\n", tk.Udi.String())
 
 	var verification verification.Verification
 
@@ -81,6 +81,9 @@ func verify(dev Device, verbose bool, showURLOnly bool, baseDir string, verifyBa
 			exit(1)
 		}
 	} else {
+		// Verify from an URL
+		verifyURL := fmt.Sprintf("%s/%s", verifyBaseURL, hex.EncodeToString(tk.Udi.Bytes))
+
 		if verbose {
 			le.Printf("Fetching verification data from %s ...\n", verifyURL)
 		}
@@ -95,19 +98,10 @@ func verify(dev Device, verbose bool, showURLOnly bool, baseDir string, verifyBa
 		le.Printf("Verification data was created %s\n", verification.Timestamp)
 	}
 
-	if verification.AppTag == "" {
-		parseFailure("app tag empty")
-		exit(1)
-	}
-
-	if _, err := hex.DecodeString(verification.AppHash); err != nil {
-		parseFailure("hex decode error")
-		exit(1)
-	}
-
-	appBin, err := appBins.Get(verification.AppHash)
+	// Find the right app to run
+	appBin, err := appBins.Get(hex.EncodeToString(verification.AppHash))
 	if err != nil {
-		notFound("upstream app digest unknown")
+		notFound("app digest")
 		exit(1)
 	}
 
@@ -139,58 +133,10 @@ func verify(dev Device, verbose bool, showURLOnly bool, baseDir string, verifyBa
 		exit(1)
 	}
 
-	if verification.Proof != "" {
-		// This is a Sigsum proof
-
-		var pr proof.SigsumProof
-
-		fmt.Printf("proof: %v\n", verification.Proof)
-
-		if err := pr.FromASCII(bytes.NewBufferString(verification.Proof)); err != nil {
-			panic(err)
-		}
-
-		digest := sumcrypto.HashBytes(msg)
-
-		fmt.Printf("digest: %x\n", digest)
-
-		policy, err := policy.NewKofNPolicy([]sumcrypto.PublicKey{logKey}, []sumcrypto.PublicKey{witnessKey}, 1)
-		if err != nil {
-			panic(err)
-		}
-
-		if err := pr.Verify(&digest, sigsumKeys, policy); err != nil {
-			verificationFailed("vendor signature not verified")
-			exit(1)
-		}
-
-		le.Printf("Verified with a Sigsum proof, submit key %x\n", submitKey)
+	if verification.IsProof() {
+		verifyProof(msg, verification)
 	} else {
-		// This is a classical vendor signature
-
-		vSignature, err := hex.DecodeString(verification.Signature)
-		if err != nil {
-			parseFailure(err.Error())
-			exit(1)
-		}
-
-		// We allow for any of the known vendor keys and break
-		// on the first which verifies.
-		var verified = false
-
-		for _, vendorPubKey := range vendorKeys.Keys {
-			if ed25519.Verify(vendorPubKey.PubKey[:], msg, vSignature) {
-				le.Printf("Verified with vendor key %x\n", vendorPubKey.PubKey)
-				verified = true
-				break
-			}
-		}
-
-		if !verified {
-			verificationFailed("vendor signature not verified")
-			exit(1)
-		}
-
+		verifySig(msg, verification, appBins)
 	}
 
 	// Get a device signature over a random challenge
@@ -249,6 +195,45 @@ func notFound(msg string) {
 func verificationFailed(msg string) {
 	fmt.Printf("VERIFICATION FAILED: %s\n", msg)
 	fmt.Printf("Please visit %s to understand what this might mean.\n", verifyInfoURL)
+}
+
+func verifyProof(msg []byte, verification verification.Verification) {
+	submitKey := mustParsePublicKey("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIONFrsjCVeDB3KwJVsfr/kphaZZZ9Sypuu42ahZBjeya sigsum key")
+	witnessKey := mustParsePublicKey("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFw1KBko6do5a+7eXyKiJRpYnmrG3lKk3oXehjT/zK9t TKey")
+	logKey, err := sumcrypto.PublicKeyFromHex("4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6")
+	if err != nil {
+		panic(err)
+	}
+
+	sigsumKeys := map[crypto.Hash]crypto.PublicKey{crypto.HashBytes(submitKey[:]): submitKey}
+
+	policy, err := policy.NewKofNPolicy([]sumcrypto.PublicKey{logKey}, []sumcrypto.PublicKey{witnessKey}, 1)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := verification.VerifyProof(msg, *policy, sigsumKeys); err != nil {
+		verificationFailed("vendor signature not verified")
+		os.Exit(1)
+	}
+
+	le.Printf("Verified with Sigsum proof using submit key %x\n", submitKey)
+}
+
+func verifySig(msg []byte, verification verification.Verification, appBins appbins.AppBins) {
+	vendorKeys, err := vendorkey.NewVendorKeys(appBins)
+	if err != nil {
+		missing(fmt.Sprintf("no vendor signing public key: %v", err))
+		os.Exit(1)
+	}
+
+	verifiedWith, err := verification.VerifySig(msg, vendorKeys)
+	if err != nil {
+		verificationFailed("vendor signature not verified")
+		os.Exit(1)
+	}
+
+	le.Printf("Verified with vendor key %x\n", verifiedWith.PubKey)
 }
 
 func mustParsePublicKey(ascii string) sumcrypto.PublicKey {

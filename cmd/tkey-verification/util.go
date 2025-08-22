@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
+	"github.com/tillitis/tkey-verification/internal/appbins"
+	"github.com/tillitis/tkey-verification/internal/vendorkey"
 )
 
 func readBuildInfo() string {
@@ -28,13 +30,13 @@ func readBuildInfo() string {
 }
 
 func builtWith() {
-	appBins, err := NewAppBins()
+	appBins, err := appbins.NewAppBins()
 	if err != nil {
 		fmt.Printf("Failed to init embedded device apps: %v\n", err)
 		os.Exit(1)
 	}
 
-	vendorKeys, err := NewVendorKeys(appBins)
+	vendorKeys, err := vendorkey.NewVendorKeys(appBins)
 	if err != nil {
 		le.Printf("Found no usable embedded vendor signing public key\n")
 		os.Exit(1)
