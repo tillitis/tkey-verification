@@ -12,7 +12,9 @@ import (
 	"net/rpc"
 	"os"
 
+	"github.com/tillitis/tkey-verification/internal/appbins"
 	"github.com/tillitis/tkey-verification/internal/tkey"
+	"github.com/tillitis/tkey-verification/internal/vendorkey"
 )
 
 func serveSigner(conf ServerConfig, dev Device, verbose bool, checkConfigOnly bool) {
@@ -31,20 +33,20 @@ func serveSigner(conf ServerConfig, dev Device, verbose bool, checkConfigOnly bo
 		os.Exit(1)
 	}
 
-	appBins, err := NewAppBins()
+	appBins, err := appbins.NewAppBins()
 	if err != nil {
 		fmt.Printf("Failed to init embedded device apps: %v\n", err)
 		os.Exit(1)
 	}
 
-	vendorKeys, err := NewVendorKeys(appBins)
+	vendorKeys, err := vendorkey.NewVendorKeys(appBins)
 	if err != nil {
 		le.Printf("Found no usable embedded vendor signing public key: %v\n", err)
 		os.Exit(1)
 	}
 
 	// Do we have the configured pubkey to use for vendor signing?
-	var vendorPubKey PubKey
+	var vendorPubKey vendorkey.PubKey
 
 	if pubkey, ok := vendorKeys.Keys[conf.VendorSigningAppHash]; ok {
 		vendorPubKey = pubkey

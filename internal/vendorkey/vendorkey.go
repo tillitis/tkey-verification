@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2024 Tillitis AB <tillitis.se>
 // SPDX-License-Identifier: BSD-2-Clause
 
-package main
+package vendorkey
 
 import (
 	"bytes"
@@ -11,6 +11,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+
+	"github.com/tillitis/tkey-verification/internal/appbins"
 )
 
 // nolint:typecheck // Avoid lint error when the embedding file is missing.
@@ -21,7 +23,7 @@ var pubKeysData []byte
 type PubKey struct {
 	PubKey [ed25519.PublicKeySize]byte // Vendor public key
 	Tag    string                      // Name and tag of the device app
-	AppBin AppBin                      // The actual device app binary
+	AppBin appbins.AppBin              // The actual device app binary
 }
 
 func (p *PubKey) String() string {
@@ -48,7 +50,7 @@ func (v *VendorKeys) String() string {
 // NewAppBins())
 //
 // It returns the vendor public keys and any error.
-func NewVendorKeys(appBins AppBins) (VendorKeys, error) {
+func NewVendorKeys(appBins appbins.AppBins) (VendorKeys, error) {
 	lines := strings.Split(strings.Trim(strings.ReplaceAll(string(pubKeysData), "\r\n", "\n"), "\n"), "\n")
 
 	var vendorKeys = VendorKeys{
@@ -74,7 +76,7 @@ func NewVendorKeys(appBins AppBins) (VendorKeys, error) {
 			return vendorKeys, fmt.Errorf("couldn't decode public key: %w", err)
 		}
 		if l := len(pubKey); l != ed25519.PublicKeySize {
-			return vendorKeys, ErrWrongLen
+			return vendorKeys, fmt.Errorf("public key has wrong length")
 		}
 
 		appHash, err := hex.DecodeString(appHashHex)
@@ -82,10 +84,10 @@ func NewVendorKeys(appBins AppBins) (VendorKeys, error) {
 			return vendorKeys, fmt.Errorf("couldn't decode app digest: %w", err)
 		}
 		if l := len(appHash); l != sha512.Size {
-			return vendorKeys, ErrWrongLen
+			return vendorKeys, fmt.Errorf("app digest not SHA-512")
 		}
 
-		var appBin AppBin
+		var appBin appbins.AppBin
 		if _, ok := appBins.Bins[appHashHex]; ok {
 			appBin = appBins.Bins[appHashHex]
 			if appBin.Tag != tag {
@@ -93,7 +95,7 @@ func NewVendorKeys(appBins AppBins) (VendorKeys, error) {
 			}
 
 		} else {
-			return vendorKeys, ErrNotFound
+			return vendorKeys, fmt.Errorf("couldn't find device app for digest %v", appHashHex)
 		}
 
 		for _, pk := range vendorKeys.Keys {

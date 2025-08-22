@@ -131,7 +131,11 @@ func main() {
 			os.Exit(2)
 		}
 
-		verify(dev, verbose, showURLOnly, baseDir, baseURL)
+		if showURLOnly {
+			verifyShowUrl(dev, baseURL)
+		}
+
+		verify(dev, verbose, baseDir, baseURL)
 
 	case "show-pubkey":
 		if binPath == "" {
