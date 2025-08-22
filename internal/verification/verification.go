@@ -143,13 +143,18 @@ func (v *Verification) VerifySig(msg []byte, vendorKeys vendorkey.VendorKeys) (v
 	return vendorkey.PubKey{}, fmt.Errorf("vendor signature not verified")
 }
 
-func (v *Verification) VerifyProof(msg []byte, policy policy.Policy, sigsumKeys map[sumcrypto.Hash]sumcrypto.PublicKey) error {
-	digest := sumcrypto.HashBytes(msg)
-	fmt.Printf("digest: %x\n", digest)
-
+func (v *Verification) VerifyProofDigest(digest sumcrypto.Hash, policy policy.Policy, sigsumKeys map[sumcrypto.Hash]sumcrypto.PublicKey) error {
 	if err := v.Proof.Verify(&digest, sigsumKeys, &policy); err != nil {
 		return err
 	}
 
 	return nil
+
+}
+
+func (v *Verification) VerifyProof(msg []byte, policy policy.Policy, sigsumKeys map[sumcrypto.Hash]sumcrypto.PublicKey) error {
+	digest := sumcrypto.HashBytes(msg)
+	fmt.Printf("digest: %x\n", msg)
+
+	return v.VerifyProofDigest(digest, policy, sigsumKeys)
 }
