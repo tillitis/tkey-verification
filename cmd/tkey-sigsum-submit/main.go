@@ -6,35 +6,21 @@ package main
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/spf13/pflag"
+	"github.com/tillitis/tkey-verification/internal/submission"
+	"github.com/tillitis/tkey-verification/internal/verification"
 	"sigsum.org/sigsum-go/pkg/policy"
+	"sigsum.org/sigsum-go/pkg/proof"
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/submit"
 )
 
 var le = log.New(os.Stderr, "", 0)
-
-type Submission struct {
-	Timestamp string `json:"timestamp"`
-	AppTag    string `json:"apptag"`
-	AppHash   string `json:"apphash"`
-	Request   string `json:"request"`
-}
-
-type Verification struct {
-	Timestamp string `json:"timestamp"`
-	AppTag    string `json:"apptag"`
-	AppHash   string `json:"apphash"`
-	Signature string `json:"signature,omitempty"`
-	Proof     string `json:"proof"`
-}
 
 const policyText = `log 4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6 https://test.sigsum.org/barreleye
 
@@ -103,31 +89,27 @@ func processSubmissionFile(fn, submDir, verDir string, submitConfig submit.Confi
 
 	// TODO: Check if verification file already exists
 
-	submission, err := submissionFromFile(submissionPath)
+	var submission submission.Submission
+	err := submission.FromFile(submissionPath)
 	if err != nil {
 		return fmt.Errorf("Failed to open submission file: %w", err)
 	}
 
-	var req requests.Leaf
-	err = req.FromASCII(bytes.NewBufferString(submission.Request))
-	if err != nil {
-		return fmt.Errorf("Failed to parse sigsum request: %w", err)
-	}
-
-	proofText, err := logDevice(req, submitConfig)
+	proofText, err := logDevice(submission.Request, submitConfig)
 	if err != nil {
 		return fmt.Errorf("Failed to log device: %w", err)
 	}
 
 	le.Printf("Got proof: \n%v\n", proofText)
 
-	verification := Verification{
+	verification := verification.Verification{
+		Type:      verification.VerProof,
 		Timestamp: submission.Timestamp,
 		AppTag:    submission.AppTag,
 		AppHash:   submission.AppHash,
 		Proof:     proofText,
 	}
-	err = storeVerification(verificationPath, verification)
+	err = verification.ToFile(verificationPath)
 	if err != nil {
 		return fmt.Errorf("Failed to store verification file: %w", err)
 	}
@@ -137,59 +119,17 @@ func processSubmissionFile(fn, submDir, verDir string, submitConfig submit.Confi
 	return nil
 }
 
-func submissionFromFile(fn string) (Submission, error) {
-	var submission Submission
-
-	le.Printf("Reading submission data from file %s ...\n", fn)
-	submissionJSON, err := os.ReadFile(fn)
-	if err != nil {
-		return submission, fmt.Errorf("Failed to read submission file: %w", err)
-	}
-
-	if err = json.Unmarshal(submissionJSON, &submission); err != nil {
-		return submission, fmt.Errorf("Failed to parse submission file: %w", err)
-	}
-
-	return submission, nil
-}
-
-func storeVerification(fn string, verification Verification) error {
-	verificationJSON, err := json.Marshal(verification)
-	if err != nil {
-		return fmt.Errorf("JSON Marshal failed: %w", err)
-	}
-
-	err = os.WriteFile(fn, append(verificationJSON, '\n'), 0o644)
-	if err != nil {
-		return fmt.Errorf("WriteFile %s failed: %w", fn, err)
-	}
-
-	le.Printf("Verification file stored as '%s'", fn)
-
-	return nil
-}
-
-func logDevice(req requests.Leaf, submitConfig submit.Config) (string, error) {
+func logDevice(req requests.Leaf, submitConfig submit.Config) (proof.SigsumProof, error) {
 	ctx := context.Background()
 	reqs := []requests.Leaf{req}
 
 	proofs, err := submit.SubmitLeafRequests(ctx, &submitConfig, reqs)
 	if err != nil {
-		return "", fmt.Errorf("Failed to submit sigsum log request: %w", err)
+		return proof.SigsumProof{}, fmt.Errorf("Failed to submit sigsum log request: %w", err)
 	}
 	if len(proofs) != 1 {
-		return "", fmt.Errorf("Expected one proof from log, got %d", len(proofs))
+		return proof.SigsumProof{}, fmt.Errorf("Expected one proof from log, got %d", len(proofs))
 	}
 
-	proof := proofs[0]
-	proofTextBuilder := strings.Builder{}
-
-	err = proof.ToASCII(&proofTextBuilder)
-	if err != nil {
-		return "", fmt.Errorf("Failed to convert proof to ASCII: %w", err)
-	}
-
-	proofText := proofTextBuilder.String()
-
-	return proofText, nil
+	return proofs[0], nil
 }
