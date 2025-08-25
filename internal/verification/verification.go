@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/tillitis/tkey-verification/internal/vendorkey"
@@ -28,7 +29,7 @@ type VerificationJson struct {
 	Timestamp string `json:"timestamp"`
 	AppTag    string `json:"apptag"`
 	AppHash   string `json:"apphash"`
-	Signature string `json:"signature"`
+	Signature string `json:"signature,omitempty"`
 	Proof     string `json:"proof"`
 }
 
@@ -89,6 +90,36 @@ func (v *Verification) FromJson(b []byte) error {
 	return nil
 }
 
+func (v *Verification) ToJson() ([]byte, error) {
+	var vJ VerificationJson
+
+	vJ.Timestamp = v.Timestamp.UTC().Format(time.RFC3339)
+	vJ.AppTag = v.AppTag
+	vJ.AppHash = hex.EncodeToString(v.AppHash)
+
+	if v.Type == VerSig || len(v.Signature) != 0 {
+		return nil, fmt.Errorf("vendor signature not supported")
+	}
+
+	if v.Type == VerProof {
+		proofTextBuilder := strings.Builder{}
+		err := v.Proof.ToASCII(&proofTextBuilder)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't convert proof to ASCII: %w", err)
+		}
+		vJ.Proof = proofTextBuilder.String()
+	} else {
+		return nil, fmt.Errorf("unknown verification type")
+	}
+
+	json, err := json.Marshal(vJ)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't marshal JSON: %w", err)
+	}
+
+	return json, nil
+}
+
 func (v *Verification) FromFile(fn string) error {
 	verificationJSON, err := os.ReadFile(fn)
 	if err != nil {
@@ -96,6 +127,20 @@ func (v *Verification) FromFile(fn string) error {
 	}
 
 	return v.FromJson(verificationJSON)
+
+	return nil
+}
+
+func (v *Verification) ToFile(fn string) error {
+	vJ, err := v.ToJson()
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(fn, append(vJ, '\n'), 0o644)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
