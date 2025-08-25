@@ -8,9 +8,9 @@ been tampered with, only that the identity of an app running on it is
 the same and, to a lesser degree, that it still runs the same
 firmware.
 
-*Note well*: If your TKey hasn't been provisioned by Tillitis, for
-example your IT department, you will need to run their version of the
-`tkey-verification` program instead of this one.
+*Note well*: If your TKey wasn't provisioned by Tillitis, and instead
+by another provider like your IT department, you will need to run
+their version of the `tkey-verification` program instead of this one.
 
 ## Installation
 
@@ -20,7 +20,7 @@ on Tillitis' web.
 
 You can download a release of the tool at:
 
-  https://github.com/tillitis/tkey-verification/releases
+https://github.com/tillitis/tkey-verification/releases
 
 Or do:
 
@@ -28,34 +28,98 @@ Or do:
 $ go install github.com/tillitis/tkey-verification/cmd/tkey-verification@latest
 ```
 
-if you have a Go compiler. Please note that if you install like this
-you won't get the tag in `--version`.
+Please note that if you install with `go install` you won't get the
+tag in `--version`.
 
-## Terminology
+## Usage
 
-- "device under verification": The device the vendor is provisioning
-  or the user is verifying.
-- "device signature": A signature made on the device under
-  verification with the signer device app.
-- Unique Device Identifier (UDI): A unique identifier present in all
-  TKeys. The 1st half identifies the revision of the hardware, the 2nd
-  half is a serial number.
-- "signing server": An HSM-like machine providing signatures over
-  messages and producing files to be uploaded to some database.
-- "signer": A device app used for confirming the TKey's identity,
-  right now either verisigner (source in older versions in this
-  repository, look for verisigner tags) or
-  [tkey-device-signer](https://github.com/tillitis/tkey-device-signer).
-- "signer public key": The public key of signer running on the device
-  under verification.
-- "vendor public key": The public key of the vendor, typically
-  Tillitis, corresponding to a private key in a TKey in the signing
-  server.
-- "vendor signature": A signature made by the signing server.
+For the typical end user with network access, insert the TKey and run:
+
+```
+$ tkey-verification verify
+```
+
+For more advanced use and for provisioning, see the man page in
+`doc/tkey-verification.1`.
+
+## Introduction
+
+Think of a TKey identity as a message made up of:
+
+- Unique Device Identifier (UDI)
+- the public key of a signing device app, typically
+  [signer](https://github.com/tillitis/tkey-device-signer), running on
+  the TKey
+- digest of the firmware of this TKey
+
+This identity is what we want to prove is the same to the end user.
+
+### Provisioning
+
+Done by the provider, maybe during provisioning of the FPGA bitstream,
+but not necessarily.
+
+- Create and [control](#control) a TKey identity, sign a hash digest
+  of the identity and submit the signed digest to a Sigsum log.
+
+- Publish the Sigsum proof and some metadata, a [verification
+  file](#verification-file), reachable by HTTP, indexed by the UDI,
+  typically: https://tkey.tillitis.se/<UDI>
+
+### Verification
+
+Done by end user.
+
+- Recreate and [control](#control) the TKey identity by loading the
+  same app on the same TKey and doing a challenge/response.
+
+- Verify the TKey identity with a Sigsum proof.
+
+All data needed to recreate and verify the identity is provided in the
+[verification file](#verification-file).
+
+### Verification file
+
+The verification file contains:
+
+- `timestamp`: RFC3339 timestamp when the signature was done.
+- `apptag`: a human readable hint for anyone who wants to reproduce the
+  procedure manually.
+- `apphash`: hash digest for the specific device app to run.
+- `proof`: Sigsum proof that this TKey identity is signed and logged.
+
+In older versions of the verification file, instead of `proof`:
+
+- `signature`: Ed25519 provider's signature.
+
+For compatibility with older TKeys we continue to support being able
+to verify the provider's signature. We identify what kind (proof or
+signature) we need to use by differences in the verification file. It
+is an error if both a proof and a provider signature occurs in a file.
+
+The canonical URL for this file in a TKey provisioned by Tillitis is:
+
+https://tkey.tillitis.se/verify/UDI-in-hex
+
+like:
+
+https://tkey.tillitis.se/verify/0133704100000015
+
+### Control
+
+Both during provisioning and verification we need to control that the
+public key in the TKey identity is the correct one.
+
+- Extract public key from loaded app.
+
+- Do a challenge/response, asking for the loaded app to make a
+  signature over some random data.
+
+- Verify the signature with the already retrieved public key.
 
 ## What is verified?
 
-What does verifying a TKey with `tkey-verification` prove?
+What does verifying a TKey with `tkey-verification verify` prove?
 
 To explain the verification and what it proves, first we need a brief
 explanation on how the TKey works. The TKey uses measured boot. The
@@ -66,7 +130,7 @@ The CDI is a combination of:
 
 - a per-device unique secret embedded in the hardware, the Unique
   Device Secret (UDS),
-  
+
 - the integrity of the software before it is started, as measured by
   immutable and thefore trusted firmware, and,
 
@@ -81,10 +145,10 @@ CDI = blake2s(UDS, blake2s(application), USS)
 where `blake2s` is the hash function BLAKE2s from [RFC
 7693](https://www.rfc-editor.org/info/rfc7693).
 
-There are two parts to verifying a TKey. First what the vendor does
+There are two parts to verifying a TKey. First what the provider does
 during provisioning, then what the user does during verification:
 
-- Provisioning: The vendor signes a message containing the Unique
+- Provisioning: The provider signs a message containing the Unique
   Device Identifier (UDI), a digest over the observed firmware, and
   the signer's public key.
 
@@ -94,10 +158,9 @@ during provisioning, then what the user does during verification:
   process.
 
 - Verification: `tkey-verification` first recreates the message (UDI,
-  firmware digest, signer's public key), checks the vendor signature
-  over the message, and finally does a challenge/response to prove
-  that the device under verification has the corresponding private
-  key.
+  firmware digest, signer's public key), checks the provider's
+  signature over the message, and finally does a challenge/response to
+  prove that the device has the corresponding private key.
 
 **Proven**: It's now proven that the currently used TKey device,
 running this device app is the same as the TKey device (or at least a
@@ -112,8 +175,8 @@ Less strongly shown:
   copy of the expected firmware in the right place in the memory map.
 - The authenticity of the RISC-V softcore isn't proven, but it was at
   least able to run the device app successfully.
-- The rest of the FPGA design, except the UDS, but at least it worked
-  as expected with the loaded signer app.
+- The rest of the FPGA design isn't proven either, except the UDS, but
+  at least it worked as expected with the loaded signer app.
 
 Not proved at all:
 
@@ -122,14 +185,14 @@ Not proved at all:
 
 ## Why is the signed message not published?
 
-The message that is signed by the vendor key is not published. It is,
-instead, recreated when verifying a TKey. This makes it impossible for
-anyone else to verify the message, including for the vendor, if the
-vendor haven't stored the message somewhere else.
+The message that is signed by the provider's key is not published. It
+is, instead, recreated when verifying a TKey. This makes it impossible
+for anyone else, including the provider, to verify the message if they
+haven't stored the message somewhere else.
 
-When designing this system we were afraid that publishing, or even
-keeping, the signer public key in a way that ties it very strongly to
-a certain UDI would be bad for the user. 
+When originally designing this system we were afraid that publishing,
+or even keeping, the signer public key in a way that ties it very
+strongly to a certain UDI would be bad for the user.
 
 Since we're currently using the ordinary
 [signer](https://github.com/tillitis/tkey-device-signer) device app
@@ -145,9 +208,9 @@ TKey!
 ## Weaknesses
 
 - The entire device is not proven.
-- The distribution of the vendor public key is sensitive. Since all
-  trust is placed in the vendor's signature, all fails if the end user
-  is tricked to use the wrong vendor public key. It's right now
+- The distribution of the provider's public key is sensitive. Since
+  all trust is placed in the provider's signature, all fails if the
+  end user is tricked to use the wrong public key. It's right now
   embedded in tkey-verification.
 - The distribution of the tkey-verification client app is sensitive,
   since if it is malicious it can just say "TKey is genuine!" without
@@ -158,6 +221,30 @@ TKey!
   same verification can also be done independently by other tools.
 
 ## Security Protocol
+
+Detailed step-by-step security protocol.
+
+### Terminology
+
+- "device under verification": The device the provider is provisioning
+  or the user is verifying.
+- "device signature": A signature made on the device under
+  verification with the signer device app.
+- Unique Device Identifier (UDI): A unique identifier present in all
+  TKeys. The 1st half identifies the revision of the hardware, the 2nd
+  half is a serial number.
+- "signing server": An HSM-like machine providing signatures over
+  messages and producing files to be uploaded to some database.
+- "signer": A device app used for confirming the TKey's identity,
+  right now either verisigner (source in older versions in this
+  repository, look for verisigner tags) or
+  [tkey-device-signer](https://github.com/tillitis/tkey-device-signer).
+- "signer public key": The public key of signer running on the device
+  under verification.
+- "provider's public key": The public key of the provider, typically
+  Tillitis or an IT department, corresponding to a private key in a
+  TKey in the signing server.
+- "provider's signature": A signature made by the signing server.
 
 ### During provisioning
 
@@ -173,22 +260,22 @@ TKey!
    the internal firmware database to verify that the TKey, according
    to its hardware revision, is running the expected firmware.
 7. Sigsum sign a message consisting of the UDI, firmware digest, and
-   signer public key with a vendor signature, creating a Sigsum
+   signer public key with provider's signature, creating a Sigsum
    request file.
 8. Submit the request file to the Sigsum log, collecting the proof.
-9. Build the Verification file, including the Sigsum proof.
-10. Publish the [Verification file](#verification-file), indexed by
+9. Build the verification file, including the Sigsum proof.
+10. Publish the [verification file](#verification-file), indexed by
     the UDI.
 
 The following diagram contains an overview of how data flows during
-provisioning:
+provisioning at Tillitis:
 
-![Data flow during provisioning](/signing-procedure.svg)
+![Data flow during provisioning](signing-procedure.svg)
 
 ### Verifying
 
 1. Retrieve the UDI from the device under verification.
-2. Get the [Verification file](#verification-file) with the Sigsum
+2. Get the [verification file](#verification-file) with the Sigsum
    proof, app tag, and app digest for this UDI.
 3. Run the signer with the same tag and digest on the device under
    verification.
@@ -203,7 +290,7 @@ provisioning:
 8. Recreate the message of UDI, firmware digest and signer public key.
 9. Verify the Sigsum proof of the message, thus proving that the
    UDI, the firmware, and this private/public key pair was the same
-   during vendor signing.
+   during provider's signing.
 
 Note that the exact same signer binary that was used for producing the
 signer signature during provisioning *must* be used when verifying it.
@@ -214,8 +301,8 @@ same digest.
 
 ## Building tkey-verification
 
-Build the `tkey-verification` tool with the test file containing
-public key(s) for vendor signing/verify.
+Build the `tkey-verification` tool with the test file containing the
+provider's public key(s).
 
 ```
 $ cp test-vendor-signing-pubkeys.txt cmd/tkey-verification/vendor-signing-pubkeys.txt
@@ -275,7 +362,7 @@ $ make certs
 
 - You need 1 TKey and 1 QEMU machine running to try this out (or 2
   TKeys, or 2 QEMU machines, if you manage to get that working). One
-  is Tillitis' (vendor's) signing TKey, and the other is a TKey that
+  is Tillitis' (provider's) signing TKey, and the other is a TKey that
   you want to sign and then verify as genuine. You need to know the
   serial port device paths for these.
 
@@ -329,9 +416,9 @@ $ make certs
 For the complete set of commands, see the manual page
 [tkey-verification(1)](doc/tkey-verification.1).
 
-## Creating the vendor public keys file
+## Creating the provider's public keys file
 
-The vendor's public key is built into the tkey-verification binary
+The provider's public key is built into the tkey-verification binary
 from a text file.
 
 For each public key, the tag and hash digest of the device app used
@@ -367,36 +454,7 @@ $ cat other-pubkey.txt >> cmd/tkey-verification/vendor-signing-pubkeys.txt
 $ make
 ```
 
-## Flow
-
-The computer running `tkey-verification serve-sign` generates files
-in a directory `signatures/` which is named after the Unique Device
-Identifier (in hex), for example `signatures/0133704100000015`.
-
-## Verification file
-
-The verification file is what the vendor should publish on a web
-server, indexed by the UDI. The canonical URL is:
-
-https://tkey.tillitis.se/verify/UDI-in-hex
-
-like:
-
-https://tkey.tillitis.se/verify/0133704100000015
-
-This file is needed in order to be able to verify a TKey.
-
-The file contains:
-
-- timestamp: RFC3339 UTC timestamp when the signature was done.
-- apptag: The Git tag of the signer app used on the device under
-  verification,
-- apphash: The hash of the signer app binary used on the device under
-  verification. Stored in hexadecimal.
-- proof: Sigsum proof that the message (described above) has been
-  signed and logged.
-
-Example file content:
+## Example verification file
 
 ```
 {
@@ -407,10 +465,7 @@ Example file content:
 }
 ```
 
-TODO: Decide on the format of the proof. Included like this? As a
-separate resource on another URL linked through the JSON file?
-
-Here's a proof included above, for reference:
+Unescaped Sigsum proof from above:
 
 ```
 version=1
@@ -507,3 +562,25 @@ https://spdx.org/licenses/
 
 We attempt to follow the [REUSE
 specification](https://reuse.software/).
+
+## Open questions
+
+- Can we use the exact same key pair as the Sigsum submit key as we
+  used as a provider's key pair before? If not, why not?
+
+- Can we continue not to publish the TKey identity? See [Why is the
+  signed message not
+  published?](#why-is-the-signed-message-not-published). Is this even
+  a good idea?
+
+- Decide on the format of the proof in the verification file. Included
+  as an JSON-escaped string like in the example included here? As a
+  separate resource on another URL linked through the JSON file?
+
+- Should the timestamp when the signature was done be included in the
+  signed message? In the older design it was unprotected.
+
+- What do we do with all the older signatures? Keep them unlogged? If
+  we want to Sigsum log them we need to do it some other way than the
+  proposed new system, since we can't recreate the TKey identities and
+  sign them.
