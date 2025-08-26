@@ -67,7 +67,7 @@ func NewAppBins() (AppBins, error) {
 
 	entries, err := binsFS.ReadDir(binsDir)
 	if err != nil {
-		return AppBins{}, fmt.Errorf("error when reading %v: %w", err)
+		return AppBins{}, fmt.Errorf("error when reading %v: %w", binsDir, err)
 	}
 
 	for _, entry := range entries {
