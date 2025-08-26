@@ -4,8 +4,6 @@
 package main
 
 import (
-	"crypto/ed25519"
-	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -45,16 +43,27 @@ func verifyShowUrl(dev Device, verifyBaseURL string) {
 	exit(0)
 }
 
+// verify verifies a Tkey by:
+//
+//   - Connecting to the device, retrieving the UDI
+//
+//   - Fetching the verification file, indexed by the UDI.
+//
+//   - Load the signer indicated in the verification file, which
+//     returns the public key.
+//
+//   - Doing a challenge/response to prove the signer's identity
+//     against the public key we just got.
+//
+//   - Verify that the device has the expected firmware.
+//
+//   - Recreates the vendor signed message.
+//
+//   - Verify the vendor signature over the message.
 func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string) {
 	appBins, err := appbins.NewAppBins()
 	if err != nil {
 		missing(fmt.Sprintf("no embedded device apps: %v", err))
-		os.Exit(1)
-	}
-
-	firmwares, err := NewFirmwares()
-	if err != nil {
-		missing("no firmware digests")
 		os.Exit(1)
 	}
 
@@ -111,13 +120,14 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string) {
 		exit(1)
 	}
 
-	expectedFw, err := firmwares.GetFirmware(tk.Udi)
-	if err != nil {
-		notFound("no known firmware for UDI")
+	// Check device identity
+	if err := tk.Challenge(pubKey); err != nil {
+		verificationFailed("challenge/response failed")
 		exit(1)
 	}
 
-	fw, err := verifyFirmwareHash(*expectedFw, *tk)
+	// Check we have the right firmware.
+	fw, err := verifyFirmwareHash(*tk)
 	if err != nil {
 		verificationFailed("unexpected firmware")
 		exit(1)
@@ -126,36 +136,19 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string) {
 		le.Printf("TKey firmware was verified, size:%d hash:%0x…\n", fw.Size, fw.Hash[:16])
 	}
 
-	// Verify vendor's signature over known message.
+	// Recreate message the vendor signed
 	msg, err := buildMessage(tk.Udi.Bytes, fw.Hash[:], pubKey)
 	if err != nil {
 		parseFailure(err.Error())
 		exit(1)
 	}
 
+	// Verify the vendor signature or Sigsum proof over the
+	// recreated message.
 	if verification.IsProof() {
 		verifyProof(msg, verification)
 	} else {
 		verifySig(msg, verification, appBins)
-	}
-
-	// Get a device signature over a random challenge
-	challenge := make([]byte, 32)
-	if _, err = rand.Read(challenge); err != nil {
-		le.Printf("rand.Read failed: %s", err)
-		exit(1)
-	}
-
-	signature, err := tk.Sign(challenge)
-	if err != nil {
-		commFailed(err.Error())
-		exit(1)
-	}
-
-	// Verify device signature against device public key
-	if !ed25519.Verify(pubKey, challenge, signature) {
-		verificationFailed("challenge not verified")
-		exit(1)
 	}
 
 	fmt.Printf("TKey is genuine!\n")

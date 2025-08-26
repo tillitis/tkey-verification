@@ -68,12 +68,6 @@ func signChallenge(conf ProvConfig, dev Device, verbose bool) (appbins.AppBin, *
 		os.Exit(1)
 	}
 
-	firmwares, err := NewFirmwares()
-	if err != nil {
-		le.Printf("Found no usable firmwares\n")
-		os.Exit(1)
-	}
-
 	var fw Firmware
 	tk, err := tkey.NewTKey(dev.Path, dev.Speed, verbose)
 	if err != nil {
@@ -89,12 +83,7 @@ func signChallenge(conf ProvConfig, dev Device, verbose bool) (appbins.AppBin, *
 	}
 	le.Printf("TKey UDI: %s\n", tk.Udi.String())
 
-	expectfw, err := firmwares.GetFirmware(tk.Udi)
-	if err != nil {
-		return appBin, nil, nil, fw, fmt.Errorf("couldn't find firmware for UDI")
-	}
-
-	fw, err = verifyFirmwareHash(*expectfw, *tk)
+	fw, err = verifyFirmwareHash(*tk)
 	if err != nil {
 		return appBin, nil, nil, fw, fmt.Errorf("%w", err)
 	}
