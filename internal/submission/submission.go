@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"sigsum.org/sigsum-go/pkg/requests"
@@ -62,6 +63,28 @@ func (s *Submission) FromJson(b []byte) error {
 	return nil
 }
 
+func (s *Submission) ToJson() ([]byte, error) {
+	var sJ SubmissionJSON
+
+	sJ.Timestamp = s.Timestamp.UTC().Format(time.RFC3339)
+	sJ.AppTag = s.AppTag
+	sJ.AppHash = hex.EncodeToString(s.AppHash)
+
+	reqTextBuilder := strings.Builder{}
+	err := s.Request.ToASCII(&reqTextBuilder)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't convert request to ASCII: %w", err)
+	}
+	sJ.Request = reqTextBuilder.String()
+
+	json, err := json.Marshal(sJ)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't marshal JSON: %w", err)
+	}
+
+	return json, nil
+}
+
 func (s *Submission) FromFile(fn string) error {
 	submissionJSON, err := os.ReadFile(fn)
 	if err != nil {
@@ -69,4 +92,18 @@ func (s *Submission) FromFile(fn string) error {
 	}
 
 	return s.FromJson(submissionJSON)
+}
+
+func (s *Submission) ToFile(fn string) error {
+	sJ, err := s.ToJson()
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(fn, append(sJ, '\n'), 0o644)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

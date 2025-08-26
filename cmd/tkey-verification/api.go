@@ -7,15 +7,17 @@ import (
 	"crypto/ed25519"
 	"crypto/sha512"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"sync"
 	"time"
 
+	"github.com/tillitis/tkey-verification/internal/submission"
 	"github.com/tillitis/tkey-verification/internal/tkey"
-	"github.com/tillitis/tkey-verification/internal/verification"
+	sigsumcrypto "sigsum.org/sigsum-go/pkg/crypto"
+	"sigsum.org/sigsum-go/pkg/requests"
+	"sigsum.org/sigsum-go/pkg/types"
 )
 
 const MessageLen = tkey.UDISize + sha512.Size + ed25519.PublicKeySize
@@ -79,16 +81,16 @@ func (api *API) Sign(args *Args, _ *struct{}) error {
 		return ErrWrongLen
 	}
 
-	signature, err := api.tk.Sign(args.Message)
+	signer := TkeySigsumSigner{api.tk}
+	sigsumMsg := sigsumcrypto.HashBytes(args.Message)
+	signature, err := types.SignLeafMessage(signer, sigsumMsg[:])
 	if err != nil {
-		le.Printf("tkey.Sign failed: %v", err)
-
 		return ErrSignFailed
 	}
 
-	if !ed25519.Verify(api.vendorPubKey, args.Message, signature) {
-		le.Printf("Vendor signature failed verification\n")
-
+	leafReq := requests.Leaf{Message: sigsumMsg, Signature: signature, PublicKey: signer.Public()}
+	_, err = leafReq.Verify()
+	if err != nil {
 		return ErrVerificationFailed
 	}
 
@@ -100,20 +102,15 @@ func (api *API) Sign(args *Args, _ *struct{}) error {
 		return ErrSigExist
 	}
 
-	json, err := json.Marshal(verification.VerificationJson{
-		Timestamp: time.Now().UTC().Format(time.RFC3339),
+	subm := submission.Submission{
+		Timestamp: time.Now().UTC(),
 		AppTag:    args.AppTag,
-		AppHash:   hex.EncodeToString(args.AppHash),
-		Signature: hex.EncodeToString(signature),
-	})
-	if err != nil {
-		le.Printf("JSON Marshal failed: %v", err)
-
-		return ErrInternal
+		AppHash:   args.AppHash,
+		Request:   leafReq,
 	}
 
-	//nolint:gosec
-	if err = os.WriteFile(fn, append(json, '\n'), 0o644); err != nil {
+	err = subm.ToFile(fn)
+	if err != nil {
 		le.Printf("WriteFile %s failed: %v", fn, err)
 
 		return ErrInternal
@@ -122,4 +119,37 @@ func (api *API) Sign(args *Args, _ *struct{}) error {
 	le.Printf("Wrote %s\n", fn)
 
 	return nil
+}
+
+type TkeySigsumSigner struct {
+	tk tkey.TKey
+}
+
+func (s TkeySigsumSigner) Public() sigsumcrypto.PublicKey {
+	pubkey, err := s.tk.GetPubkey()
+	if err != nil {
+		s.tk.Close()
+		le.Fatal("GetPubKey failed: %w", err)
+	}
+	if len(pubkey) != sigsumcrypto.PublicKeySize {
+		le.Fatalf("internal error, unexpected public key size %d: ", len(pubkey))
+	}
+	var ret sigsumcrypto.PublicKey
+	copy(ret[:], pubkey)
+
+	return ret
+}
+
+func (s TkeySigsumSigner) Sign(msg []byte) (sigsumcrypto.Signature, error) {
+	sig, err := s.tk.Sign(msg)
+	if err != nil {
+		return sigsumcrypto.Signature{}, err
+	}
+	if len(sig) != sigsumcrypto.SignatureSize {
+		return sigsumcrypto.Signature{}, fmt.Errorf("internal error, unexpected signature size %d: ", len(sig))
+	}
+	var ret sigsumcrypto.Signature
+	copy(ret[:], sig)
+
+	return ret, nil
 }

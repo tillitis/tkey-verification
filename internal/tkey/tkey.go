@@ -170,6 +170,17 @@ func (t TKey) GetFirmwareHash(firmwareSize int) ([]byte, error) {
 	return fwHash, nil
 }
 
+// GetPubkey connects to a TKey and asks an already running
+// verisigner-app for its public key.
+func (t TKey) GetPubkey() ([]byte, error) {
+	pubkey, err := t.signer.GetPubkey()
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	return pubkey, nil
+}
+
 func handleSignals(action func(), sig ...os.Signal) chan<- os.Signal {
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, sig...)
