@@ -9,7 +9,7 @@ the same and, to a lesser degree, that it still runs the same
 firmware.
 
 *Note well*: If your TKey wasn't provisioned by Tillitis, and instead
-by another provider like your IT department, you will need to run
+by another "vendor" like your IT department, you will need to run
 their version of the `tkey-verification` program instead of this one.
 
 ## Installation
@@ -56,11 +56,11 @@ This identity is what we want to prove is the same to the end user.
 
 ### Provisioning
 
-Done by the provider, maybe during provisioning of the FPGA bitstream,
+Done by the vendor, maybe during provisioning of the FPGA bitstream,
 but not necessarily.
 
-- Create and [control](#control) a TKey identity, sign a hash digest
-  of the identity and submit the signed digest to a Sigsum log.
+- Create and [check](#check-identity) a TKey identity, sign a hash
+  digest of the identity and submit the signed digest to a Sigsum log.
 
 - Publish the Sigsum proof and some metadata, a [verification
   file](#verification-file), reachable by HTTP, indexed by the UDI,
@@ -70,8 +70,8 @@ but not necessarily.
 
 Done by end user.
 
-- Recreate and [control](#control) the TKey identity by loading the
-  same app on the same TKey and doing a challenge/response.
+- Recreate and [check](#check-identity) the TKey identity by loading
+  the same app on the same TKey and doing a challenge/response.
 
 - Verify the TKey identity with a Sigsum proof.
 
@@ -90,12 +90,12 @@ The verification file contains:
 
 In older versions of the verification file, instead of `proof`:
 
-- `signature`: Ed25519 provider's signature.
+- `signature`: Ed25519 vendor's signature.
 
 For compatibility with older TKeys we continue to support being able
-to verify the provider's signature. We identify what kind (proof or
+to verify the vendor's signature. We identify what kind (proof or
 signature) we need to use by differences in the verification file. It
-is an error if both a proof and a provider signature occurs in a file.
+is an error if both a proof and a vendor signature occurs in a file.
 
 The canonical URL for this file in a TKey provisioned by Tillitis is:
 
@@ -105,9 +105,9 @@ like:
 
 https://tkey.tillitis.se/verify/0133704100000015
 
-### Control
+### Check identity
 
-Both during provisioning and verification we need to control that the
+Both during provisioning and verification we need to check that the
 public key in the TKey identity is the correct one.
 
 - Extract public key from loaded app.
@@ -145,10 +145,10 @@ CDI = blake2s(UDS, blake2s(application), USS)
 where `blake2s` is the hash function BLAKE2s from [RFC
 7693](https://www.rfc-editor.org/info/rfc7693).
 
-There are two parts to verifying a TKey. First what the provider does
+There are two parts to verifying a TKey. First what the vendor does
 during provisioning, then what the user does during verification:
 
-- Provisioning: The provider signs a message containing the Unique
+- Provisioning: The vendor signs a message containing the Unique
   Device Identifier (UDI), a digest over the observed firmware, and
   the signer's public key.
 
@@ -158,7 +158,7 @@ during provisioning, then what the user does during verification:
   process.
 
 - Verification: `tkey-verification` first recreates the message (UDI,
-  firmware digest, signer's public key), checks the provider's
+  firmware digest, signer's public key), checks the vendor's
   signature over the message, and finally does a challenge/response to
   prove that the device has the corresponding private key.
 
@@ -185,9 +185,9 @@ Not proved at all:
 
 ## Why is the signed message not published?
 
-The message that is signed by the provider's key is not published. It
+The message that is signed by the vendor's key is not published. It
 is, instead, recreated when verifying a TKey. This makes it impossible
-for anyone else, including the provider, to verify the message if they
+for anyone else, including the vendor, to verify the message if they
 haven't stored the message somewhere else.
 
 When originally designing this system we were afraid that publishing,
@@ -208,8 +208,8 @@ TKey!
 ## Weaknesses
 
 - The entire device is not proven.
-- The distribution of the provider's public key is sensitive. Since
-  all trust is placed in the provider's signature, all fails if the
+- The distribution of the vendor's public key is sensitive. Since
+  all trust is placed in the vendor's signature, all fails if the
   end user is tricked to use the wrong public key. It's right now
   embedded in tkey-verification.
 - The distribution of the tkey-verification client app is sensitive,
@@ -226,7 +226,7 @@ Detailed step-by-step security protocol.
 
 ### Terminology
 
-- "device under verification": The device the provider is provisioning
+- "device under verification": The device the vendor is provisioning
   or the user is verifying.
 - "device signature": A signature made on the device under
   verification with the signer device app.
@@ -241,10 +241,10 @@ Detailed step-by-step security protocol.
   [tkey-device-signer](https://github.com/tillitis/tkey-device-signer).
 - "signer public key": The public key of signer running on the device
   under verification.
-- "provider's public key": The public key of the provider, typically
+- "vendor's public key": The public key of the vendor, typically
   Tillitis or an IT department, corresponding to a private key in a
   TKey in the signing server.
-- "provider's signature": A signature made by the signing server.
+- "vendor's signature": A signature made by the signing server.
 
 ### During provisioning
 
@@ -260,7 +260,7 @@ Detailed step-by-step security protocol.
    the internal firmware database to verify that the TKey, according
    to its hardware revision, is running the expected firmware.
 7. Sigsum sign a message consisting of the UDI, firmware digest, and
-   signer public key with provider's signature, creating a Sigsum
+   signer public key with vendor's signature, creating a Sigsum
    request file.
 8. Submit the request file to the Sigsum log, collecting the proof.
 9. Build the verification file, including the Sigsum proof.
@@ -290,7 +290,7 @@ provisioning at Tillitis:
 8. Recreate the message of UDI, firmware digest and signer public key.
 9. Verify the Sigsum proof of the message, thus proving that the
    UDI, the firmware, and this private/public key pair was the same
-   during provider's signing.
+   during vendor's signing.
 
 Note that the exact same signer binary that was used for producing the
 signer signature during provisioning *must* be used when verifying it.
@@ -302,7 +302,7 @@ same digest.
 ## Building tkey-verification
 
 Build the `tkey-verification` tool with the test file containing the
-provider's public key(s).
+vendor's public key(s).
 
 ```
 $ cp test-vendor-signing-pubkeys.txt cmd/tkey-verification/vendor-signing-pubkeys.txt
@@ -362,7 +362,7 @@ $ make certs
 
 - You need 1 TKey and 1 QEMU machine running to try this out (or 2
   TKeys, or 2 QEMU machines, if you manage to get that working). One
-  is Tillitis' (provider's) signing TKey, and the other is a TKey that
+  is Tillitis' (vendor's) signing TKey, and the other is a TKey that
   you want to sign and then verify as genuine. You need to know the
   serial port device paths for these.
 
@@ -416,9 +416,9 @@ $ make certs
 For the complete set of commands, see the manual page
 [tkey-verification(1)](doc/tkey-verification.1).
 
-## Creating the provider's public keys file
+## Creating the vendor's public keys file
 
-The provider's public key is built into the tkey-verification binary
+The vendor's public key is built into the tkey-verification binary
 from a text file.
 
 For each public key, the tag and hash digest of the device app used
@@ -566,7 +566,7 @@ specification](https://reuse.software/).
 ## Open questions
 
 - Can we use the exact same key pair as the Sigsum submit key as we
-  used as a provider's key pair before? If not, why not?
+  used as a vendor's key pair before? If not, why not?
 
 - Can we continue not to publish the TKey identity? See [Why is the
   signed message not
