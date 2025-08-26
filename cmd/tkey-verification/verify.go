@@ -221,8 +221,8 @@ func verifyProof(msg []byte, verification verification.Verification) {
 }
 
 func verifySig(msg []byte, verification verification.Verification, appBins appbins.AppBins) {
-	vendorKeys, err := vendorkey.NewVendorKeys(appBins)
-	if err != nil {
+	var vendorKeys vendorkey.VendorKeys
+	if err := vendorKeys.FromEmbedded(appBins); err != nil {
 		missing(fmt.Sprintf("no vendor signing public key: %v", err))
 		os.Exit(1)
 	}

@@ -45,17 +45,10 @@ func (v *VendorKeys) String() string {
 	return sb.String()
 }
 
-// NewVendorKeys initializes all the known vendor public keys. It
-// needs to know the existing device applications (get them with
-// NewAppBins())
-//
-// It returns the vendor public keys and any error.
-func NewVendorKeys(appBins appbins.AppBins) (VendorKeys, error) {
-	lines := strings.Split(strings.Trim(strings.ReplaceAll(string(pubKeysData), "\r\n", "\n"), "\n"), "\n")
+func (v *VendorKeys) FromString(pubkeys string, appBins appbins.AppBins) error {
+	lines := strings.Split(strings.Trim(strings.ReplaceAll(pubkeys, "\r\n", "\n"), "\n"), "\n")
 
-	var vendorKeys = VendorKeys{
-		map[string]PubKey{},
-	}
+	v.Keys = make(map[string]PubKey)
 
 	for _, line := range lines {
 		fields := strings.Fields(line)
@@ -66,50 +59,59 @@ func NewVendorKeys(appBins appbins.AppBins) (VendorKeys, error) {
 		}
 
 		if len(fields) != 3 {
-			return vendorKeys, fmt.Errorf("Expected 3 space-separated fields: pubkey in hex, signer-app tag, and its hash in hex")
+			return fmt.Errorf("Expected 3 space-separated fields: pubkey in hex, signer-app tag, and its hash in hex")
 		}
 
 		pubKeyHex, tag, appHashHex := fields[0], fields[1], fields[2]
 
 		pubKey, err := hex.DecodeString(pubKeyHex)
 		if err != nil {
-			return vendorKeys, fmt.Errorf("couldn't decode public key: %w", err)
+			return fmt.Errorf("couldn't decode public key: %w", err)
 		}
 		if l := len(pubKey); l != ed25519.PublicKeySize {
-			return vendorKeys, fmt.Errorf("public key has wrong length")
+			return fmt.Errorf("public key has wrong length")
 		}
 
 		appHash, err := hex.DecodeString(appHashHex)
 		if err != nil {
-			return vendorKeys, fmt.Errorf("couldn't decode app digest: %w", err)
+			return fmt.Errorf("couldn't decode app digest: %w", err)
 		}
 		if l := len(appHash); l != sha512.Size {
-			return vendorKeys, fmt.Errorf("app digest not SHA-512")
+			return fmt.Errorf("app digest not SHA-512")
 		}
 
 		var appBin appbins.AppBin
 		if _, ok := appBins.Bins[appHashHex]; ok {
 			appBin = appBins.Bins[appHashHex]
 			if appBin.Tag != tag {
-				return vendorKeys, fmt.Errorf("embedded app tag != vendor signing app tag")
+				return fmt.Errorf("embedded app tag != vendor signing app tag")
 			}
 
 		} else {
-			return vendorKeys, fmt.Errorf("couldn't find device app for digest %v", appHashHex)
+			return fmt.Errorf("couldn't find device app for digest %v", appHashHex)
 		}
 
-		for _, pk := range vendorKeys.Keys {
+		for _, pk := range v.Keys {
 			if bytes.Compare(pubKey, pk.PubKey[:]) == 0 {
-				return vendorKeys, fmt.Errorf("public key already exists")
+				return fmt.Errorf("public key already exists")
 			}
 		}
 
-		vendorKeys.Keys[appHashHex] = PubKey{
+		v.Keys[appHashHex] = PubKey{
 			PubKey: *(*[ed25519.PublicKeySize]byte)(pubKey),
 			Tag:    tag,
 			AppBin: appBin,
 		}
 	}
 
-	return vendorKeys, nil
+	return nil
+}
+
+// FromString initializes all the known vendor public keys. It
+// needs to know the existing device applications (get them with
+// NewAppBins())
+//
+// It returns the vendor public keys and any error.
+func (v *VendorKeys) FromEmbedded(appBins appbins.AppBins) error {
+	return v.FromString(string(pubKeysData), appBins)
 }
