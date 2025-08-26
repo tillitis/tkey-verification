@@ -33,7 +33,17 @@ func buildMessage(udiBE, fwHash, pubKey []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func verifyFirmwareHash(expectedFW Firmware, tk tkey.TKey) (Firmware, error) {
+func verifyFirmwareHash(tk tkey.TKey) (Firmware, error) {
+	firmwares, err := NewFirmwares()
+	if err != nil {
+		return Firmware{}, fmt.Errorf("no firmware digests")
+	}
+
+	expectedFW, err := firmwares.GetFirmware(tk.Udi)
+	if err != nil {
+		return Firmware{}, fmt.Errorf("no firmware for UDI")
+	}
+
 	fwHash, err := tk.GetFirmwareHash(expectedFW.Size)
 	if err != nil {
 		return Firmware{}, fmt.Errorf("couldn't get firmware digest from TKey: %w", err)
@@ -43,5 +53,5 @@ func verifyFirmwareHash(expectedFW Firmware, tk tkey.TKey) (Firmware, error) {
 		return Firmware{}, ErrWrongFirmware
 	}
 
-	return expectedFW, nil
+	return *expectedFW, nil
 }

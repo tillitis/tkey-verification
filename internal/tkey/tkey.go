@@ -20,6 +20,8 @@
 package tkey
 
 import (
+	"crypto/ed25519"
+	"crypto/rand"
 	"fmt"
 	"log"
 	"os"
@@ -178,4 +180,26 @@ func handleSignals(action func(), sig ...os.Signal) chan<- os.Signal {
 		}
 	}()
 	return ch
+}
+
+// Challenge gets a device signature over a random challenge.
+//
+// It returns true if verification was a success. False otherwise.
+func (t *TKey) Challenge(pubKey []byte) error {
+	challenge := make([]byte, 32)
+	if _, err := rand.Read(challenge); err != nil {
+		return fmt.Errorf("rand.Read failed: %w", err)
+	}
+
+	signature, err := t.Sign(challenge)
+	if err != nil {
+		return fmt.Errorf("%w")
+	}
+
+	// Verify device signature against device public key
+	if !ed25519.Verify(pubKey, challenge, signature) {
+		return fmt.Errorf("")
+	}
+
+	return nil
 }
