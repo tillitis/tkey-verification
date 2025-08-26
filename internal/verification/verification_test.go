@@ -4,15 +4,26 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"crypto/sha512"
+	"encoding/hex"
 	"fmt"
 	"testing"
 
 	"github.com/tillitis/tkey-verification/internal/tkey"
+	"github.com/tillitis/tkey-verification/internal/vendorkey"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	sumcrypto "sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
 	"sigsum.org/sigsum-go/pkg/policy"
 )
+
+const verificationSigJSON = `
+{
+  "timestamp": "2023-03-03T09:31:51Z",
+  "apptag":"verisigner-v0.0.3",
+  "apphash":"f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142",
+  "signature":"e30f47287220a6aa0553cb93ca38f60eb0601fa5f802dc15d7be13447ea4f57308a94137543c5492606cb4b69eaa6f9618e7806d588c391fdd83cd920dcf230c"
+}
+`
 
 const verificationProofJSON = `
 {
@@ -31,35 +42,50 @@ func TestParseVerification(t *testing.T) {
 	}
 }
 
-// func TestVerifySignature(t *testing.T) {
-// 	var v Verification
-// 	var udi tkey.UDI
+func TestVerifySignature(t *testing.T) {
+	var v Verification
 
-// 	pubKey := []byte()
+	udi := []byte{0, 1, 2, 3, 4, 5, 6, 7}
 
-// 	fwDigest := []byte("06d0aafcc763307420380a8c5a324f3fccfbba6af7ff6fe0facad684ebd69dd43234c8531a096c77c2dc3543f8b8b629c94136ca7e257ca560da882e4dbbb025")
+	// Create test vendor keys
+	var vendorKeys vendorkey.VendorKeys
 
-// 	if err := v.FromJson([]byte(verJSON)); err != nil {
-// 		t.Fatal(err)
-// 	}
+	seed := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
-// 	appBins, err := appbins.NewAppBins()
-// 	vendorKeys, err := vendorkey.NewVendorKeys(appBins)
-// 	if err != nil {
-// 		t.Logf("no vendor signing public key: %v", err)
-// 		t.FailNow()
-// 	}
+	privKey := ed25519.NewKeyFromSeed(seed)
 
-// 	// Verify vendor's signature over known message.
-// 	msg, err := buildMessage(udi.Bytes, fwDigest, pubKey)
-// 	if err != nil {
-// 		t.Fatal("couldn't build message")
-// 	}
-// 	_, err = v.VerifySig(msg, vendorKeys)
-// 	if err != nil {
-// 		t.Fatal("vendor signature verification failed")
-// 	}
-// }
+	var pubKey vendorkey.PubKey
+	copy(pubKey.PubKey[:], privKey[32:])
+
+	vendorKeys.Keys = map[string]vendorkey.PubKey{
+		"key": pubKey,
+	}
+
+	fwDigest, err := hex.DecodeString("3769540390ee3d990ea3f9e4cc9a0d1af5bcaebb82218185a78c39c6bf01d9cdc305ba253a1fb9f3f9fcc63d97c8e5f34bbb1f7bec56a8f246f1d2239867b623")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Build a message
+	msg, err := buildMessage(udi, fwDigest, pubKey.PubKey[:])
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Keep to create test data. Sign and output both key pair and signature:
+	//sig := ed25519.Sign(privKey, msg)
+	// fmt.Printf("privkey: %x\npubkey: %x\nsig: %x\n", privKey, pubKey.PubKey, sig)
+
+	if err := v.FromJson([]byte(verificationSigJSON)); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = v.VerifySig(msg, vendorKeys)
+	if err != nil {
+		t.Fatal("vendor signature verification failed")
+	}
+}
 
 func TestVerifyProof(t *testing.T) {
 	var v Verification
