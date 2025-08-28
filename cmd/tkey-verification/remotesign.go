@@ -4,8 +4,6 @@
 package main
 
 import (
-	"crypto/ed25519"
-	"crypto/rand"
 	"crypto/tls"
 	"fmt"
 	"net"
@@ -89,22 +87,9 @@ func signChallenge(conf ProvConfig, dev Device, verbose bool) (appbins.AppBin, *
 	}
 	le.Printf("TKey firmware with size:%d and verified hash:%0x…\n", fw.Size, fw.Hash[:16])
 
-	// Locally generate a challenge and sign it
-	challenge := make([]byte, 32)
-	if _, err = rand.Read(challenge); err != nil {
-		return appBin, nil, nil, fw, fmt.Errorf("%w", err)
-	}
-
-	signature, err := tk.Sign(challenge)
+	err = tk.Challenge(pubKey)
 	if err != nil {
-		return appBin, nil, nil, fw, fmt.Errorf("%w", err)
-	}
-
-	fmt.Printf("signature: %x\n", signature)
-
-	// Verify the signature against the extracted public key
-	if !ed25519.Verify(pubKey, challenge, signature) {
-		return appBin, nil, nil, fw, ErrVerificationFailed
+		return appBin, nil, nil, fw, fmt.Errorf("challenge/response failed: %w", err)
 	}
 
 	return appBin, &tk.Udi, pubKey, fw, nil
