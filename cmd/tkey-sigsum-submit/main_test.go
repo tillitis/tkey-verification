@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"os"
 	"path"
@@ -53,7 +54,7 @@ func Test_processSubmissionFileShouldGenerateVerificationFileFromSubmissionFile(
 		le.Fatalf("Failed to read sigsum policy: %v", err)
 	}
 
-	fakeClient := http.Client{Transport: fakeTransport{}}
+	fakeClient := http.Client{Transport: ts.NewFakeTransport()}
 	submitConfig := submit.Config{
 		HTTPClient: &fakeClient,
 		Policy:     pol,
@@ -78,15 +79,17 @@ func Test_processSubmissionFileShouldGenerateVerificationFileFromSubmissionFile(
 }
 
 // fakeTransport is an HTTP Transport faking a Sigsum Log. Just enough behavior
-// is faked to make it possible to add a predetermined leaf and generate a
-// predermined proof.
+// is faked to make it possible for a client to add a predetermined leaf and
+// generate a predetermined proof.
 //
 // Will panic if the 'add-leaf' request body has unexpected content.
 // Will panic when accessing an unexpected URL.
 // Will panic on run time errors.
-type fakeTransport struct{}
+type fakeTransport struct {
+	cacheIndex int
+}
 
-func (c fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (ft fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	const addLeafURL = "http://sigsumlog.test/add-leaf"
 	const expectedAddLeafRequestBody = `message=f23e454ee9c9627dd1a80f6ab2e1565fa0cda3a7c91f853eb8099ff645674719
 signature=b4f9eabdcb6b05d259e964ba6fa427c178b5586d30e6b4026287656c8a7ee2674af33d2c05701ea8f98458fe7c54b787c7a73c0fda6f09046bcf7604cea86c00
@@ -119,7 +122,12 @@ node_hash=9ca6b461d616cf790a32a967574087298abb4cd0c3da938b7fed143b7d92b5ec
 			panic("Fake server got unexpected 'add-leaf' body")
 		}
 
-		return &http.Response{StatusCode: http.StatusOK}, nil
+		if ts.getLeafWasCalled(ft) {
+			return &http.Response{StatusCode: http.StatusOK}, nil
+		} else {
+			ts.setLeafWasCalled(ft)
+			return &http.Response{StatusCode: http.StatusAccepted}, nil
+		}
 	case getTreeHeadURL:
 		return &http.Response{
 			StatusCode: http.StatusOK,
@@ -135,3 +143,35 @@ node_hash=9ca6b461d616cf790a32a967574087298abb4cd0c3da938b7fed143b7d92b5ec
 	errStr := fmt.Sprintf("Fake server got unexpected URL: %s", req.URL.String())
 	panic(errStr)
 }
+
+// transportStates is a thread safe storage used by fakeTransport to store
+// state between requests
+type transportStates struct {
+	addLeafWasCalled []bool
+	lock             sync.Mutex
+}
+
+func (ts *transportStates) NewFakeTransport() fakeTransport {
+	ts.lock.Lock()
+	defer ts.lock.Unlock()
+
+	i := len(ts.addLeafWasCalled)
+	ts.addLeafWasCalled = append(ts.addLeafWasCalled, false)
+	return fakeTransport{cacheIndex: i}
+}
+
+func (ts *transportStates) setLeafWasCalled(ft fakeTransport) {
+	ts.lock.Lock()
+	defer ts.lock.Unlock()
+
+	ts.addLeafWasCalled[ft.cacheIndex] = true
+}
+
+func (ts *transportStates) getLeafWasCalled(ft fakeTransport) bool {
+	ts.lock.Lock()
+	defer ts.lock.Unlock()
+
+	return ts.addLeafWasCalled[ft.cacheIndex]
+}
+
+var ts = transportStates{}
