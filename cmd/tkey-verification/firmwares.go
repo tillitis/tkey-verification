@@ -66,12 +66,14 @@ func NewFirmwares() (Firmwares, error) {
 	var err error
 
 	// This is the default/qemu UDI0, with firmware from main at
-	// c126199a41149f6284aa9533e72395c978733b44
-	err = fws.addFirmware("00010203", 0x0010, 8, 3, 4192, "3769540390ee3d990ea3f9e4cc9a0d1af5bcaebb82218185a78c39c6bf01d9cdc305ba253a1fb9f3f9fcc63d97c8e5f34bbb1f7bec56a8f246f1d2239867b623")
+	// TK1-24.03 (1c90b1aa3dbfb4e62039683ee6049ae8af608498)
+	err = fws.addFirmware("00010203", 0x0010, 8, 3, 4160, "06d0aafcc763307420380a8c5a324f3fccfbba6af7ff6fe0facad684ebd69dd43234c8531a096c77c2dc3543f8b8b629c94136ca7e257ca560da882e4dbbb025")
 	if err != nil {
 		return fws, err
 	}
 
+	// This is the firmware from main at
+	// c126199a41149f6284aa9533e72395c978733b44
 	err = fws.addFirmware("01337080", 0x1337, 2, 0, 4192, "3769540390ee3d990ea3f9e4cc9a0d1af5bcaebb82218185a78c39c6bf01d9cdc305ba253a1fb9f3f9fcc63d97c8e5f34bbb1f7bec56a8f246f1d2239867b623")
 	if err != nil {
 		return fws, err
