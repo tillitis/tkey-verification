@@ -109,8 +109,6 @@ func processSubmissionFile(fn, submDir, verDir string, submitConfig submit.Confi
 		return fmt.Errorf("Failed to log device: %w", err)
 	}
 
-	le.Printf("Got proof: \n%v\n", proofText)
-
 	verification := verification.Verification{
 		Type:      verification.VerProof,
 		Timestamp: submission.Timestamp,
