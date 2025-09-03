@@ -65,22 +65,31 @@ func main() {
 	submitConfig := submit.Config{}
 	submitConfig.Policy = pol
 
-	entries, err := os.ReadDir(submissionsDir)
+	err = processSubmissionDir(submissionsDir, verificationsDir, submitConfig)
 	if err != nil {
-		le.Fatalf("Failed to read directory '%s': %v", submissionsDir, err)
+		le.Fatalf("Submission failed: %v", err)
+	}
+}
+
+func processSubmissionDir(submDir string, verDir string, submitConfig submit.Config) error {
+	entries, err := os.ReadDir(submDir)
+	if err != nil {
+		le.Fatalf("Failed to read directory '%s': %v", submDir, err)
 	}
 
 	for _, entry := range entries {
 		err = processSubmissionFile(
 			entry.Name(),
-			submissionsDir,
-			verificationsDir,
+			submDir,
+			verDir,
 			submitConfig,
 		)
 		if err != nil {
-			le.Fatalf("Failed to process submission file: %v", err)
+			return fmt.Errorf("Failed to process submission file: %v", err)
 		}
 	}
+
+	return nil
 }
 
 func processSubmissionFile(fn, submDir, verDir string, submitConfig submit.Config) error {
