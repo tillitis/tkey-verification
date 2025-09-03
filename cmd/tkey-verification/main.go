@@ -35,7 +35,7 @@ type Device struct {
 func main() {
 	var dev Device
 	var baseURL, baseDir, configFile, binPath string
-	var checkConfigOnly, verbose, showURLOnly, versionOnly, build, helpOnly bool
+	var sigsum, checkConfigOnly, verbose, showURLOnly, versionOnly, build, helpOnly bool
 
 	if version == "" {
 		version = readBuildInfo()
@@ -59,6 +59,8 @@ func main() {
 		"Read verification data from a file located in `DIRECTORY` and named after the TKey UDI in hex, instead of from a URL. You can for example first use \"verify --show-url\" and download the verification file manually on some other computer, then transfer the file back and use \"verify --base-dir .\" (command: verify).")
 	pflag.StringVar(&baseURL, "base-url", defaultBaseURL,
 		"Set the base `URL` of verification server for fetching verification data (command: verify).")
+	pflag.BoolVar(&sigsum, "sigsum", false,
+		"Demand a Sigsum proof in the verification file (command: verify).")
 	pflag.StringVarP(&binPath, "app", "a", "",
 		"`PATH` to the device app to show vendor signing pubkey (command: show-pubkey).")
 	pflag.BoolVar(&versionOnly, "version", false, "Output version information.")
@@ -135,7 +137,7 @@ func main() {
 			verifyShowUrl(dev, baseURL)
 		}
 
-		verify(dev, verbose, baseDir, baseURL)
+		verify(dev, verbose, baseDir, baseURL, sigsum)
 
 	case "show-pubkey":
 		if binPath == "" {

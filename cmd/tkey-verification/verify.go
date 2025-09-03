@@ -13,6 +13,7 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 	"github.com/tillitis/tkey-verification/internal/vendorkey"
 	"github.com/tillitis/tkey-verification/internal/verification"
+	"github.com/tillitis/tkeyclient"
 	"sigsum.org/sigsum-go/pkg/crypto"
 	sumcrypto "sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
@@ -60,7 +61,7 @@ func verifyShowUrl(dev Device, verifyBaseURL string) {
 //   - Recreates the vendor signed message.
 //
 //   - Verify the vendor signature over the message.
-func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string) {
+func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, sigsum bool) {
 	appBins, err := appbins.NewAppBins()
 	if err != nil {
 		missing(fmt.Sprintf("no embedded device apps: %v", err))
@@ -80,6 +81,30 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string) {
 	}
 
 	le.Printf("TKey UDI: %s\n", tk.Udi.String())
+
+	// If this is a TKey from Tillitis (vendor 0x1337), product ID
+	// Castor means we demand a Sigsum proof. Bellatrix means
+	// vendor signature.
+	//
+	// If it's not Tillitis we use default false, but let the user
+	// set their expectations with -sigsum.
+	//
+	// TODO: What do do if it's not Tillitis? Tolerate whatever is
+	// in the Verification File? Make it configurable at build
+	// time?
+	if tk.Udi.VendorID == 0x1337 {
+		switch tk.Udi.ProductID {
+		case tkeyclient.UDIPIDBellatrix:
+			sigsum = false
+		case tkeyclient.UDIPIDCastor:
+			sigsum = true
+		default:
+			// Not sure!
+			le.Printf("Unknown Product ID: Don't know if we need signature or Sigsum proof.")
+			os.Exit(1)
+		}
+
+	}
 
 	var verification verification.Verification
 
@@ -146,8 +171,20 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string) {
 	// Verify the vendor signature or Sigsum proof over the
 	// recreated message.
 	if verification.IsProof() {
-		verifyProof(msg, verification)
+		if sigsum {
+			verifyProof(msg, verification)
+		} else {
+			// Strange. Exit.
+			verificationFailed("Expected vendor signature but got a Sigsum proof")
+			os.Exit(1)
+		}
 	} else {
+		if sigsum {
+			// Strange. Exit.
+			verificationFailed("Sigsum proof required but not available")
+			os.Exit(1)
+		}
+
 		verifySig(msg, verification, appBins)
 	}
 
