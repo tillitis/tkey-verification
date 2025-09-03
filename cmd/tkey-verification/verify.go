@@ -228,7 +228,10 @@ func verificationFailed(msg string) {
 }
 
 func verifyProof(msg []byte, verification verification.Verification) {
-	submitKey := mustParsePublicKey("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIONFrsjCVeDB3KwJVsfr/kphaZZZ9Sypuu42ahZBjeya sigsum key")
+	submitKey, err := sumcrypto.PublicKeyFromHex("50d9a125f51d85ffa1fb12011bdae05d39e03cda2a35d0daf3077072daabbb10")
+	if err != nil {
+		panic(err)
+	}
 	witnessKey := mustParsePublicKey("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFw1KBko6do5a+7eXyKiJRpYnmrG3lKk3oXehjT/zK9t TKey")
 	logKey, err := sumcrypto.PublicKeyFromHex("4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6")
 	if err != nil {
