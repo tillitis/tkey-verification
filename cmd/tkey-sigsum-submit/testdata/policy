@@ -1,0 +1,8 @@
+log 4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6 http://sigsumlog.test
+
+witness testwitness 5c35281928e9da396beede5f22a2251a589e6ac6de52a4de85de8634ffccaf6d
+
+group  demo-quorum-rule all testwitness
+
+quorum demo-quorum-rule
+
