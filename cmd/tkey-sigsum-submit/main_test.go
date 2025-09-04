@@ -86,6 +86,16 @@ func Test_processSubmissionDir(t *testing.T) {
 			postVerFiles:      []string{},
 			errString:         "Processed submission directory must be empty",
 		},
+		{
+			name:              "Should abort if any submission file is invalid",
+			preSubmFiles:      []string{"0001020304050607", "000102030400DEAD"},
+			preDoneSubmFiles:  []string{},
+			preVerFiles:       []string{},
+			postSubmFiles:     []string{"0001020304050607", "000102030400DEAD"},
+			postDoneSubmFiles: []string{},
+			postVerFiles:      []string{},
+			errString:         "Invalid submission file",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -125,13 +135,15 @@ func Test_processSubmissionDir(t *testing.T) {
 			err := processSubmissionDir(submDir, verDir, doneSubmDir, submitConfig)
 
 			if tt.errString == "" {
+				// Expecting nil
 				if err != nil {
 					t.Logf("Unexpected error %v", err)
 					t.Fail()
 				}
 			} else {
-				if err == nil || err.Error() != tt.errString {
-					t.Logf("Unexpected error '%v', wanted '%v'", err, tt.errString)
+				// Expecting error
+				if err == nil || !strings.HasPrefix(err.Error(), tt.errString) {
+					t.Logf("Unexpected error '%v', should start with '%v'", err, tt.errString)
 					t.Fail()
 				}
 			}
