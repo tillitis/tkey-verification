@@ -74,19 +74,26 @@ func Test_processSubmissionDir(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			submDir := t.TempDir()
+			tempDir := t.TempDir()
+
+			submDir := path.Join(tempDir, "submissions")
+			mustCreateDir(submDir)
 			for _, fn := range tt.preSubmFiles {
 				dstPath := path.Join(submDir, fn)
 				srcPath := path.Join("testdata/submissions", fn)
 				copyFile(dstPath, srcPath)
 			}
-			verDir := t.TempDir()
+
+			verDir := path.Join(tempDir, "verifications")
+			mustCreateDir(verDir)
 			for _, fn := range tt.preVerFiles {
 				dstPath := path.Join(verDir, fn)
 				srcPath := path.Join("testdata/verifications", fn)
 				copyFile(dstPath, srcPath)
 			}
-			doneSubmDir := t.TempDir()
+
+			doneSubmDir := path.Join(tempDir, "processed-submissions")
+			mustCreateDir(doneSubmDir)
 
 			pol := mustReadPolicyFile("testdata/policy")
 			fakeClient := http.Client{Transport: ts.NewFakeTransport()}
@@ -140,7 +147,7 @@ func copyFile(dstPath string, srcPath string) {
 		panic(msg)
 	}
 
-	err = os.WriteFile(dstPath, srcData, 0644)
+	err = os.WriteFile(dstPath, srcData, 0600)
 	if err != nil {
 		msg := fmt.Sprintf("Could not copy to file: %v", err)
 		panic(msg)
@@ -162,6 +169,14 @@ func mustListFiles(dir string) []os.DirEntry {
 	}
 
 	return entries
+}
+
+func mustCreateDir(path string) {
+	err := os.Mkdir(path, 0700)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to create directory '%s': %v", path, err)
+		panic(msg)
+	}
 }
 
 func requireFileContentEqual(t *testing.T, aPath string, bPath string) {
