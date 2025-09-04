@@ -42,6 +42,54 @@ func Test_processSubmissionFileShouldGenerateVerificationFileFromSubmissionFile(
 	requireFileContentEqual(t, verFile, "testdata/verifications/0001020304050607")
 }
 
+func Test_processSubmissionDir(t *testing.T) {
+	tests := []struct {
+		name          string
+		preSubmFiles  []string
+		postVerFiles  []string
+		err           error
+	}{
+		{
+			"One valid submission file generates one verification file",
+			[]string{"0001020304050607"},
+			[]string{"0001020304050607"},
+			nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			submDir := t.TempDir()
+			for _, fn := range tt.preSubmFiles {
+				dstPath := path.Join(submDir, fn)
+				srcPath := path.Join("testdata/submissions", fn)
+				copyFile(dstPath, srcPath)
+			}
+			verDir := t.TempDir()
+
+			pol := mustReadPolicyFile("testdata/policy")
+			fakeClient := http.Client{Transport: ts.NewFakeTransport()}
+			submitConfig := submit.Config{
+				HTTPClient: &fakeClient,
+				Policy:     pol,
+			}
+
+			err := processSubmissionDir(submDir, verDir, submitConfig)
+
+			if err != tt.err {
+				t.Logf("Unexpected error: %s", err)
+				t.Fail()
+			}
+
+			requireFileCount(t, verDir, len(tt.postVerFiles))
+			for _, fn := range tt.postVerFiles {
+				verFile := path.Join(verDir, fn)
+				wantVerFile := path.Join("testdata/verifications", fn)
+				requireFileContentEqual(t, verFile, wantVerFile)
+			}
+		})
+	}
+}
+
 func copyFile(dstPath string, srcPath string) {
 	srcData, err := os.ReadFile(srcPath)
 	if err != nil {
@@ -54,6 +102,23 @@ func copyFile(dstPath string, srcPath string) {
 		msg := fmt.Sprintf("Could not copy to file: %v", err)
 		panic(msg)
 	}
+}
+
+func requireFileCount(t *testing.T, dir string, wantCount int) {
+	count := len(mustListFiles(dir))
+	if count != wantCount {
+		t.Fatalf("Folder '%s' contains %d files, wanted %d.", dir, count, wantCount)
+	}
+}
+
+func mustListFiles(dir string) []os.DirEntry {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to read directory '%s': %v", dir, err)
+		panic(msg)
+	}
+
+	return entries
 }
 
 func requireFileContentEqual(t *testing.T, aPath string, bPath string) {
