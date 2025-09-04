@@ -47,16 +47,29 @@ func Test_processSubmissionDir(t *testing.T) {
 	tests := []struct {
 		name              string
 		preSubmFiles      []string
+		preVerFiles       []string
+		postSubmFiles     []string
 		postDoneSubmFiles []string
 		postVerFiles      []string
-		err               error
+		errString         string
 	}{
 		{
 			"One valid submission file generates one verification file",
 			[]string{"0001020304050607"},
+			[]string{},
+			[]string{},
 			[]string{"0001020304050607"},
 			[]string{"0001020304050607"},
-			nil,
+			"",
+		},
+		{
+			"Should abort if verification directory is not empty on start",
+			[]string{"0001020304050607"},
+			[]string{"0001020304050607"},
+			[]string{"0001020304050607"},
+			[]string{},
+			[]string{"0001020304050607"},
+			"Verification directory must be empty",
 		},
 	}
 	for _, tt := range tests {
@@ -68,6 +81,11 @@ func Test_processSubmissionDir(t *testing.T) {
 				copyFile(dstPath, srcPath)
 			}
 			verDir := t.TempDir()
+			for _, fn := range tt.preVerFiles {
+				dstPath := path.Join(verDir, fn)
+				srcPath := path.Join("testdata/verifications", fn)
+				copyFile(dstPath, srcPath)
+			}
 			doneSubmDir := t.TempDir()
 
 			pol := mustReadPolicyFile("testdata/policy")
@@ -79,9 +97,16 @@ func Test_processSubmissionDir(t *testing.T) {
 
 			err := processSubmissionDir(submDir, verDir, doneSubmDir, submitConfig)
 
-			if err != tt.err {
-				t.Logf("Unexpected error: %s", err)
-				t.Fail()
+			if tt.errString == "" {
+				if err != nil {
+					t.Logf("Unexpected error %v", err)
+					t.Fail()
+				}
+			} else {
+				if err == nil || err.Error() != tt.errString {
+					t.Logf("Unexpected error '%v', wanted '%v'", err, tt.errString)
+					t.Fail()
+				}
 			}
 
 			requireFileCount(t, submDir, len(tt.postSubmFiles))
