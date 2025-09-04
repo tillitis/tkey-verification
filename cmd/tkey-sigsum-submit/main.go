@@ -96,6 +96,14 @@ func processSubmissionDir(submDir, verDir, doneSubmDir string, submitConfig subm
 	}
 
 	for _, entry := range entries {
+		var submission submission.Submission
+		err := submission.FromFile(path.Join(submDir, entry.Name()))
+		if err != nil {
+			return fmt.Errorf("Invalid submission file: %w", err)
+		}
+	}
+
+	for _, entry := range entries {
 		err = processSubmissionFile(
 			entry.Name(),
 			submDir,
