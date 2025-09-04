@@ -32,7 +32,7 @@ quorum demo-quorum-rule
 `
 
 func main() {
-	var verificationsDir, submissionsDir string
+	var verificationsDir, submissionsDir, processedSubmissionsDir string
 	var helpOnly bool
 
 	// TODO: Add version command
@@ -40,6 +40,8 @@ func main() {
 	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.CommandLine.SortFlags = false
 	pflag.StringVarP(&submissionsDir, "submissions-dir", "m", "",
+		"Read and log submission data from each file in `DIRECTORY`")
+	pflag.StringVarP(&processedSubmissionsDir, "processed-submissions-dir", "n", "",
 		"Read and log submission data from each file in `DIRECTORY`")
 	pflag.StringVarP(&verificationsDir, "verifications-dir", "d", "",
 		"Write verification data to a file located in `DIRECTORY` with the same name as the submission file")
@@ -51,8 +53,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	if verificationsDir == "" || submissionsDir == "" {
-		le.Printf("Missing arguments: -d, -m\n\n")
+	if verificationsDir == "" || submissionsDir == "" || processedSubmissionsDir == "" {
+		le.Printf("Missing arguments: -d, -m, -n\n\n")
 		pflag.Usage()
 		os.Exit(1)
 	}
@@ -65,13 +67,13 @@ func main() {
 	submitConfig := submit.Config{}
 	submitConfig.Policy = pol
 
-	err = processSubmissionDir(submissionsDir, verificationsDir, submitConfig)
+	err = processSubmissionDir(submissionsDir, verificationsDir, processedSubmissionsDir, submitConfig)
 	if err != nil {
 		le.Fatalf("Submission failed: %v", err)
 	}
 }
 
-func processSubmissionDir(submDir string, verDir string, submitConfig submit.Config) error {
+func processSubmissionDir(submDir, verDir, doneSubmDir string, submitConfig submit.Config) error {
 	entries, err := os.ReadDir(submDir)
 	if err != nil {
 		le.Fatalf("Failed to read directory '%s': %v", submDir, err)
@@ -82,6 +84,7 @@ func processSubmissionDir(submDir string, verDir string, submitConfig submit.Con
 			entry.Name(),
 			submDir,
 			verDir,
+			doneSubmDir,
 			submitConfig,
 		)
 		if err != nil {
@@ -92,8 +95,9 @@ func processSubmissionDir(submDir string, verDir string, submitConfig submit.Con
 	return nil
 }
 
-func processSubmissionFile(fn, submDir, verDir string, submitConfig submit.Config) error {
+func processSubmissionFile(fn, submDir, verDir, doneSubmDir string, submitConfig submit.Config) error {
 	submissionPath := path.Join(submDir, fn)
+	doneSubmissionPath := path.Join(doneSubmDir, fn)
 	verificationPath := path.Join(verDir, fn)
 
 	// TODO: Check if verification file already exists
@@ -121,7 +125,7 @@ func processSubmissionFile(fn, submDir, verDir string, submitConfig submit.Confi
 		return fmt.Errorf("Failed to store verification file: %w", err)
 	}
 
-	// TODO: Move or delete submission-file
+	os.Rename(submissionPath, doneSubmissionPath)
 
 	return nil
 }
