@@ -74,9 +74,25 @@ func main() {
 }
 
 func processSubmissionDir(submDir, verDir, doneSubmDir string, submitConfig submit.Config) error {
+	verFileCount, err := os.ReadDir(verDir)
+	if err != nil {
+		return fmt.Errorf("Failed to read directory '%s': %w", verDir, err)
+	}
+	if len(verFileCount) != 0 {
+		return fmt.Errorf("Verification directory must be empty")
+	}
+
+	doneSubmFileCount, err := os.ReadDir(doneSubmDir)
+	if err != nil {
+		return fmt.Errorf("Failed to read directory '%s': %w", doneSubmDir, err)
+	}
+	if len(doneSubmFileCount) != 0 {
+		return fmt.Errorf("Processed submission directory must be empty")
+	}
+
 	entries, err := os.ReadDir(submDir)
 	if err != nil {
-		le.Fatalf("Failed to read directory '%s': %v", submDir, err)
+		return fmt.Errorf("Failed to read directory '%s': %w", submDir, err)
 	}
 
 	for _, entry := range entries {
@@ -99,8 +115,6 @@ func processSubmissionFile(fn, submDir, verDir, doneSubmDir string, submitConfig
 	submissionPath := path.Join(submDir, fn)
 	doneSubmissionPath := path.Join(doneSubmDir, fn)
 	verificationPath := path.Join(verDir, fn)
-
-	// TODO: Check if verification file already exists
 
 	var submission submission.Submission
 	err := submission.FromFile(submissionPath)
