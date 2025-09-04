@@ -47,6 +47,7 @@ func Test_processSubmissionDir(t *testing.T) {
 	tests := []struct {
 		name              string
 		preSubmFiles      []string
+		preDoneSubmFiles  []string
 		preVerFiles       []string
 		postSubmFiles     []string
 		postDoneSubmFiles []string
@@ -58,6 +59,7 @@ func Test_processSubmissionDir(t *testing.T) {
 			[]string{"0001020304050607"},
 			[]string{},
 			[]string{},
+			[]string{},
 			[]string{"0001020304050607"},
 			[]string{"0001020304050607"},
 			"",
@@ -65,11 +67,22 @@ func Test_processSubmissionDir(t *testing.T) {
 		{
 			"Should abort if verification directory is not empty on start",
 			[]string{"0001020304050607"},
+			[]string{},
 			[]string{"0001020304050607"},
 			[]string{"0001020304050607"},
 			[]string{},
 			[]string{"0001020304050607"},
 			"Verification directory must be empty",
+		},
+		{
+			"Should abort if processed submissions directory is not empty on start",
+			[]string{"0001020304050607"},
+			[]string{"0001020304050607"},
+			[]string{},
+			[]string{"0001020304050607"},
+			[]string{"0001020304050607"},
+			[]string{},
+			"Processed submission directory must be empty",
 		},
 	}
 	for _, tt := range tests {
@@ -94,6 +107,11 @@ func Test_processSubmissionDir(t *testing.T) {
 
 			doneSubmDir := path.Join(tempDir, "processed-submissions")
 			mustCreateDir(doneSubmDir)
+			for _, fn := range tt.preDoneSubmFiles {
+				dstPath := path.Join(doneSubmDir, fn)
+				srcPath := path.Join("testdata/submissions", fn)
+				copyFile(dstPath, srcPath)
+			}
 
 			pol := mustReadPolicyFile("testdata/policy")
 			fakeClient := http.Client{Transport: ts.NewFakeTransport()}
