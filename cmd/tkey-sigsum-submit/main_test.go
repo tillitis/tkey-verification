@@ -44,7 +44,7 @@ func Test_processSubmissionFileShouldGenerateVerificationFileFromSubmissionFile(
 }
 
 func Test_processSubmissionDir(t *testing.T) {
-	tests := []struct {
+	type Params []struct {
 		name              string
 		preSubmFiles      []string
 		preDoneSubmFiles  []string
@@ -53,36 +53,38 @@ func Test_processSubmissionDir(t *testing.T) {
 		postDoneSubmFiles []string
 		postVerFiles      []string
 		errString         string
-	}{
+	}
+
+	tests := Params{
 		{
-			"One valid submission file generates one verification file",
-			[]string{"0001020304050607"},
-			[]string{},
-			[]string{},
-			[]string{},
-			[]string{"0001020304050607"},
-			[]string{"0001020304050607"},
-			"",
+			name:              "One valid submission file generates one verification file",
+			preSubmFiles:      []string{"0001020304050607"},
+			preDoneSubmFiles:  []string{},
+			preVerFiles:       []string{},
+			postSubmFiles:     []string{},
+			postDoneSubmFiles: []string{"0001020304050607"},
+			postVerFiles:      []string{"0001020304050607"},
+			errString:         "",
 		},
 		{
-			"Should abort if verification directory is not empty on start",
-			[]string{"0001020304050607"},
-			[]string{},
-			[]string{"0001020304050607"},
-			[]string{"0001020304050607"},
-			[]string{},
-			[]string{"0001020304050607"},
-			"Verification directory must be empty",
+			name:              "Should abort if verification directory is not empty on start",
+			preSubmFiles:      []string{"0001020304050607"},
+			preDoneSubmFiles:  []string{},
+			preVerFiles:       []string{"0001020304050607"},
+			postSubmFiles:     []string{"0001020304050607"},
+			postDoneSubmFiles: []string{},
+			postVerFiles:      []string{"0001020304050607"},
+			errString:         "Verification directory must be empty",
 		},
 		{
-			"Should abort if processed submissions directory is not empty on start",
-			[]string{"0001020304050607"},
-			[]string{"0001020304050607"},
-			[]string{},
-			[]string{"0001020304050607"},
-			[]string{"0001020304050607"},
-			[]string{},
-			"Processed submission directory must be empty",
+			name:              "Should abort if processed submissions directory is not empty on start",
+			preSubmFiles:      []string{"0001020304050607"},
+			preDoneSubmFiles:  []string{"0001020304050607"},
+			preVerFiles:       []string{},
+			postSubmFiles:     []string{"0001020304050607"},
+			postDoneSubmFiles: []string{"0001020304050607"},
+			postVerFiles:      []string{},
+			errString:         "Processed submission directory must be empty",
 		},
 	}
 	for _, tt := range tests {
