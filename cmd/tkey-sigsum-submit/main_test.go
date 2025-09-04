@@ -21,6 +21,7 @@ import (
 
 func Test_processSubmissionFileShouldGenerateVerificationFileFromSubmissionFile(t *testing.T) {
 	submDir := t.TempDir()
+	doneSubmDir := t.TempDir()
 	verDir := t.TempDir()
 	fn := "0001020304050607"
 	submFile := path.Join(submDir, fn)
@@ -34,7 +35,7 @@ func Test_processSubmissionFileShouldGenerateVerificationFileFromSubmissionFile(
 		Policy:     pol,
 	}
 
-	err := processSubmissionFile(fn, submDir, verDir, submitConfig)
+	err := processSubmissionFile(fn, submDir, verDir, doneSubmDir, submitConfig)
 	if err != nil {
 		t.Fatalf("Got error when running processSubmissionFile: %v", err)
 	}
@@ -44,13 +45,15 @@ func Test_processSubmissionFileShouldGenerateVerificationFileFromSubmissionFile(
 
 func Test_processSubmissionDir(t *testing.T) {
 	tests := []struct {
-		name          string
-		preSubmFiles  []string
-		postVerFiles  []string
-		err           error
+		name              string
+		preSubmFiles      []string
+		postDoneSubmFiles []string
+		postVerFiles      []string
+		err               error
 	}{
 		{
 			"One valid submission file generates one verification file",
+			[]string{"0001020304050607"},
 			[]string{"0001020304050607"},
 			[]string{"0001020304050607"},
 			nil,
@@ -65,6 +68,7 @@ func Test_processSubmissionDir(t *testing.T) {
 				copyFile(dstPath, srcPath)
 			}
 			verDir := t.TempDir()
+			doneSubmDir := t.TempDir()
 
 			pol := mustReadPolicyFile("testdata/policy")
 			fakeClient := http.Client{Transport: ts.NewFakeTransport()}
@@ -73,11 +77,25 @@ func Test_processSubmissionDir(t *testing.T) {
 				Policy:     pol,
 			}
 
-			err := processSubmissionDir(submDir, verDir, submitConfig)
+			err := processSubmissionDir(submDir, verDir, doneSubmDir, submitConfig)
 
 			if err != tt.err {
 				t.Logf("Unexpected error: %s", err)
 				t.Fail()
+			}
+
+			requireFileCount(t, submDir, len(tt.postSubmFiles))
+			for _, fn := range tt.postSubmFiles {
+				submFile := path.Join(submDir, fn)
+				wantSubmFile := path.Join("testdata/submissions", fn)
+				requireFileContentEqual(t, submFile, wantSubmFile)
+			}
+
+			requireFileCount(t, doneSubmDir, len(tt.postDoneSubmFiles))
+			for _, fn := range tt.postDoneSubmFiles {
+				submFile := path.Join(doneSubmDir, fn)
+				wantSubmFile := path.Join("testdata/submissions", fn)
+				requireFileContentEqual(t, submFile, wantSubmFile)
 			}
 
 			requireFileCount(t, verDir, len(tt.postVerFiles))
