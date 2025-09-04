@@ -52,9 +52,42 @@ Think of a TKey identity as a message made up of:
   the TKey
 - digest of the firmware of this TKey
 
-This identity is what we want to prove is the same to the end user.
+This identity is what we want to prove is the same to the end user. We
+do this by signing a digest of the identity, logging the digest into a
+transparency log, and publishing a [verification
+file](verification-file) about it.
 
-### Provisioning
+The user can later download the verification file, recreate the
+message, and verify that we signed a digest of it with the included
+Sigsum proof.
+
+## Sigsum transparency log
+
+We submit signed checksums of all identities in [a Sigsum transparency
+log](https://sigsum.org/). We want to:
+
+- Be able to monitor when our private key is used and signal to us if
+  it's leaked.
+- Increase trust in the identities by having our signatures logged and
+  witnessed.
+
+We don't store or publish the TKey identities, so we can't actually
+verify the identities ourselves. See "Why is the TKey identity not
+published?" below.
+
+We plan to run a Sigsum monitor tailing the log to see when our key is
+used. To make it easier to find illicit use of the key we will store
+the *digest* of the TKey identity, but not the identity itself.
+
+If the monitor finds our key has been used, it uses the digest
+reported from the log and checks if this is indeed a digest we have
+signed. If not, it alerts us.
+
+The timestamps by the witnesses should give us a hint when this was
+first used. We can compare with the timestamps in our verification
+files to see the last good verification file.
+
+## Provisioning
 
 Done by the vendor, maybe during provisioning of the FPGA bitstream,
 but not necessarily.
@@ -64,9 +97,9 @@ but not necessarily.
 
 - Publish the Sigsum proof and some metadata, a [verification
   file](#verification-file), reachable by HTTP, indexed by the UDI,
-  typically: https://tkey.tillitis.se/<UDI>
+  typically: https://tkey.tillitis.se/UDI-in-hex
 
-### Verification
+## Verification
 
 Done by end user.
 
@@ -78,7 +111,7 @@ Done by end user.
 All data needed to recreate and verify the identity is provided in the
 [verification file](#verification-file).
 
-### Verification file
+## Verification file
 
 The verification file contains:
 
@@ -94,8 +127,8 @@ In older versions of the verification file, instead of `proof`:
 
 For compatibility with older TKeys we continue to support being able
 to verify the vendor's signature. We identify what kind (proof or
-signature) we need to use by differences in the verification file. It
-is an error if both a proof and a vendor signature occurs in a file.
+signature) we need to use by the product ID of the TKey. Older TKeys:
+require a signature, newer: require a Sigsum proof.
 
 The canonical URL for this file in a TKey provisioned by Tillitis is:
 
@@ -105,15 +138,18 @@ like:
 
 https://tkey.tillitis.se/verify/0133704100000015
 
-### Check identity
+## Check identity
 
-Both during provisioning and verification we need to check that the
-public key in the TKey identity is the correct one.
+Both during provisioning and verification we need to authenticate the
+TKey identity, to see that the combination of device app and hardware
+is the expected.
 
-- Extract public key from loaded app.
+- Load the signer device app.
 
-- Do a challenge/response, asking for the loaded app to make a
-  signature over some random data.
+- Retrieve its public key.
+
+- Do a challenge/response, asking the running app to make a signature
+  over some random data.
 
 - Verify the signature with the already retrieved public key.
 
@@ -183,12 +219,12 @@ Not proved at all:
 - USB controller CH552 firmware and hardware.
 - PCB design.
 
-## Why is the signed message not published?
+## Why is the TKey identity not published?
 
-The message that is signed by the vendor's key is not published. It
-is, instead, recreated when verifying a TKey. This makes it impossible
-for anyone else, including the vendor, to verify the message if they
-haven't stored the message somewhere else.
+The TKey identity that is signed by the vendor's key is not published.
+It is, instead, recreated when verifying a TKey. This makes it
+impossible for anyone else, including the vendor, to verify the
+message if they haven't stored the message somewhere else.
 
 When originally designing this system we were afraid that publishing,
 or even keeping, the signer public key in a way that ties it very
@@ -244,6 +280,10 @@ Detailed step-by-step security protocol.
 - "vendor's public key": The public key of the vendor, typically
   Tillitis or an IT department, corresponding to a private key in a
   TKey in the signing server.
+- "vendor's Sigsum private key": The private key the vendor uses to
+  sign a digest for logging in the Sigsum transparency log.
+- "vendor's Sigsum public key": The public key corresponding to the
+  vendor's Sigsum private key.
 - "vendor's signature": A signature made by the signing server.
 
 ### During provisioning
@@ -259,13 +299,14 @@ Detailed step-by-step security protocol.
 6. Ask signer for a digest of the firmware binary (in ROM). Consult
    the internal firmware database to verify that the TKey, according
    to its hardware revision, is running the expected firmware.
-7. Sigsum sign a message consisting of the UDI, firmware digest, and
-   signer public key with vendor's signature, creating a Sigsum
-   request file.
+7. Sign a digest of a message consisting of the UDI, firmware digest,
+   and signer public key with vendor's private Sigsum key, creating a
+   Sigsum log request file.
 8. Submit the request file to the Sigsum log, collecting the proof.
 9. Build the verification file, including the Sigsum proof.
 10. Publish the [verification file](#verification-file), indexed by
     the UDI.
+11. (Transfer the digest of the message to the future Sigsum monitor.)
 
 The following diagram contains an overview of how data flows during
 provisioning at Tillitis:
