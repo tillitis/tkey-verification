@@ -27,7 +27,7 @@ func Test_processSubmissionFileShouldGenerateVerificationFileFromSubmissionFile(
 	submFile := path.Join(submDir, fn)
 	verFile := path.Join(verDir, fn)
 
-	copyFile(submFile, "testdata/submissions/0001020304050607")
+	copyFile(submFile, "testdata/0001020304050607-subm-valid")
 	pol := mustReadPolicyFile("testdata/policy")
 	fakeClient := http.Client{Transport: ts.NewFakeTransport()}
 	submitConfig := submit.Config{
@@ -40,60 +40,66 @@ func Test_processSubmissionFileShouldGenerateVerificationFileFromSubmissionFile(
 		t.Fatalf("Got error when running processSubmissionFile: %v", err)
 	}
 
-	requireFileContentEqual(t, verFile, "testdata/verifications/0001020304050607")
+	requireFileContentEqual(t, verFile, "testdata/0001020304050607-ver-valid")
 }
 
 func Test_processSubmissionDir(t *testing.T) {
 	type Params []struct {
 		name              string
-		preSubmFiles      []string
-		preDoneSubmFiles  []string
-		preVerFiles       []string
-		postSubmFiles     []string
-		postDoneSubmFiles []string
-		postVerFiles      []string
+		preSubmFiles      map[string]string
+		preDoneSubmFiles  map[string]string
+		preVerFiles       map[string]string
+		postSubmFiles     map[string]string
+		postDoneSubmFiles map[string]string
+		postVerFiles      map[string]string
 		errString         string
 	}
 
 	tests := Params{
 		{
 			name:              "One valid submission file generates one verification file",
-			preSubmFiles:      []string{"0001020304050607"},
-			preDoneSubmFiles:  []string{},
-			preVerFiles:       []string{},
-			postSubmFiles:     []string{},
-			postDoneSubmFiles: []string{"0001020304050607"},
-			postVerFiles:      []string{"0001020304050607"},
+			preSubmFiles:      map[string]string{"0001020304050607-subm-valid": "0001020304050607"},
+			preDoneSubmFiles:  map[string]string{},
+			preVerFiles:       map[string]string{},
+			postSubmFiles:     map[string]string{},
+			postDoneSubmFiles: map[string]string{"0001020304050607-subm-valid": "0001020304050607"},
+			postVerFiles:      map[string]string{"0001020304050607-ver-valid": "0001020304050607"},
 			errString:         "",
 		},
 		{
 			name:              "Should abort if verification directory is not empty on start",
-			preSubmFiles:      []string{"0001020304050607"},
-			preDoneSubmFiles:  []string{},
-			preVerFiles:       []string{"0001020304050607"},
-			postSubmFiles:     []string{"0001020304050607"},
-			postDoneSubmFiles: []string{},
-			postVerFiles:      []string{"0001020304050607"},
+			preSubmFiles:      map[string]string{"0001020304050607-subm-valid": "0001020304050607"},
+			preDoneSubmFiles:  map[string]string{},
+			preVerFiles:       map[string]string{"0001020304050607-ver-valid": "0001020304050607"},
+			postSubmFiles:     map[string]string{"0001020304050607-subm-valid": "0001020304050607"},
+			postDoneSubmFiles: map[string]string{},
+			postVerFiles:      map[string]string{"0001020304050607-ver-valid": "0001020304050607"},
 			errString:         "Verification directory must be empty",
 		},
 		{
 			name:              "Should abort if processed submissions directory is not empty on start",
-			preSubmFiles:      []string{"0001020304050607"},
-			preDoneSubmFiles:  []string{"0001020304050607"},
-			preVerFiles:       []string{},
-			postSubmFiles:     []string{"0001020304050607"},
-			postDoneSubmFiles: []string{"0001020304050607"},
-			postVerFiles:      []string{},
+			preSubmFiles:      map[string]string{"0001020304050607-subm-valid": "0001020304050607"},
+			preDoneSubmFiles:  map[string]string{"0001020304050607-subm-valid": "0001020304050607"},
+			preVerFiles:       map[string]string{},
+			postSubmFiles:     map[string]string{"0001020304050607-subm-valid": "0001020304050607"},
+			postDoneSubmFiles: map[string]string{"0001020304050607-subm-valid": "0001020304050607"},
+			postVerFiles:      map[string]string{},
 			errString:         "Processed submission directory must be empty",
 		},
 		{
-			name:              "Should abort if any submission file is invalid",
-			preSubmFiles:      []string{"0001020304050607", "000102030400DEAD"},
-			preDoneSubmFiles:  []string{},
-			preVerFiles:       []string{},
-			postSubmFiles:     []string{"0001020304050607", "000102030400DEAD"},
-			postDoneSubmFiles: []string{},
-			postVerFiles:      []string{},
+			name: "Should abort if any submission file is invalid",
+			preSubmFiles: map[string]string{
+				"0001020304050607-subm-valid":       "0001020304050607",
+				"000102030400DEAD-subm-invalid-sig": "000102030400DEAD",
+			},
+			preDoneSubmFiles: map[string]string{},
+			preVerFiles:      map[string]string{},
+			postSubmFiles: map[string]string{
+				"0001020304050607-subm-valid":       "0001020304050607",
+				"000102030400DEAD-subm-invalid-sig": "000102030400DEAD",
+			},
+			postDoneSubmFiles: map[string]string{},
+			postVerFiles:      map[string]string{},
 			errString:         "Invalid submission file",
 		},
 	}
@@ -103,25 +109,25 @@ func Test_processSubmissionDir(t *testing.T) {
 
 			submDir := path.Join(tempDir, "submissions")
 			mustCreateDir(submDir)
-			for _, fn := range tt.preSubmFiles {
-				dstPath := path.Join(submDir, fn)
-				srcPath := path.Join("testdata/submissions", fn)
+			for srcFn, dstFn := range tt.preSubmFiles {
+				dstPath := path.Join(submDir, dstFn)
+				srcPath := path.Join("testdata", srcFn)
 				copyFile(dstPath, srcPath)
 			}
 
 			verDir := path.Join(tempDir, "verifications")
 			mustCreateDir(verDir)
-			for _, fn := range tt.preVerFiles {
-				dstPath := path.Join(verDir, fn)
-				srcPath := path.Join("testdata/verifications", fn)
+			for srcFn, dstFn := range tt.preVerFiles {
+				dstPath := path.Join(verDir, dstFn)
+				srcPath := path.Join("testdata", srcFn)
 				copyFile(dstPath, srcPath)
 			}
 
 			doneSubmDir := path.Join(tempDir, "processed-submissions")
 			mustCreateDir(doneSubmDir)
-			for _, fn := range tt.preDoneSubmFiles {
-				dstPath := path.Join(doneSubmDir, fn)
-				srcPath := path.Join("testdata/submissions", fn)
+			for srcFn, dstFn := range tt.preDoneSubmFiles {
+				dstPath := path.Join(doneSubmDir, dstFn)
+				srcPath := path.Join("testdata", srcFn)
 				copyFile(dstPath, srcPath)
 			}
 
@@ -149,23 +155,23 @@ func Test_processSubmissionDir(t *testing.T) {
 			}
 
 			requireFileCount(t, submDir, len(tt.postSubmFiles))
-			for _, fn := range tt.postSubmFiles {
+			for wantFn, fn := range tt.postSubmFiles {
 				submFile := path.Join(submDir, fn)
-				wantSubmFile := path.Join("testdata/submissions", fn)
+				wantSubmFile := path.Join("testdata", wantFn)
 				requireFileContentEqual(t, submFile, wantSubmFile)
 			}
 
 			requireFileCount(t, doneSubmDir, len(tt.postDoneSubmFiles))
-			for _, fn := range tt.postDoneSubmFiles {
+			for wantFn, fn := range tt.postDoneSubmFiles {
 				submFile := path.Join(doneSubmDir, fn)
-				wantSubmFile := path.Join("testdata/submissions", fn)
+				wantSubmFile := path.Join("testdata", wantFn)
 				requireFileContentEqual(t, submFile, wantSubmFile)
 			}
 
 			requireFileCount(t, verDir, len(tt.postVerFiles))
-			for _, fn := range tt.postVerFiles {
+			for wantFn, fn := range tt.postVerFiles {
 				verFile := path.Join(verDir, fn)
-				wantVerFile := path.Join("testdata/verifications", fn)
+				wantVerFile := path.Join("testdata", wantFn)
 				requireFileContentEqual(t, verFile, wantVerFile)
 			}
 		})
