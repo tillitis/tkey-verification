@@ -204,12 +204,12 @@ func (t *TKey) Challenge(pubKey []byte) error {
 
 	signature, err := t.Sign(challenge)
 	if err != nil {
-		return fmt.Errorf("%w")
+		return fmt.Errorf("%w", err)
 	}
 
 	// Verify device signature against device public key
 	if !ed25519.Verify(pubKey, challenge, signature) {
-		return fmt.Errorf("")
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil
