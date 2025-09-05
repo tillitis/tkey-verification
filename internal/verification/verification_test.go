@@ -8,13 +8,22 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/tillitis/tkey-verification/internal/sigsum"
 	"github.com/tillitis/tkey-verification/internal/tkey"
 	"github.com/tillitis/tkey-verification/internal/vendorkey"
-	"sigsum.org/sigsum-go/pkg/crypto"
 	sumcrypto "sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
-	"sigsum.org/sigsum-go/pkg/policy"
 )
+
+const submitKey = `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIONFrsjCVeDB3KwJVsfr/kphaZZZ9Sypuu42ahZBjeya sigsum key`
+
+const policyStr = `log 4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6 https://test.sigsum.org/barreleye
+
+witness poc.sigsum.org/nisse 1c25f8a44c635457e2e391d1efbca7d4c2951a0aef06225a881e46b98962ac6c
+
+group  demo-quorum-rule any poc.sigsum.org/nisse
+quorum demo-quorum-rule
+`
 
 const verificationSigJSON = `
 {
@@ -90,20 +99,10 @@ func TestVerifySignature(t *testing.T) {
 
 func TestVerifyProofRawHash(t *testing.T) {
 	var v Verification
+	var log sigsum.SigsumLog
 
-	submitKey := mustParsePublicKey("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIONFrsjCVeDB3KwJVsfr/kphaZZZ9Sypuu42ahZBjeya sigsum key")
-
-	sigsumKeys := map[crypto.Hash]crypto.PublicKey{crypto.HashBytes(submitKey[:]): submitKey}
-
-	witnessKey := mustParsePublicKey("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFw1KBko6do5a+7eXyKiJRpYnmrG3lKk3oXehjT/zK9t TKey")
-	logKey, err := sumcrypto.PublicKeyFromHex("4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6")
-	if err != nil {
-		panic(err)
-	}
-
-	policy, err := policy.NewKofNPolicy([]sumcrypto.PublicKey{logKey}, []sumcrypto.PublicKey{witnessKey}, 1)
-	if err != nil {
-		panic(err)
+	if err := log.FromString(submitKey, policyStr); err != nil {
+		t.Fatal(err)
 	}
 
 	digest, err := sumcrypto.HashFromHex("2291327fbadd2b3b8f8c0c005426700ad9139425a52a9140679e89b3b65c359b")
@@ -115,27 +114,17 @@ func TestVerifyProofRawHash(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := v.VerifyProofDigest(digest, *policy, sigsumKeys); err != nil {
+	if err := v.VerifyProofDigest(digest, *log.Policy, log.SubmitKeys); err != nil {
 		t.Fatal("vendor signature not verified")
 	}
 }
 
 func TestVerifyProof(t *testing.T) {
 	var v Verification
+	var log sigsum.SigsumLog
 
-	submitKey := mustParsePublicKey("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIONFrsjCVeDB3KwJVsfr/kphaZZZ9Sypuu42ahZBjeya sigsum key")
-
-	sigsumKeys := map[crypto.Hash]crypto.PublicKey{crypto.HashBytes(submitKey[:]): submitKey}
-
-	witnessKey := mustParsePublicKey("ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFw1KBko6do5a+7eXyKiJRpYnmrG3lKk3oXehjT/zK9t TKey")
-	logKey, err := sumcrypto.PublicKeyFromHex("4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6")
-	if err != nil {
-		panic(err)
-	}
-
-	policy, err := policy.NewKofNPolicy([]sumcrypto.PublicKey{logKey}, []sumcrypto.PublicKey{witnessKey}, 1)
-	if err != nil {
-		panic(err)
+	if err := log.FromString(submitKey, policyStr); err != nil {
+		t.Fatal(err)
 	}
 
 	if err := v.FromJson([]byte(verificationProofJSON)); err != nil {
@@ -161,7 +150,7 @@ func TestVerifyProof(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := v.VerifyProof(msg, *policy, sigsumKeys); err != nil {
+	if err := v.VerifyProof(msg, *log.Policy, log.SubmitKeys); err != nil {
 		t.Fatal("vendor signature not verified")
 	}
 }
