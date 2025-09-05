@@ -45,6 +45,11 @@ func (v *VendorKeys) String() string {
 	return sb.String()
 }
 
+// FromString initializes all the known vendor public keys. It
+// needs to know the existing device applications (get them with
+// NewAppBins())
+//
+// It returns the vendor public keys and any error.
 func (v *VendorKeys) FromString(pubkeys string, appBins appbins.AppBins) error {
 	lines := strings.Split(strings.Trim(strings.ReplaceAll(pubkeys, "\r\n", "\n"), "\n"), "\n")
 
@@ -107,11 +112,6 @@ func (v *VendorKeys) FromString(pubkeys string, appBins appbins.AppBins) error {
 	return nil
 }
 
-// FromString initializes all the known vendor public keys. It
-// needs to know the existing device applications (get them with
-// NewAppBins())
-//
-// It returns the vendor public keys and any error.
 func (v *VendorKeys) FromEmbedded(appBins appbins.AppBins) error {
 	return v.FromString(string(pubKeysData), appBins)
 }
