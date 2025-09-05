@@ -40,7 +40,7 @@ func Test_processSubmissionFileShouldGenerateVerificationFileFromSubmissionFile(
 		t.Fatalf("Got error when running processSubmissionFile: %v", err)
 	}
 
-	requireFileContentEqual(t, verFile, "testdata/0001020304050607-ver-valid")
+	assertFileContentsEqual(t, verFile, "testdata/0001020304050607-ver-valid")
 }
 
 func Test_processSubmissionDir(t *testing.T) {
@@ -125,41 +125,40 @@ func Test_processSubmissionDir(t *testing.T) {
 
 			err := processSubmissionDir(submDir, verDir, doneSubmDir, submitConfig)
 
-			if tt.errString == "" {
-				// Expecting nil
-				if err != nil {
-					t.Logf("Unexpected error %v", err)
-					t.Fail()
-				}
-			} else {
-				// Expecting error
-				if err == nil || !strings.HasPrefix(err.Error(), tt.errString) {
-					t.Logf("Unexpected error '%v', should start with '%v'", err, tt.errString)
-					t.Fail()
-				}
-			}
+			assertErrorMsgStartsWith(t, err, tt.errString)
 
-			requireFileCount(t, submDir, len(tt.postSubmFiles))
-			for wantFn, fn := range tt.postSubmFiles {
-				submFile := path.Join(submDir, fn)
-				wantSubmFile := path.Join("testdata", wantFn)
-				requireFileContentEqual(t, submFile, wantSubmFile)
-			}
-
-			requireFileCount(t, doneSubmDir, len(tt.postDoneSubmFiles))
-			for wantFn, fn := range tt.postDoneSubmFiles {
-				submFile := path.Join(doneSubmDir, fn)
-				wantSubmFile := path.Join("testdata", wantFn)
-				requireFileContentEqual(t, submFile, wantSubmFile)
-			}
-
-			requireFileCount(t, verDir, len(tt.postVerFiles))
-			for wantFn, fn := range tt.postVerFiles {
-				verFile := path.Join(verDir, fn)
-				wantVerFile := path.Join("testdata", wantFn)
-				requireFileContentEqual(t, verFile, wantVerFile)
-			}
+			assertDirContainsOnly(t, submDir, tt.postSubmFiles)
+			assertDirContainsOnly(t, doneSubmDir, tt.postDoneSubmFiles)
+			assertDirContainsOnly(t, verDir, tt.postVerFiles)
 		})
+	}
+}
+
+func assertErrorMsgStartsWith(t *testing.T, err error, errString string) {
+	if errString == "" {
+		// Expecting nil
+		if err != nil {
+			t.Logf("Unexpected error %v", err)
+			t.Fail()
+		}
+	} else {
+		// Expecting error
+		if err == nil || !strings.HasPrefix(err.Error(), errString) {
+			t.Logf("Unexpected error '%v', should start with '%v'", err, errString)
+			t.Fail()
+		}
+	}
+}
+
+// Assert that directory dir only contains the files in specified in samples.
+// The contents of each file is checked for equality with the contents of its
+// corresponding sample file located in the testdata directory.
+func assertDirContainsOnly(t *testing.T, dir string, samples map[string]string) {
+	assertFileCount(t, dir, len(samples))
+	for sampleFn, createdFn := range samples {
+		createdFile := path.Join(dir, createdFn)
+		samplePath := path.Join("testdata", sampleFn)
+		assertFileContentsEqual(t, createdFile, samplePath)
 	}
 }
 
@@ -186,10 +185,11 @@ func copyFile(dstPath string, srcPath string) {
 	}
 }
 
-func requireFileCount(t *testing.T, dir string, wantCount int) {
+func assertFileCount(t *testing.T, dir string, wantCount int) {
 	count := len(mustListFiles(dir))
 	if count != wantCount {
-		t.Fatalf("Folder '%s' contains %d files, wanted %d.", dir, count, wantCount)
+		t.Logf("Folder '%s' contains %d files, wanted %d.", dir, count, wantCount)
+		t.Fail()
 	}
 }
 
@@ -211,7 +211,7 @@ func mustCreateDir(path string) {
 	}
 }
 
-func requireFileContentEqual(t *testing.T, aPath string, bPath string) {
+func assertFileContentsEqual(t *testing.T, aPath string, bPath string) {
 	aData, err := os.ReadFile(aPath)
 	if err != nil {
 		t.Fatalf("Could not read file: %v", err)
@@ -223,7 +223,8 @@ func requireFileContentEqual(t *testing.T, aPath string, bPath string) {
 	}
 
 	if !bytes.Equal(aData, bData) {
-		t.Fatalf("Contents of '%s' and '%s' are not equal", aPath, bPath)
+		t.Logf("Contents of '%s' and '%s' are not equal", aPath, bPath)
+		t.Fail()
 	}
 }
 
