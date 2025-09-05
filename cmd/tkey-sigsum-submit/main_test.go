@@ -135,6 +135,8 @@ func Test_processSubmissionDir(t *testing.T) {
 }
 
 func assertErrorMsgStartsWith(t *testing.T, err error, errString string) {
+	t.Helper()
+
 	if errString == "" {
 		// Expecting nil
 		if err != nil {
@@ -154,6 +156,8 @@ func assertErrorMsgStartsWith(t *testing.T, err error, errString string) {
 // The contents of each file is checked for equality with the contents of its
 // corresponding sample file located in the testdata directory.
 func assertDirContainsOnly(t *testing.T, dir string, samples map[string]string) {
+	t.Helper()
+
 	assertFileCount(t, dir, len(samples))
 	for sampleFn, createdFn := range samples {
 		createdFile := path.Join(dir, createdFn)
@@ -186,6 +190,8 @@ func copyFile(dstPath string, srcPath string) {
 }
 
 func assertFileCount(t *testing.T, dir string, wantCount int) {
+	t.Helper()
+
 	count := len(mustListFiles(dir))
 	if count != wantCount {
 		t.Logf("Folder '%s' contains %d files, wanted %d.", dir, count, wantCount)
@@ -212,6 +218,8 @@ func mustCreateDir(path string) {
 }
 
 func assertFileContentsEqual(t *testing.T, aPath string, bPath string) {
+	t.Helper()
+
 	aData, err := os.ReadFile(aPath)
 	if err != nil {
 		t.Fatalf("Could not read file: %v", err)
