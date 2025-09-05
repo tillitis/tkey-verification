@@ -108,28 +108,13 @@ func Test_processSubmissionDir(t *testing.T) {
 			tempDir := t.TempDir()
 
 			submDir := path.Join(tempDir, "submissions")
-			mustCreateDir(submDir)
-			for srcFn, dstFn := range tt.preSubmFiles {
-				dstPath := path.Join(submDir, dstFn)
-				srcPath := path.Join("testdata", srcFn)
-				copyFile(dstPath, srcPath)
-			}
+			copySamplesToDir(submDir, tt.preSubmFiles)
 
 			verDir := path.Join(tempDir, "verifications")
-			mustCreateDir(verDir)
-			for srcFn, dstFn := range tt.preVerFiles {
-				dstPath := path.Join(verDir, dstFn)
-				srcPath := path.Join("testdata", srcFn)
-				copyFile(dstPath, srcPath)
-			}
+			copySamplesToDir(verDir, tt.preVerFiles)
 
 			doneSubmDir := path.Join(tempDir, "processed-submissions")
-			mustCreateDir(doneSubmDir)
-			for srcFn, dstFn := range tt.preDoneSubmFiles {
-				dstPath := path.Join(doneSubmDir, dstFn)
-				srcPath := path.Join("testdata", srcFn)
-				copyFile(dstPath, srcPath)
-			}
+			copySamplesToDir(doneSubmDir, tt.preDoneSubmFiles)
 
 			pol := mustReadPolicyFile("testdata/policy")
 			fakeClient := http.Client{Transport: ts.NewFakeTransport()}
@@ -175,6 +160,15 @@ func Test_processSubmissionDir(t *testing.T) {
 				requireFileContentEqual(t, verFile, wantVerFile)
 			}
 		})
+	}
+}
+
+func copySamplesToDir(dstDir string, samples map[string]string) {
+	mustCreateDir(dstDir)
+	for srcFn, dstFn := range samples {
+		dstPath := path.Join(dstDir, dstFn)
+		srcPath := path.Join("testdata", srcFn)
+		copyFile(dstPath, srcPath)
 	}
 }
 
