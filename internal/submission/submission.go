@@ -2,6 +2,7 @@ package submission
 
 import (
 	"bytes"
+	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tillitis/tkey-verification/internal/util"
 	"sigsum.org/sigsum-go/pkg/requests"
 )
 
@@ -22,7 +24,7 @@ type SubmissionJSON struct {
 type Submission struct {
 	Timestamp time.Time
 	AppTag    string
-	AppHash   []byte
+	AppHash   [sha512.Size]byte
 	Request   requests.Leaf
 }
 
@@ -45,8 +47,7 @@ func (s *Submission) FromJson(b []byte) error {
 	}
 	s.AppTag = sJ.AppTag
 
-	s.AppHash, err = hex.DecodeString(sJ.AppHash)
-	if err != nil {
+	if err := util.DecodeHex(s.AppHash[:], sJ.AppHash); err != nil {
 		return fmt.Errorf("couldn't decode app digest")
 	}
 
@@ -68,7 +69,7 @@ func (s *Submission) ToJson() ([]byte, error) {
 
 	sJ.Timestamp = s.Timestamp.UTC().Format(time.RFC3339)
 	sJ.AppTag = s.AppTag
-	sJ.AppHash = hex.EncodeToString(s.AppHash)
+	sJ.AppHash = hex.EncodeToString(s.AppHash[:])
 
 	reqTextBuilder := strings.Builder{}
 	err := s.Request.ToASCII(&reqTextBuilder)

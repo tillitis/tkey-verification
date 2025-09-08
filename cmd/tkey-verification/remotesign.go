@@ -4,6 +4,7 @@
 package main
 
 import (
+	"crypto/sha512"
 	"crypto/tls"
 	"fmt"
 	"net"
@@ -14,6 +15,7 @@ import (
 	"github.com/tillitis/tkey-verification/internal/data"
 	"github.com/tillitis/tkey-verification/internal/firmware"
 	"github.com/tillitis/tkey-verification/internal/tkey"
+	"github.com/tillitis/tkey-verification/internal/util"
 )
 
 type Message struct {
@@ -29,9 +31,17 @@ func remoteSign(conf ProvConfig, dev Device, verbose bool) {
 	firmwares.MustFromJSON([]byte(data.FirmwaresJSON))
 
 	// Find the app to use
-	bin, ok := appbins.MustAppBins().Bins[conf.SigningAppHash]
+	var appHash [sha512.Size]byte
+
+	if err := util.DecodeHex(appHash[:], conf.SigningAppHash); err != nil {
+		le.Printf("couldn't decode signingapphash from config")
+		os.Exit(1)
+	}
+
+	bin, ok := appbins.MustAppBins().Bins[appHash]
 	if !ok {
 		le.Printf("Couldn't find configure app %v\n", conf.SigningAppHash)
+		os.Exit(1)
 	}
 
 	_, _, err := net.SplitHostPort(conf.ServerAddr)

@@ -6,6 +6,7 @@ package verification
 import (
 	"bytes"
 	"crypto/ed25519"
+	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tillitis/tkey-verification/internal/util"
 	"github.com/tillitis/tkey-verification/internal/vendorkey"
 	sumcrypto "sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/policy"
@@ -40,7 +42,7 @@ type Verification struct {
 	Type      VerificationType
 	Timestamp time.Time
 	AppTag    string
-	AppHash   []byte
+	AppHash   [sha512.Size]byte
 	Signature []byte
 	Proof     proof.SigsumProof
 }
@@ -64,8 +66,7 @@ func (v *Verification) FromJson(b []byte) error {
 	}
 	v.AppTag = vJ.AppTag
 
-	v.AppHash, err = hex.DecodeString(vJ.AppHash)
-	if err != nil {
+	if err := util.DecodeHex(v.AppHash[:], vJ.AppHash); err != nil {
 		return fmt.Errorf("couldn't decode app digest")
 	}
 
@@ -98,7 +99,7 @@ func (v *Verification) ToJson() ([]byte, error) {
 
 	vJ.Timestamp = v.Timestamp.UTC().Format(time.RFC3339)
 	vJ.AppTag = v.AppTag
-	vJ.AppHash = hex.EncodeToString(v.AppHash)
+	vJ.AppHash = hex.EncodeToString(v.AppHash[:])
 
 	if v.Type == VerSig || len(v.Signature) != 0 {
 		return nil, fmt.Errorf("vendor signature not supported")

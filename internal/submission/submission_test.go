@@ -2,11 +2,13 @@ package submission
 
 import (
 	"bytes"
+	"crypto/sha512"
 	"encoding/hex"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/tillitis/tkey-verification/internal/util"
 	sumcrypto "sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/requests"
 )
@@ -37,8 +39,8 @@ func TestJSONDecodeSubmission(t *testing.T) {
 		t.Fatalf("Incorrect apptag. Got: %v, want: %v", s.AppTag, wantAppTag)
 	}
 
-	wantAppHash := mustDecodeHexString("cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4")
-	if !bytes.Equal(s.AppHash, wantAppHash) {
+	wantAppHash := mustDecodeHash("cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4")
+	if s.AppHash != wantAppHash {
 		t.Logf("Incorrect apphash. Got: %v, want: %v", s.AppHash, wantAppHash)
 	}
 
@@ -46,7 +48,7 @@ func TestJSONDecodeSubmission(t *testing.T) {
 	rSignature := mustDecodeHexString("b4f9eabdcb6b05d259e964ba6fa427c178b5586d30e6b4026287656c8a7ee2674af33d2c05701ea8f98458fe7c54b787c7a73c0fda6f09046bcf7604cea86c00")
 	rPublicKey := mustDecodeHexString("50d9a125f51d85ffa1fb12011bdae05d39e03cda2a35d0daf3077072daabbb10")
 	wantRequest := requests.Leaf{
-		Message: sumcrypto.Hash(rMessage),
+		Message:   sumcrypto.Hash(rMessage),
 		Signature: sumcrypto.Signature(rSignature),
 		PublicKey: sumcrypto.PublicKey(rPublicKey),
 	}
@@ -61,16 +63,16 @@ func TestJSONDecodeSubmission(t *testing.T) {
 }
 
 func TestJSONEncodeSubmission(t *testing.T) {
-	appHash := mustDecodeHexString("cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4")
+	appHash := mustDecodeHash("cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4")
 	rMessage := mustDecodeHexString("f23e454ee9c9627dd1a80f6ab2e1565fa0cda3a7c91f853eb8099ff645674719")
 	rSignature := mustDecodeHexString("b4f9eabdcb6b05d259e964ba6fa427c178b5586d30e6b4026287656c8a7ee2674af33d2c05701ea8f98458fe7c54b787c7a73c0fda6f09046bcf7604cea86c00")
 	rPublicKey := mustDecodeHexString("50d9a125f51d85ffa1fb12011bdae05d39e03cda2a35d0daf3077072daabbb10")
 	s := Submission{
 		Timestamp: time.Date(2025, 9, 2, 10, 56, 48, 0, time.UTC),
-		AppTag: "signer-v1.0.1",
-		AppHash: appHash,
+		AppTag:    "signer-v1.0.1",
+		AppHash:   appHash,
 		Request: requests.Leaf{
-			Message: sumcrypto.Hash(rMessage),
+			Message:   sumcrypto.Hash(rMessage),
 			Signature: sumcrypto.Signature(rSignature),
 			PublicKey: sumcrypto.PublicKey(rPublicKey),
 		},
@@ -98,4 +100,14 @@ func mustDecodeHexString(s string) []byte {
 	}
 
 	return b
+}
+
+func mustDecodeHash(s string) [sha512.Size]byte {
+	var hash [sha512.Size]byte
+
+	if err := util.DecodeHex(hash[:], s); err != nil {
+		panic(err)
+	}
+
+	return hash
 }
