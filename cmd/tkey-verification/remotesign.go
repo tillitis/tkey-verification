@@ -28,7 +28,7 @@ func remoteSign(conf ProvConfig, dev Device, verbose bool) {
 	var firmwares firmware.Firmwares
 
 	// Get our firmwares
-	firmwares.MustFromJSON([]byte(data.FirmwaresJSON))
+	firmwares.MustDecodeString(data.FirmwaresConf)
 
 	// Find the app to use
 	var appHash [sha512.Size]byte

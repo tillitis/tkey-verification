@@ -66,7 +66,7 @@ func verifyShowUrl(dev Device, verifyBaseURL string) {
 func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, sigsum bool) {
 	var firmwares firmware.Firmwares
 
-	firmwares.MustFromJSON([]byte(data.FirmwaresJSON))
+	firmwares.MustDecodeString(data.FirmwaresConf)
 
 	appBins, err := appbins.NewAppBins()
 	if err != nil {

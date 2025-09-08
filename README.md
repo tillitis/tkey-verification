@@ -384,11 +384,11 @@ in-depth notes on the program.
 `tkey-verification` and `tkey-verify` contain some embedded data. Most
 of them are in [internal/data/data.go](internal/data/data.go).
 
-- Vendor public keys, `VendorPubKeys`.
+- Vendor public keys, see the `VendorPubKeys` constant.
 
 - A database mapping known hardware revisions (first half of the
   Unique Device Identifier) to their expected firmware size and hash.
-  See `FirmwareJSON`.
+  See the `FirmwaresConf` constant.
 
 - Included device apps. See below.
 
