@@ -42,7 +42,7 @@ func showPubkey(binPath string, dev Device, verbose bool) {
 
 	tag := strings.TrimSuffix(filepath.Base(binPath), ".bin")
 
-	le.Printf("Public Key, app tag, and app hash for vendor-signing-pubkeys.txt follows on stdout:\n")
+	le.Printf("Public Key, app tag, and app hash for embedded vendor pubkeys follows on stdout:\n")
 	fmt.Printf("%s %s %s\n", hex.EncodeToString(pubKey), tag, hex.EncodeToString(appHash[:]))
 
 	exit(0)

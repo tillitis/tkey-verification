@@ -361,11 +361,11 @@ same digest.
 
 ## Building tkey-verification
 
-Build the `tkey-verification` tool with the test file containing the
-vendor's public key(s).
+Build the `tkey-verification` tool with the test vendor's public key
+by editing `internal/data/data.go`. Look for "Test vendor key" and
+change to use that one.
 
 ```
-$ cp test-vendor-signing-pubkeys.txt internal/vendorkey/vendor-signing-pubkeys.txt
 $ make
 ```
 
@@ -381,11 +381,14 @@ yourself.
 See [Implementation notes](doc/implementation-notes.md) for more
 in-depth notes on the program.
 
-- `tkey-verification` and `tkey-verify` contain an in-code database
-  mapping known hardware revisions (first half of the Unique Device
-  Identifier) to their expected firmware size and hash. This needs to
-  be maintained in [internal/data/data.go](internal/data/data.go) in
-  `FirmwareJSON`.
+`tkey-verification` and `tkey-verify` contain some embedded data. Most
+of them are in [internal/data/data.go](internal/data/data.go).
+
+- Vendor public keys, `VendorPubKeys`.
+
+- A database mapping known hardware revisions (first half of the
+  Unique Device Identifier) to their expected firmware size and hash.
+  See `FirmwareJSON`.
 
 ## Building included device apps
 
@@ -489,10 +492,10 @@ For the complete set of commands, see the manual pages
 [tkey-verify(1)](doc/tkey-verify.1) and
 [tkey-verification(1)](doc/tkey-verification.1)
 
-## Creating the vendor's public keys file
+## Creating the vendor's public key(s)
 
-The vendor's public key is built into the tkey-verification binary
-from a text file.
+The vendor's public key is built into the tkey-verification binary.
+Look for `VendorPubKeys` in `internal/data/data.go`.
 
 For each public key, the tag and hash digest of the device app used
 when extracting the public key is also provided. The signing server
@@ -500,7 +503,7 @@ needs this so that its TKey can have the correct private key when
 signing. Note that these tags per public key are independent from and
 can be different from the tag used for device signing.
 
-A test file is provided in `test-vendor-signing-pubkeys.txt`. It
+A test vendor key is provided in in the `internal/data/data.go`. It
 contains the default public key of our QEMU machine, which is
 generated when running verisigner v0.0.3.
 
@@ -516,14 +519,14 @@ Example:
 
 ```
 ./tkey-verification show-pubkey --port /dev/pts/10 --app cmd/tkey-verification/bins/signer-v1.0.1.bin
-Public Key, app tag, and app hash for vendor-signing-pubkeys.txt follows on stdout:
+Public Key, app tag, and app hash for embedded vendor pubkeys follows on stdout:
 03a7bd3be67cb466869904ec14b9974ebcc6e593abdc4151315ace2511b9c94d signer-v1.0.1 cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4
 ```
 
-Enter that line into a file, for instance `other-pubkey.txt`. Then build everything with this file:
+Enter that line into `VendorPubKeys` in `internal/data/data.go`. Then
+build everything with this vendor key:
 
 ```
-$ cat other-pubkey.txt >> cmd/tkey-verification/vendor-signing-pubkeys.txt
 $ make
 ```
 
