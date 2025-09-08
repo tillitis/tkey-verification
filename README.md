@@ -377,12 +377,11 @@ yourself.
 See [Implementation notes](doc/implementation-notes.md) for more
 in-depth notes on the program.
 
-- `tkey-verification` contains an in-code database mapping known
-  hardware revisions (first half of the Unique Device Identifier) to
-  their expected firmware size and hash. This needs to be maintained
-  in
-  [cmd/tkey-verification/firmwares.go](cmd/tkey-verification/firmwares.go)
-  in `NewFirmwares()`.
+- `tkey-verification` and `tkey-verify` contain an in-code database
+  mapping known hardware revisions (first half of the Unique Device
+  Identifier) to their expected firmware size and hash. This needs to
+  be maintained in [internal/data/data.go](internal/data/data.go) in
+  `FirmwareJSON`.
 
 ## Building included device apps
 

@@ -1,14 +1,16 @@
 // SPDX-FileCopyrightText: 2023 Tillitis AB <tillitis.se>
 // SPDX-License-Identifier: BSD-2-Clause
 
-package main
+package firmware
 
 import (
 	"crypto/sha512"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 
+	"github.com/tillitis/tkey-verification/internal/data"
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
@@ -16,6 +18,19 @@ const (
 	fwSizeMin int = 2000
 	fwSizeMax int = 8192
 )
+
+type FirmwareJSON struct {
+	UDI0Big  string
+	Vendor   uint16
+	Product  uint8
+	Revision uint8
+	Size     int
+	Hash     string
+}
+
+type FirmwaresJSON struct {
+	FWs []FirmwareJSON
+}
 
 type Firmware struct {
 	Hash [sha512.Size]byte
@@ -30,17 +45,22 @@ type Firmwares struct {
 
 // GetFirmware returns what we know about a firmware indexed by a UDI,
 // or an error if no firmare is found.
-func (f Firmwares) GetFirmware(udi tkey.UDI) (*Firmware, error) {
+func (f Firmwares) GetFirmware(udi tkey.UDI) (Firmware, error) {
+	var fw Firmware
+
 	hw, err := newHardware(udi.VendorID, udi.ProductID, udi.ProductRev)
 	if err != nil {
-		return nil, err
-	}
-	fw, ok := f.firmwares[*hw]
-	if !ok {
-		return nil, ErrUDI
+		return fw, err
 	}
 
-	return &fw, nil
+	var ok bool
+
+	fw, ok = f.firmwares[*hw]
+	if !ok {
+		return fw, fmt.Errorf("firmware not found")
+	}
+
+	return fw, nil
 }
 
 func (f Firmwares) List() []string {
@@ -53,6 +73,31 @@ func (f Firmwares) List() []string {
 	return list
 }
 
+func (f *Firmwares) FromJSON(b []byte) error {
+	var fwsJ FirmwaresJSON
+
+	if err := json.Unmarshal(b, &fwsJ); err != nil {
+		return fmt.Errorf("couldn't unmarshal JSON: %w", err)
+	}
+
+	// Put everything in the map, indexed by the hardware description
+	f.firmwares = make(map[hardware]Firmware)
+
+	for _, fw := range fwsJ.FWs {
+		if err := f.addFirmware(fw.UDI0Big, fw.Vendor, fw.Product, fw.Revision, fw.Size, fw.Hash); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (f *Firmwares) MustFromJSON(b []byte) {
+	if err := f.FromJSON(b); err != nil {
+		panic(err)
+	}
+}
+
 // NewFirmwares initialises all known firmwares. It returns a map of
 // all firmwares or an error.
 //
@@ -63,34 +108,8 @@ func NewFirmwares() (Firmwares, error) {
 		firmwares: make(map[hardware]Firmware),
 	}
 
-	var err error
-
-	// This is the default/qemu UDI0, with firmware from main at
-	// TK1-24.03 (1c90b1aa3dbfb4e62039683ee6049ae8af608498)
-	err = fws.addFirmware("00010203", 0x0010, 8, 3, 4160, "06d0aafcc763307420380a8c5a324f3fccfbba6af7ff6fe0facad684ebd69dd43234c8531a096c77c2dc3543f8b8b629c94136ca7e257ca560da882e4dbbb025")
-	if err != nil {
+	if err := fws.FromJSON([]byte(data.FirmwaresJSON)); err != nil {
 		return fws, err
-	}
-
-	// This is the firmware from main at
-	// c126199a41149f6284aa9533e72395c978733b44
-	err = fws.addFirmware("01337080", 0x1337, 2, 0, 4192, "3769540390ee3d990ea3f9e4cc9a0d1af5bcaebb82218185a78c39c6bf01d9cdc305ba253a1fb9f3f9fcc63d97c8e5f34bbb1f7bec56a8f246f1d2239867b623")
-	if err != nil {
-		return fws, err
-	}
-
-	err = fws.addFirmware("01337081", 0x1337, 2, 1, 4192, "3769540390ee3d990ea3f9e4cc9a0d1af5bcaebb82218185a78c39c6bf01d9cdc305ba253a1fb9f3f9fcc63d97c8e5f34bbb1f7bec56a8f246f1d2239867b623")
-	if err != nil {
-		return fws, err
-	}
-
-	err = fws.addFirmware("01337082", 0x1337, 2, 2, 4160, "06d0aafcc763307420380a8c5a324f3fccfbba6af7ff6fe0facad684ebd69dd43234c8531a096c77c2dc3543f8b8b629c94136ca7e257ca560da882e4dbbb025")
-	if err != nil {
-		return fws, err
-	}
-
-	if len(fws.firmwares) == 0 {
-		return fws, fmt.Errorf("firmware info missing")
 	}
 
 	return fws, nil
@@ -109,7 +128,7 @@ func (f *Firmwares) addFirmware(udi0BEhex string, vendorID uint16, productID uin
 		return fmt.Errorf("couldn't decode UDI: %w", err)
 	}
 	if l := len(udi0BE); l != tkey.UDISize/2 {
-		return ErrWrongLen
+		return fmt.Errorf("wrong length of UDI0")
 	}
 
 	hw, err := newHardware(vendorID, productID, productRev)
@@ -118,10 +137,10 @@ func (f *Firmwares) addFirmware(udi0BEhex string, vendorID uint16, productID uin
 	}
 
 	if fwSize < fwSizeMin {
-		return ErrWrongLen
+		return fmt.Errorf("too small firmware size")
 	}
 	if fwSize > fwSizeMax {
-		return ErrWrongLen
+		return fmt.Errorf("to large firmware size")
 	}
 
 	fwHash, err := hex.DecodeString(fwHashHex)
@@ -129,7 +148,7 @@ func (f *Firmwares) addFirmware(udi0BEhex string, vendorID uint16, productID uin
 		return fmt.Errorf("couldn't decode firmware hash: %w", err)
 	}
 	if l := len(fwHash); l != sha512.Size {
-		return ErrWrongLen
+		return fmt.Errorf("wrong length of firmware digest")
 	}
 
 	// Safety check. We compare the passed UDI0 argument to what

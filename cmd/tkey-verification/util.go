@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/tillitis/tkey-verification/internal/appbins"
+	"github.com/tillitis/tkey-verification/internal/firmware"
 	"github.com/tillitis/tkey-verification/internal/vendorkey"
 )
 
@@ -42,7 +43,7 @@ func builtWith() {
 		os.Exit(1)
 	}
 
-	firmwares, err := NewFirmwares()
+	firmwares, err := firmware.NewFirmwares()
 	if err != nil {
 		le.Printf("Found no usable firmwares\n")
 		os.Exit(1)
