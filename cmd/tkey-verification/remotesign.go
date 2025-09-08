@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/tillitis/tkey-verification/internal/appbins"
+	"github.com/tillitis/tkey-verification/internal/firmware"
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
@@ -49,7 +50,7 @@ func remoteSign(conf ProvConfig, dev Device, verbose bool) {
 
 // Returns the currently used device app, UDI, pubkey, expected
 // firmware, and any error
-func signChallenge(conf ProvConfig, dev Device, verbose bool) (appbins.AppBin, *tkey.UDI, []byte, Firmware, error) {
+func signChallenge(conf ProvConfig, dev Device, verbose bool) (appbins.AppBin, *tkey.UDI, []byte, firmware.Firmware, error) {
 	appBins, err := appbins.NewAppBins()
 	if err != nil {
 		fmt.Printf("Failed to init embedded device apps: %v\n", err)
@@ -66,7 +67,7 @@ func signChallenge(conf ProvConfig, dev Device, verbose bool) (appbins.AppBin, *
 		os.Exit(1)
 	}
 
-	var fw Firmware
+	var fw firmware.Firmware
 	tk, err := tkey.NewTKey(dev.Path, dev.Speed, verbose)
 	if err != nil {
 		return appBin, nil, nil, fw, fmt.Errorf("%w", err)
@@ -95,7 +96,7 @@ func signChallenge(conf ProvConfig, dev Device, verbose bool) (appbins.AppBin, *
 	return appBin, &tk.Udi, pubKey, fw, nil
 }
 
-func vendorSign(server *Server, udi []byte, pubKey []byte, fw Firmware, appBin appbins.AppBin) error {
+func vendorSign(server *Server, udi []byte, pubKey []byte, fw firmware.Firmware, appBin appbins.AppBin) error {
 	conn, err := tls.Dial("tcp", server.Addr, &server.TLSConfig)
 	if err != nil {
 		return fmt.Errorf("%w", err)
