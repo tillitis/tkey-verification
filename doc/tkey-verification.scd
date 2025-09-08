@@ -75,7 +75,7 @@ The commands are as follows:
 
 *show-pubkey*
 
-	Output public key data to populate "vendor-signing-pubkeys.txt"
+	Output public key data to populate the embedded vendor pubkeys
 	for building into *tkey-verification* to be able to use some other
 	commands. This is necessary in order to bootstrap *tkey-verification*
 	from scratch or to add another vendor signing key.
@@ -171,8 +171,8 @@ The file contains:
 The files generated will later be published on a public web server.
 The publication is out of scope for the current program.
 
-*tkey-verification* show-pubkey generates output for a file called
-"vendor-signing-pubkeys.txt" to be included in the build of a new
+*tkey-verification* show-pubkey generates output for the embedded
+vendor pubkeys to be included in the build of a new
 *tkey-verification*. It's output is:
 
 - Ed25519 public key
@@ -218,7 +218,7 @@ In order to include a new vendor signing key, use:
 % ./tkey-verification show-pubkey --port /dev/pts/12 --app cmd/tkey-verification/bins/signer-v1.0.0.bin
 Connecting to device on serial port /dev/pts/12 ...
 Firmware name0:'tk1 ' name1:'mkdf' version:5
-Public Key, app tag, and app hash for vendor-signing-pubkeys.txt follows on stdout:
+Public Key, app tag, and app hash for embedded vendor pubkeys follows on stdout:
 038dd0b898c601517a09cd249d3c4f2de8e9aab38c5fa02701ae29bb41a6d863 verisigner-v0.0.1 9598910ec9ebe2504a5f894de6f8e0677dc94c156c7bd6f7e805a35354b3c85daa4ca66ab93f4d75221b501def457b4cafc933c6cdcf16d1eb8ccba6cccf6630
 ```
 

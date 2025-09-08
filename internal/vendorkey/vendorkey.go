@@ -7,18 +7,13 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"crypto/sha512"
-	_ "embed"
 	"encoding/hex"
 	"fmt"
 	"strings"
 
 	"github.com/tillitis/tkey-verification/internal/appbins"
+	"github.com/tillitis/tkey-verification/internal/data"
 )
-
-// nolint:typecheck // Avoid lint error when the embedding file is missing.
-//
-//go:embed vendor-signing-pubkeys.txt
-var pubKeysData []byte
 
 type PubKey struct {
 	PubKey [ed25519.PublicKeySize]byte // Vendor public key
@@ -113,5 +108,5 @@ func (v *VendorKeys) FromString(pubkeys string, appBins appbins.AppBins) error {
 }
 
 func (v *VendorKeys) FromEmbedded(appBins appbins.AppBins) error {
-	return v.FromString(string(pubKeysData), appBins)
+	return v.FromString(string(data.VendorPubKeys), appBins)
 }

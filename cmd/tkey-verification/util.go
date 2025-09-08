@@ -72,7 +72,7 @@ Commands:
 
   remote-sign   Call the remote signing server to sign for a local TKey.
 
-  show-pubkey	Prints the info needed for the vendor-signing-pubkeys.txt to stdout.
+  show-pubkey	Prints the info needed for the embedded vendor pubkeys to stdout.
 		This includes public key, app tag, and app hash in the right format.
 
 		Use the flag --app to specify the path o the desired app to use, i.e.,
