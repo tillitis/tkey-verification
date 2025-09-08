@@ -12,7 +12,7 @@ import (
 func TestParseEmbeddedFirmwares(t *testing.T) {
 	var f Firmwares
 
-	if err := f.FromJSON([]byte(data.FirmwaresJSON)); err != nil {
+	if err := f.FromString(data.FirmwaresConf); err != nil {
 		t.Fatal(err)
 	}
 }

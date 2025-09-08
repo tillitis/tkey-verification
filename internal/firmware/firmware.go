@@ -7,11 +7,13 @@ import (
 	"crypto/sha512"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/tillitis/tkey-verification/internal/data"
 	"github.com/tillitis/tkey-verification/internal/tkey"
+	"github.com/tillitis/tkey-verification/internal/util"
 )
 
 const (
@@ -19,17 +21,13 @@ const (
 	fwSizeMax int = 8192
 )
 
-type FirmwareJSON struct {
-	UDI0Big  string
-	Vendor   uint16
-	Product  uint8
-	Revision uint8
-	Size     int
-	Hash     string
-}
-
-type FirmwaresJSON struct {
-	FWs []FirmwareJSON
+type Hardware struct {
+	Udi        string
+	VendorId   uint16
+	ProductId  uint8
+	ProductRev uint8
+	FwSize     int
+	FwHash     [sha512.Size]byte
 }
 
 type Firmware struct {
@@ -73,18 +71,62 @@ func (f Firmwares) List() []string {
 	return list
 }
 
-func (f *Firmwares) FromJSON(b []byte) error {
-	var fwsJ FirmwaresJSON
-
-	if err := json.Unmarshal(b, &fwsJ); err != nil {
-		return fmt.Errorf("couldn't unmarshal JSON: %w", err)
-	}
+func (f *Firmwares) FromString(fwStr string) error {
+	lines := strings.Split(strings.Trim(strings.ReplaceAll(fwStr, "\r\n", "\n"), "\n"), "\n")
 
 	// Put everything in the map, indexed by the hardware description
 	f.firmwares = make(map[hardware]Firmware)
 
-	for _, fw := range fwsJ.FWs {
-		if err := f.addFirmware(fw.UDI0Big, fw.Vendor, fw.Product, fw.Revision, fw.Size, fw.Hash); err != nil {
+	for _, line := range lines {
+		fields := strings.Fields(line)
+
+		if len(fields) == 0 || strings.HasPrefix(fields[0], "#") {
+			// ignoring empty/spaces-only lines and comments
+			continue
+		}
+
+		if len(fields) != 6 {
+			return fmt.Errorf("Expected 6 fields: UDI0 vendor product rev size hash")
+		}
+
+		udi0Str, vendorStr, productStr, revStr, sizeStr, hashStr := fields[0], fields[1], fields[2], fields[3], fields[4], fields[5]
+
+		var hw Hardware
+
+		hw.Udi = udi0Str
+
+		var err error
+		var vid uint64
+
+		vid, err = strconv.ParseUint(vendorStr, 16, 16)
+		if err != nil {
+			return err
+		}
+
+		hw.VendorId = uint16(vid)
+
+		var prod uint64
+		prod, err = strconv.ParseUint(productStr, 10, 8)
+		if err != nil {
+			return err
+		}
+
+		hw.ProductId = uint8(prod)
+
+		var rev uint64
+		rev, err = strconv.ParseUint(revStr, 10, 8)
+		if err != nil {
+			return err
+		}
+
+		hw.ProductRev = uint8(rev)
+
+		hw.FwSize, err = strconv.Atoi(sizeStr)
+		if err != nil {
+			return err
+		}
+
+		if err := f.addFirmware(hw.Udi, hw.VendorId, hw.ProductId, hw.ProductRev, hw.FwSize, hashStr); err != nil {
 			return err
 		}
 	}
@@ -92,8 +134,8 @@ func (f *Firmwares) FromJSON(b []byte) error {
 	return nil
 }
 
-func (f *Firmwares) MustFromJSON(b []byte) {
-	if err := f.FromJSON(b); err != nil {
+func (f *Firmwares) MustDecodeString(s string) {
+	if err := f.FromString(s); err != nil {
 		panic(err)
 	}
 }
@@ -104,15 +146,15 @@ func (f *Firmwares) MustFromJSON(b []byte) {
 // To add a new firmware to the database, use addFirmware() in this
 // function.
 func NewFirmwares() (Firmwares, error) {
-	fws := Firmwares{
+	f := Firmwares{
 		firmwares: make(map[hardware]Firmware),
 	}
 
-	if err := fws.FromJSON([]byte(data.FirmwaresJSON)); err != nil {
-		return fws, err
+	if err := f.FromString(data.FirmwaresConf); err != nil {
+		return f, err
 	}
 
-	return fws, nil
+	return f, nil
 }
 
 // addFirmware adds a new known hardware identified by the triple
@@ -143,12 +185,10 @@ func (f *Firmwares) addFirmware(udi0BEhex string, vendorID uint16, productID uin
 		return fmt.Errorf("to large firmware size")
 	}
 
-	fwHash, err := hex.DecodeString(fwHashHex)
-	if err != nil {
-		return fmt.Errorf("couldn't decode firmware hash: %w", err)
-	}
-	if l := len(fwHash); l != sha512.Size {
-		return fmt.Errorf("wrong length of firmware digest")
+	var fwHash [sha512.Size]byte
+
+	if err := util.DecodeHex(fwHash[:], fwHashHex); err != nil {
+		return err
 	}
 
 	// Safety check. We compare the passed UDI0 argument to what
@@ -163,7 +203,7 @@ func (f *Firmwares) addFirmware(udi0BEhex string, vendorID uint16, productID uin
 	}
 
 	f.firmwares[*hw] = Firmware{
-		Hash: *(*[64]byte)(fwHash),
+		Hash: fwHash,
 		Size: fwSize,
 	}
 
