@@ -34,13 +34,9 @@ func buildMessage(udiBE, fwHash, pubKey []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func verifyFirmwareHash(tk tkey.TKey) (firmware.Firmware, error) {
+func verifyFirmwareHash(tk tkey.TKey, firmwares firmware.Firmwares) (firmware.Firmware, error) {
 	var expectedFW firmware.Firmware
-
-	firmwares, err := firmware.NewFirmwares()
-	if err != nil {
-		return expectedFW, fmt.Errorf("no firmware digests")
-	}
+	var err error
 
 	expectedFW, err = firmwares.GetFirmware(tk.Udi)
 	if err != nil {
