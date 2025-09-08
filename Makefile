@@ -2,14 +2,20 @@ shasum = sha512sum
 CGO = 0
 
 .PHONY: all
-all: tkey-sigsum-submit tkey-verification
+all: tkey-sigsum-submit tkey-verification tkey-verify
 
 # APP_VERSION ?= $(shell git describe --dirty --always | sed -n "s/^v\(.*\)/\1/p")
 APP_VERSION ?= $(shell git describe --dirty --always | sed -n "s/^v\(.*\)/\1/p")
+
 # .PHONY to let go-build handle deps and rebuilds
 .PHONY: tkey-sigsum-submit
 tkey-sigsum-submit:
 	CGO_ENABLED=$(CGO) go build -ldflags "-w -X main.version=$(APP_VERSION) -buildid=" -trimpath -buildvcs=false ./cmd/tkey-sigsum-submit
+
+.PHONY: tkey-verify
+tkey-verify:
+	CGO_ENABLED=$(CGO) go build -ldflags "-w -X main.version=$(APP_VERSION) -buildid=" -trimpath -buildvcs=false ./cmd/tkey-verify
+
 .PHONY: tkey-verification
 tkey-verification:
 	CGO_ENABLED=$(CGO) go build -ldflags "-w -X main.version=$(APP_VERSION) -buildid=" -trimpath -buildvcs=false ./cmd/tkey-verification
@@ -26,15 +32,19 @@ check-digests:
 	$(shasum) -c verisigner-v0.0.3.bin.sha512
 
 .PHONY: man
-man: doc/tkey-verification.1
+man: doc/tkey-verification.1 doc/tkey-verify.1
 
 doc/tkey-verification.1: doc/tkey-verification.scd
+	scdoc < $^ > $@
+
+doc/tkey-verify.1: doc/tkey-verify.scd
 	scdoc < $^ > $@
 
 .PHONY: clean
 clean:
 	rm -f tkey-sigsum-submit
 	rm -f tkey-verification
+	rm -f tkey-verify
 
 .PHONY: lint
 lint:
