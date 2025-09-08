@@ -390,10 +390,12 @@ of them are in [internal/data/data.go](internal/data/data.go).
   Unique Device Identifier) to their expected firmware size and hash.
   See `FirmwareJSON`.
 
+- Included device apps. See below.
+
 ## Building included device apps
 
 The device apps used for signing is included in binary form under
-`cmd/tkey-verification/bins/`.
+`internal/appbins/bins`.
 
 Reproducible versions of the device app `verisigner` binary included
 in this repo can be built from earlier verisigner tags. Checkout the
