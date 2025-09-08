@@ -4,15 +4,15 @@
 package appbins
 
 import (
-	"bytes"
 	"crypto/sha512"
 	"embed"
-	"encoding/hex"
 	"fmt"
 	"io/fs"
 	"path"
 	"sort"
 	"strings"
+
+	"github.com/tillitis/tkey-verification/internal/util"
 )
 
 type AppBin struct {
@@ -21,25 +21,15 @@ type AppBin struct {
 }
 
 func (a *AppBin) String() string {
-	return fmt.Sprintf("tag:%s hash:%0x…", a.Tag, a.Hash()[:16])
+	return fmt.Sprintf("tag:%s hash:%0x…", a.Tag, a.Hash())
 }
 
-func (a *AppBin) Hash() []byte {
-	hash := sha512.Sum512(a.Bin)
-	return hash[:]
+func (a *AppBin) Hash() [sha512.Size]byte {
+	return sha512.Sum512(a.Bin)
 }
 
 type AppBins struct {
-	Bins map[string]AppBin
-}
-
-// Get returns an AppBin indexed by the app hash digest.
-func (a AppBins) Get(hash string) (AppBin, error) {
-	if val, ok := a.Bins[hash]; ok {
-		return val, nil
-	}
-
-	return AppBin{}, fmt.Errorf("couldn't find device app")
+	Bins map[[sha512.Size]byte]AppBin
 }
 
 //go:embed bins/*.bin bins/*.bin.sha512
@@ -62,12 +52,12 @@ func (a AppBins) Tags() []string {
 // NewAppBins initializes the embedded device apps.
 func NewAppBins() (AppBins, error) {
 	var appBins = AppBins{
-		Bins: map[string]AppBin{},
+		Bins: map[[sha512.Size]byte]AppBin{},
 	}
 
 	entries, err := binsFS.ReadDir(binsDir)
 	if err != nil {
-		return AppBins{}, fmt.Errorf("error when reading %v: %w", binsDir, err)
+		return appBins, fmt.Errorf("error when reading %v: %w", binsDir, err)
 	}
 
 	for _, entry := range entries {
@@ -85,24 +75,27 @@ func NewAppBins() (AppBins, error) {
 		var info fs.FileInfo
 
 		if info, err = entry.Info(); err != nil {
-			return AppBins{}, fmt.Errorf("couldn't stat %v: %w", binFn, err)
+			return appBins, fmt.Errorf("couldn't stat %v: %w", binFn, err)
 		} else if info.Size() == 0 {
-			return AppBins{}, fmt.Errorf("missing file %v", binFn)
+			return appBins, fmt.Errorf("missing file %v", binFn)
 		}
 
 		var bin []byte
 		if bin, err = binsFS.ReadFile(path.Join(binsDir, binFn)); err != nil {
-			return AppBins{}, fmt.Errorf("couldn't read %v: %w", binFn, err)
+			return appBins, fmt.Errorf("couldn't read %v: %w", binFn, err)
 		}
 
 		// Require accompanying sha512 file with matching hash
 		hashFn := binFn + ".sha512"
-		var hash []byte
-		if hash, err = binsFS.ReadFile(path.Join(binsDir, hashFn)); err != nil {
-			return AppBins{}, fmt.Errorf("couldn't read %v: %w", path.Join(binsDir, hashFn), err)
+		var hashHex []byte
+		if hashHex, err = binsFS.ReadFile(path.Join(binsDir, hashFn)); err != nil {
+			return appBins, fmt.Errorf("couldn't read %v: %w", path.Join(binsDir, hashFn), err)
 		}
-		if hash, err = hex.DecodeString(string(hash[:sha512.Size*2])); err != nil {
-			return AppBins{}, err
+
+		var hash [sha512.Size]byte
+
+		if err := util.DecodeHex(hash[:], string(hashHex[:sha512.Size*2])); err != nil {
+			return appBins, err
 		}
 
 		appBin := AppBin{
@@ -110,11 +103,11 @@ func NewAppBins() (AppBins, error) {
 			Bin: bin,
 		}
 
-		if !bytes.Equal(appBin.Hash(), hash) {
-			return AppBins{}, fmt.Errorf("digests of %v != %v", binFn, hashFn)
+		if appBin.Hash() != hash {
+			return appBins, fmt.Errorf("digests of %v != %v", binFn, hashFn)
 		}
 
-		appBins.Bins[hex.EncodeToString(hash)] = appBin
+		appBins.Bins[hash] = appBin
 	}
 
 	return appBins, nil

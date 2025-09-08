@@ -139,8 +139,8 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, sigs
 	}
 
 	// Find the right app to run
-	appBin, err := appBins.Get(hex.EncodeToString(verification.AppHash))
-	if err != nil {
+	appBin, ok := appBins.Bins[verification.AppHash]
+	if !ok {
 		notFound("app digest")
 		exit(1)
 	}

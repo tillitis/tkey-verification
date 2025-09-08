@@ -13,6 +13,7 @@ import (
 
 	"github.com/tillitis/tkey-verification/internal/appbins"
 	"github.com/tillitis/tkey-verification/internal/data"
+	"github.com/tillitis/tkey-verification/internal/util"
 )
 
 type PubKey struct {
@@ -72,17 +73,15 @@ func (v *VendorKeys) FromString(pubkeys string, appBins appbins.AppBins) error {
 			return fmt.Errorf("public key has wrong length")
 		}
 
-		appHash, err := hex.DecodeString(appHashHex)
-		if err != nil {
-			return fmt.Errorf("couldn't decode app digest: %w", err)
-		}
-		if l := len(appHash); l != sha512.Size {
-			return fmt.Errorf("app digest not SHA-512")
+		var appHash [sha512.Size]byte
+
+		if err := util.DecodeHex(appHash[:], appHashHex); err != nil {
+			return err
 		}
 
 		var appBin appbins.AppBin
-		if _, ok := appBins.Bins[appHashHex]; ok {
-			appBin = appBins.Bins[appHashHex]
+		if _, ok := appBins.Bins[appHash]; ok {
+			appBin = appBins.Bins[appHash]
 			if appBin.Tag != tag {
 				return fmt.Errorf("embedded app tag != vendor signing app tag")
 			}

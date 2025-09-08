@@ -45,7 +45,7 @@ func (*API) Ping(_ *struct{}, _ *struct{}) error {
 type Args struct {
 	UDIBE   []byte
 	AppTag  string
-	AppHash []byte
+	AppHash [sha512.Size]byte
 	Message []byte
 }
 
