@@ -72,15 +72,6 @@ Commands:
 
   remote-sign   Call the remote signing server to sign for a local TKey.
 
-  verify        Verify that a TKey is genuine by extracting the TKey UDI and using it
-                to fetch the verification data, including tag and signature from the
-                web. Then running the correct verisigner-app on the TKey, extracting
-                the public key and verifying it using the vendor's signing public key.
-
-                The flags --show-url and --base-dir can be used to show the URL for
-                downloading the verification data on one machine, and verifying the
-                TKey on another machine that lacks network, see more below.
-
   show-pubkey	Prints the info needed for the vendor-signing-pubkeys.txt to stdout.
 		This includes public key, app tag, and app hash in the right format.
 

@@ -36,10 +36,14 @@ tag in `--version`.
 For the typical end user with network access, insert the TKey and run:
 
 ```
-$ tkey-verification verify
+$ tkey-verify
 ```
 
 For more advanced use and for provisioning, see the man page in
+`doc/tkey-verify.1`.
+
+For use during provisioning, use the `tkey-verification` and
+`tkey-sigsum-submit` instead. See the man page in
 `doc/tkey-verification.1`.
 
 ## Introduction
@@ -165,7 +169,7 @@ is the expected.
 
 ## What is verified?
 
-What does verifying a TKey with `tkey-verification verify` prove?
+What does verifying a TKey with `tkey-verify` prove?
 
 To explain the verification and what it proves, first we need a brief
 explanation on how the TKey works. The TKey uses measured boot. The
@@ -469,20 +473,21 @@ $ make certs
   ```
 
 - Before trying to verify you need to remove and re-insert the device
-  under verification to get it back to firmware mode.
-  `tkey-verification` always requires to load the signer itself. Then
-  try to verify against local files in a directory using `verify -d
-  signatures` (the default is to query a web server):
+  under verification to get it back to firmware mode. `tkey-verify`
+  always requires to load the signer itself. Then try to verify
+  against local files in a directory using `tkey-verify -d signatures`
+  (the default is to query a web server):
 
   ```
-  $ ./tkey-verification verify -d verifications
+  $ ./tkey-verify -d signatures
   TKey UDI: 0x0001020304050607(BE) VendorID: 0x0010 ProductID: 8 ProductRev: 3
   Reading verification data from file verifications/0001020304050607 ...
   TKey is genuine!
   ```
 
-For the complete set of commands, see the manual page
-[tkey-verification(1)](doc/tkey-verification.1).
+For the complete set of commands, see the manual pages
+[tkey-verify(1)](doc/tkey-verify.1) and
+[tkey-verification(1)](doc/tkey-verification.1)
 
 ## Creating the vendor's public keys file
 

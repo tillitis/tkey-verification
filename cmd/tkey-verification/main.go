@@ -127,18 +127,6 @@ func main() {
 
 		remoteSign(conf, dev, verbose)
 
-	case "verify":
-		if baseDir != "" && (showURLOnly || pflag.CommandLine.Lookup("base-url").Changed) {
-			le.Printf("Cannot combine --base-dir and --show-url/--base-url\n")
-			os.Exit(2)
-		}
-
-		if showURLOnly {
-			verifyShowUrl(dev, baseURL)
-		}
-
-		verify(dev, verbose, baseDir, baseURL, sigsum)
-
 	case "show-pubkey":
 		if binPath == "" {
 			le.Printf("Needs the path to an app, use `--app PATH`\n")

@@ -4,6 +4,9 @@
 package main
 
 import (
+	"bytes"
+	"crypto/ed25519"
+	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -17,8 +20,6 @@ import (
 	"github.com/tillitis/tkey-verification/internal/vendorkey"
 	"github.com/tillitis/tkey-verification/internal/verification"
 	"github.com/tillitis/tkeyclient"
-	sumcrypto "sigsum.org/sigsum-go/pkg/crypto"
-	"sigsum.org/sigsum-go/pkg/key"
 )
 
 const verifyInfoURL = "https://www.tillitis.se/verify"
@@ -157,18 +158,29 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, sigs
 	}
 
 	// Check we have the right firmware.
-	fw, err := verifyFirmwareHash(*tk, firmwares)
+	expectedFW, err := firmwares.GetFirmware(tk.Udi)
 	if err != nil {
 		verificationFailed("unexpected firmware")
-		fmt.Printf("fw: %#v\n", fw)
 		exit(1)
 	}
+
+	fwHash, err := tk.GetFirmwareHash(expectedFW.Size)
+	if err != nil {
+		commFailed("couldn't get firmware digest from TKey")
+	}
+
+	if !bytes.Equal(expectedFW.Hash[:], fwHash) {
+		le.Printf("TKey does not have expected firmware hash %0x…, but instead %0x…", expectedFW.Hash[:16], fwHash[:16])
+		verificationFailed("unexpected firmware")
+		exit(1)
+	}
+
 	if verbose {
-		le.Printf("TKey firmware was verified, size:%d hash:%0x…\n", fw.Size, fw.Hash[:16])
+		le.Printf("TKey firmware was verified, size:%d hash:%0x…\n", expectedFW.Size, expectedFW.Hash[:16])
 	}
 
 	// Recreate message the vendor signed
-	msg, err := buildMessage(tk.Udi.Bytes, fw.Hash[:], pubKey)
+	msg, err := buildMessage(tk.Udi.Bytes, expectedFW.Hash[:], pubKey)
 	if err != nil {
 		parseFailure(err.Error())
 		exit(1)
@@ -216,7 +228,7 @@ func parseFailure(msg string) {
 // binary to even complete a verification.
 func missing(msg string) {
 	fmt.Printf("MISSING IN PROGRAM: %s\n", msg)
-	fmt.Printf("It seems tkey-verification is not built correctly.\n")
+	fmt.Printf("It seems tkey-verify is not built correctly.\n")
 }
 
 // notFound describes an error where we with data from external source
@@ -264,10 +276,24 @@ func verifySig(msg []byte, verification verification.Verification, appBins appbi
 	le.Printf("Verified with vendor key %x\n", verifiedWith.PubKey)
 }
 
-func mustParsePublicKey(ascii string) sumcrypto.PublicKey {
-	key, err := key.ParsePublicKey(ascii)
-	if err != nil {
-		panic(err)
+// TODO move to some internal package?
+func buildMessage(udiBE, fwHash, pubKey []byte) ([]byte, error) {
+	var buf bytes.Buffer
+
+	if l := len(udiBE); l != tkey.UDISize {
+		return nil, fmt.Errorf("wrong length of UDI")
 	}
-	return key
+	buf.Write(udiBE)
+
+	if l := len(fwHash); l != sha512.Size {
+		return nil, fmt.Errorf("wrong length of digest")
+	}
+	buf.Write(fwHash)
+
+	if l := len(pubKey); l != ed25519.PublicKeySize {
+		return nil, fmt.Errorf("wrong length of pubkey")
+	}
+	buf.Write(pubKey)
+
+	return buf.Bytes(), nil
 }
