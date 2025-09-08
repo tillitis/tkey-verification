@@ -11,6 +11,7 @@ import (
 
 	"github.com/tillitis/tkey-verification/internal/appbins"
 	"github.com/tillitis/tkey-verification/internal/data"
+	"github.com/tillitis/tkey-verification/internal/firmware"
 	"github.com/tillitis/tkey-verification/internal/sigsum"
 	"github.com/tillitis/tkey-verification/internal/tkey"
 	"github.com/tillitis/tkey-verification/internal/vendorkey"
@@ -62,6 +63,10 @@ func verifyShowUrl(dev Device, verifyBaseURL string) {
 //
 //   - Verify the vendor signature over the message.
 func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, sigsum bool) {
+	var firmwares firmware.Firmwares
+
+	firmwares.MustFromJSON([]byte(data.FirmwaresJSON))
+
 	appBins, err := appbins.NewAppBins()
 	if err != nil {
 		missing(fmt.Sprintf("no embedded device apps: %v", err))
@@ -152,9 +157,10 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, sigs
 	}
 
 	// Check we have the right firmware.
-	fw, err := verifyFirmwareHash(*tk)
+	fw, err := verifyFirmwareHash(*tk, firmwares)
 	if err != nil {
 		verificationFailed("unexpected firmware")
+		fmt.Printf("fw: %#v\n", fw)
 		exit(1)
 	}
 	if verbose {

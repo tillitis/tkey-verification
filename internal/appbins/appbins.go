@@ -119,3 +119,12 @@ func NewAppBins() (AppBins, error) {
 
 	return appBins, nil
 }
+
+func MustAppBins() AppBins {
+	bins, err := NewAppBins()
+	if err != nil {
+		panic(err)
+	}
+
+	return bins
+}

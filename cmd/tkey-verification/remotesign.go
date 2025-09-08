@@ -11,17 +11,43 @@ import (
 	"os"
 
 	"github.com/tillitis/tkey-verification/internal/appbins"
+	"github.com/tillitis/tkey-verification/internal/data"
 	"github.com/tillitis/tkey-verification/internal/firmware"
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
+type Message struct {
+	udi    tkey.UDI
+	pubKey []byte
+	fw     firmware.Firmware
+}
+
 func remoteSign(conf ProvConfig, dev Device, verbose bool) {
+	var firmwares firmware.Firmwares
+
+	// Get our firmwares
+	firmwares.MustFromJSON([]byte(data.FirmwaresJSON))
+
+	// Find the app to use
+	bin, ok := appbins.MustAppBins().Bins[conf.SigningAppHash]
+	if !ok {
+		le.Printf("Couldn't find configure app %v\n", conf.SigningAppHash)
+	}
+
 	_, _, err := net.SplitHostPort(conf.ServerAddr)
 	if err != nil {
 		le.Printf("SplitHostPort failed: %s", err)
 		os.Exit(1)
 	}
 
+	// Authenticate the device
+	message, err := authDevice(dev, bin, firmwares)
+	if err != nil {
+		le.Printf("Couldn't authenticate device: %s\n", err)
+		os.Exit(1)
+	}
+
+	// Sign this with our HSM
 	server := Server{
 		Addr: conf.ServerAddr,
 		TLSConfig: tls.Config{
@@ -33,13 +59,7 @@ func remoteSign(conf ProvConfig, dev Device, verbose bool) {
 		},
 	}
 
-	appBin, udi, pubKey, fw, err := signChallenge(conf, dev, verbose)
-	if err != nil {
-		le.Printf("Couldn't sign challenge: %s\n", err)
-		os.Exit(1)
-	}
-
-	err = vendorSign(&server, udi.Bytes, pubKey, fw, appBin)
+	err = vendorSign(&server, message.udi.Bytes, message.pubKey, message.fw, bin)
 	if err != nil {
 		le.Printf("Couldn't get a vendor signature: %s\n", err)
 		os.Exit(1)
@@ -48,52 +68,41 @@ func remoteSign(conf ProvConfig, dev Device, verbose bool) {
 	le.Printf("Remote Sign was successful\n")
 }
 
-// Returns the currently used device app, UDI, pubkey, expected
-// firmware, and any error
-func signChallenge(conf ProvConfig, dev Device, verbose bool) (appbins.AppBin, *tkey.UDI, []byte, firmware.Firmware, error) {
-	appBins, err := appbins.NewAppBins()
+func authDevice(dev Device, appBin appbins.AppBin, firmwares firmware.Firmwares) (Message, error) {
+	var message Message
+
+	// Load the app
+	tk, err := tkey.NewTKey(dev.Path, dev.Speed, false)
 	if err != nil {
-		fmt.Printf("Failed to init embedded device apps: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Do we have the configured device app to use for device signature?
-	var appBin appbins.AppBin
-
-	if aBin, ok := appBins.Bins[conf.SigningAppHash]; ok {
-		appBin = aBin
-	} else {
-		fmt.Printf("Compiled in device signing app corresponding to hash %v (signingapphash) not found\n", conf.SigningAppHash)
-		os.Exit(1)
-	}
-
-	var fw firmware.Firmware
-	tk, err := tkey.NewTKey(dev.Path, dev.Speed, verbose)
-	if err != nil {
-		return appBin, nil, nil, fw, fmt.Errorf("%w", err)
+		return message, fmt.Errorf("%w", err)
 	}
 
 	defer tk.Close()
 
-	le.Printf("Loading device app built from %s ...\n", appBin.String())
 	pubKey, err := tk.LoadSigner(appBin.Bin)
 	if err != nil {
-		return appBin, nil, nil, fw, fmt.Errorf("%w", err)
+		return message, fmt.Errorf("%w", err)
 	}
 	le.Printf("TKey UDI: %s\n", tk.Udi.String())
 
-	fw, err = verifyFirmwareHash(*tk)
+	// Authenticate against pubkey
+	err = tk.Challenge(pubKey)
 	if err != nil {
-		return appBin, nil, nil, fw, fmt.Errorf("%w", err)
+		return message, fmt.Errorf("challenge/response failed: %w", err)
+	}
+
+	// Verify the firmware
+	fw, err := verifyFirmwareHash(*tk, firmwares)
+	if err != nil {
+		return message, fmt.Errorf("%w", err)
 	}
 	le.Printf("TKey firmware with size:%d and verified hash:%0x…\n", fw.Size, fw.Hash[:16])
 
-	err = tk.Challenge(pubKey)
-	if err != nil {
-		return appBin, nil, nil, fw, fmt.Errorf("challenge/response failed: %w", err)
-	}
+	message.udi = tk.Udi
+	message.pubKey = pubKey
+	message.fw = fw
 
-	return appBin, &tk.Udi, pubKey, fw, nil
+	return message, nil
 }
 
 func vendorSign(server *Server, udi []byte, pubKey []byte, fw firmware.Firmware, appBin appbins.AppBin) error {
