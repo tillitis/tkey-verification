@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/tillitis/tkey-verification/internal/ssh"
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
@@ -44,6 +45,11 @@ func showPubkey(binPath string, dev Device, verbose bool) {
 
 	le.Printf("Public Key, app tag, and app hash for embedded vendor pubkeys follows on stdout:\n")
 	fmt.Printf("%s %s %s\n", hex.EncodeToString(pubKey), tag, hex.EncodeToString(appHash[:]))
+
+	var sshPubKey ssh.PublicKey
+
+	copy(sshPubKey[:], pubKey)
+	fmt.Printf("SSH version: %v\n", ssh.FormatPublicEd25519(&sshPubKey))
 
 	exit(0)
 }
