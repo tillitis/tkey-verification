@@ -80,8 +80,8 @@ used. To make it easier to find illicit use of the key we will store
 the *digest* of the TKey identity, but not the identity itself.
 
 If the monitor finds our key has been used, it uses the digest
-reported from the log and checks if this is indeed a digest we have
-signed. If not, it alerts us.
+reported from the log and checks if this is indeed a known digest we
+have signed. If not, it alerts us.
 
 The timestamps by the witnesses should give us a hint when this was
 first used. We can compare with the timestamps in our verification
@@ -312,11 +312,16 @@ Detailed step-by-step security protocol.
 7. Sign a digest of a message consisting of the UDI, firmware digest,
    and signer public key with vendor's private Sigsum key, creating a
    Sigsum log [request file](#submit-request-file).
-8. Submit the request file to the Sigsum log, collecting the proof.
-9. Build the verification file, including the Sigsum proof.
-10. Publish the [verification file](#verification-file), indexed by
+8. Publish the request file to the Sigsum monitor.
+9. Submit the sigsum request included in the request file to the
+   Sigsum log, collecting the proof.
+10. Build the verification file, including the Sigsum proof.
+11. Publish the [verification file](#verification-file), indexed by
     the UDI.
-11. (Transfer the digest of the message to the future Sigsum monitor.)
+12. (Transfer the digest of the message to the future Sigsum monitor.)
+
+The checksum of a TKey must be present at the monitor before
+submitting the TKey identity to the log
 
 The following diagram contains an overview of how data flows during
 provisioning at Tillitis:
