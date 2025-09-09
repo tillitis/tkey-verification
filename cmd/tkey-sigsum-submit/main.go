@@ -12,6 +12,7 @@ import (
 	"path"
 
 	"github.com/spf13/pflag"
+	"github.com/tillitis/tkey-verification/internal/data"
 	"github.com/tillitis/tkey-verification/internal/submission"
 	"github.com/tillitis/tkey-verification/internal/verification"
 	"sigsum.org/sigsum-go/pkg/policy"
@@ -21,15 +22,6 @@ import (
 )
 
 var le = log.New(os.Stderr, "", 0)
-
-const policyText = `log 4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6 https://test.sigsum.org/barreleye
-
-witness testwitness 5c35281928e9da396beede5f22a2251a589e6ac6de52a4de85de8634ffccaf6d
-
-group  demo-quorum-rule all testwitness
-
-quorum demo-quorum-rule
-`
 
 func main() {
 	var verificationsDir, submissionsDir, processedSubmissionsDir string
@@ -59,7 +51,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	pol, err := policy.ParseConfig(bytes.NewBufferString(policyText))
+	pol, err := policy.ParseConfig(bytes.NewBufferString(data.PolicyStr))
 	if err != nil {
 		le.Fatalf("Failed to read sigsum policy: %v", err)
 	}
