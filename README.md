@@ -138,6 +138,16 @@ like:
 
 https://tkey.tillitis.se/verify/0133704100000015
 
+## Submit request file
+
+The submit request file contains:
+
+- `timestamp`: RFC3339 timestamp when the signature was done.
+- `apptag`: a human readable hint for anyone who wants to reproduce the
+  procedure manually.
+- `apphash`: hash digest for the specific device app to run.
+- `request`: sigsum add-leaf-request data.
+
 ## Check identity
 
 Both during provisioning and verification we need to authenticate the
@@ -301,7 +311,7 @@ Detailed step-by-step security protocol.
    to its hardware revision, is running the expected firmware.
 7. Sign a digest of a message consisting of the UDI, firmware digest,
    and signer public key with vendor's private Sigsum key, creating a
-   Sigsum log request file.
+   Sigsum log [request file](#submit-request-file).
 8. Submit the request file to the Sigsum log, collecting the proof.
 9. Build the verification file, including the Sigsum proof.
 10. Publish the [verification file](#verification-file), indexed by
