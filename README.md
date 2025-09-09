@@ -346,7 +346,7 @@ Build the `tkey-verification` tool with the test file containing the
 vendor's public key(s).
 
 ```
-$ cp test-vendor-signing-pubkeys.txt cmd/tkey-verification/vendor-signing-pubkeys.txt
+$ cp test-vendor-signing-pubkeys.txt internal/vendorkey/vendor-signing-pubkeys.txt
 $ make
 ```
 
@@ -434,12 +434,25 @@ $ make certs
   Remote Sign was successful
   ```
 
-- The signing server should now have signed and saved a verification
+- The signing server should now have signed and saved a submit request
   file under `signatures` with a filename generated from the Unique
   Device Identifier, typically something like `0133704100000015` if
   from Tillitis, but `0001020304050607` if the bitstream has been
   built directly from
   [tillitis-key1](https://github.com/tillitis/tillitis-key1).
+
+- To submit the TKey Identity using the submit request file. First
+  create two empty directories to hold the processed submit request
+  file and the generated verification file. Then run
+  `tkey-sigsum-submit`:
+
+  ```
+  $ mkdir processed-submissions
+  $ mkdir verifications
+  $ ./tkey-sigsum-submit -m signatures -n processed-submissions/ -d verifications/
+  2025/05/04 12:04:34 [INFO] Attempting to submit checksum#1 to log: https://test.sigsum.org/barreleye
+  2025/05/04 12:04:35 [INFO] Attempting to retrieve proof for checksum#1
+  ```
 
 - Before trying to verify you need to remove and re-insert the device
   under verification to get it back to firmware mode.
@@ -448,9 +461,9 @@ $ make certs
   signatures` (the default is to query a web server):
 
   ```
-  $ ./tkey-verification verify -d signatures
+  $ ./tkey-verification verify -d verifications
   TKey UDI: 0x0001020304050607(BE) VendorID: 0x0010 ProductID: 8 ProductRev: 3
-  Reading verification data from file signatures/0001020304050607 ...
+  Reading verification data from file verifications/0001020304050607 ...
   TKey is genuine!
   ```
 
