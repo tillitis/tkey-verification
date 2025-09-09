@@ -46,13 +46,13 @@ func Test_processSubmissionFileShouldGenerateVerificationFileFromSubmissionFile(
 func Test_processSubmissionDir(t *testing.T) {
 	type Params []struct {
 		name              string
-		preSubmFiles      map[string]string
-		preDoneSubmFiles  map[string]string
-		preVerFiles       map[string]string
-		postSubmFiles     map[string]string
-		postDoneSubmFiles map[string]string
-		postVerFiles      map[string]string
-		errString         string
+		preSubmFiles      map[string]string // Sample files to copy from testdata to submissions dir before running. Maps source->destination filename
+		preDoneSubmFiles  map[string]string // Sample files to copy from testdata to processed-submissions dir before running. Maps source->destination filename
+		preVerFiles       map[string]string // Sample files to copy from testdata to verification dir before running. Maps source->destination filename
+		postSubmFiles     map[string]string // Sample files to look for in submissions dir after running. Maps source->destination filename
+		postDoneSubmFiles map[string]string // Sample files to look for in processed submissions dir after running. Maps source->destination filename
+		postVerFiles      map[string]string // Sample files to look for in verifications dir after running. Maps source->destination filename
+		errString         string            // Expected error string. Use empty string if error is expected to be nil.
 	}
 
 	tests := Params{
@@ -166,6 +166,8 @@ func assertDirContainsOnly(t *testing.T, dir string, samples map[string]string) 
 	}
 }
 
+// Copy files from directory testdata to dstDir. `samples` maps source filename
+// to destination filename.
 func copySamplesToDir(dstDir string, samples map[string]string) {
 	mustCreateDir(dstDir)
 	for srcFn, dstFn := range samples {
