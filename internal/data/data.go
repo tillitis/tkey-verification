@@ -10,7 +10,7 @@ package data
 const VendorPubKeys = `14274d3570097aea209af1c23b64aa439a4d0d32c62735c5f6d6a29600c9a275 verisigner-v0.0.3 f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142`
 
 // Test vendor key.
-// const VendorPubKeys = `50d9a125f51d85ffa1fb12011bdae05d39e03cda2a35d0daf3077072daabbb10 verisigner-v0.0.3 f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142`
+//const VendorPubKeys = `50d9a125f51d85ffa1fb12011bdae05d39e03cda2a35d0daf3077072daabbb10 verisigner-v0.0.3 f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142`
 
 //////////////////////////////////////////////////////////////////////
 /// Sigsum
@@ -18,6 +18,9 @@ const VendorPubKeys = `14274d3570097aea209af1c23b64aa439a4d0d32c62735c5f6d6a2960
 
 // Public part of the Sigsum Submit key
 const SubmitKey = `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIONFrsjCVeDB3KwJVsfr/kphaZZZ9Sypuu42ahZBjeya sigsum key`
+
+// Test Sigsum submit key corresponding to verisigner-0.3 running on QEMU with test UDS.
+// const SubmitKey = `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDZoSX1HYX/ofsSARva4F054DzaKjXQ2vMHcHLaq7sQ sigsum key`
 
 // Sigsum policy
 const PolicyStr = `log 4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6 https://test.sigsum.org/barreleye
