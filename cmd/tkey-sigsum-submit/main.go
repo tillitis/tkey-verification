@@ -34,7 +34,7 @@ func main() {
 	pflag.StringVarP(&submissionsDir, "submissions-dir", "m", "",
 		"Read and log submission data from each file in `DIRECTORY`")
 	pflag.StringVarP(&processedSubmissionsDir, "processed-submissions-dir", "n", "",
-		"Read and log submission data from each file in `DIRECTORY`")
+		"Move submission data files to `DIRECTORY` after submission to log")
 	pflag.StringVarP(&verificationsDir, "verifications-dir", "d", "",
 		"Write verification data to a file located in `DIRECTORY` with the same name as the submission file")
 	pflag.BoolVar(&helpOnly, "help", false, "Output this help.")
