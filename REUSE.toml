@@ -26,12 +26,6 @@ path = [
      "certs/tillitis.crl",
      "certs/tillitis.crt",
      "certs/tillitis.key",
-     "cmd/tkey-verification/bins/README.md",
-     "cmd/tkey-verification/bins/signer-v1.0.1.bin",
-     "cmd/tkey-verification/bins/signer-v1.0.1.bin.sha512",
-     "cmd/tkey-verification/bins/verisigner-v0.0.3.bin",
-     "cmd/tkey-verification/bins/verisigner-v0.0.3.bin.deps",
-     "cmd/tkey-verification/bins/verisigner-v0.0.3.bin.sha512",
      "cmd/tkey-sigsum-submit/testdata/0001020304050607-subm-valid",
      "cmd/tkey-sigsum-submit/testdata/0001020304050607-ver-valid",
      "cmd/tkey-sigsum-submit/testdata/000102030400DEAD-subm-invalid-sig",
@@ -44,6 +38,12 @@ path = [
      "go.mod",
      "go.sum",
      "release-builds/tkey-verification_0.0.2_linux-amd64.sha512",
+     "internal/appbins/bins/README.md",
+     "internal/appbins/bins/signer-v1.0.1.bin",
+     "internal/appbins/bins/signer-v1.0.1.bin.sha512",
+     "internal/appbins/bins/verisigner-v0.0.3.bin",
+     "internal/appbins/bins/verisigner-v0.0.3.bin.deps",
+     "internal/appbins/bins/verisigner-v0.0.3.bin.sha512",
      "release-builds/tkey-verification_0.0.2_macos-amd64.sha512",
      "release-builds/tkey-verification_0.0.2_macos-arm64.sha512",
      "release-builds/tkey-verification_0.0.2_macos-universal.sha512",
@@ -62,8 +62,8 @@ SPDX-License-Identifier = "BSD-2-Clause"
 
 [[annotations]]
 path = [
-     "cmd/tkey-verification/bins/signer-v1.0.1.bin",
-     "cmd/tkey-verification/bins/verisigner-v0.0.3.bin",
+     "internal/appbins/bins/signer-v1.0.1.bin",
+     "internal/appbins/bins/verisigner-v0.0.3.bin",
 ]
 SPDX-FileCopyrightText = "2022 Tillitis AB <tillitis.se>"
 SPDX-License-Identifier = "GPL-2.0-only"
