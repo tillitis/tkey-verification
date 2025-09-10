@@ -1,6 +1,7 @@
 /dist
 /show-pubkey
 /tkey-verification
+/tkey-verify
 /certs
 
 
