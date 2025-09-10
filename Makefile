@@ -32,12 +32,15 @@ check-digests:
 	$(shasum) -c verisigner-v0.0.3.bin.sha512
 
 .PHONY: man
-man: doc/tkey-verification.1 doc/tkey-verify.1
+man: doc/tkey-verification.1 doc/tkey-verify.1 doc/tkey-sigsum-submit.1
 
 doc/tkey-verification.1: doc/tkey-verification.scd
 	scdoc < $^ > $@
 
 doc/tkey-verify.1: doc/tkey-verify.scd
+	scdoc < $^ > $@
+
+doc/tkey-sigsum-submit.1: doc/tkey-sigsum-submit.scd
 	scdoc < $^ > $@
 
 .PHONY: clean
