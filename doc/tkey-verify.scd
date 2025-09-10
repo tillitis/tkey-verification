@@ -1,8 +1,8 @@
-tkey-verification(1)
+tkey-verify(1)
 
 # NAME
 
-A program to verify the identity of a Tillitis TKey.
+tkey-verify - Verify the identity of a Tillitis TKey.
 
 # SYNOPSIS
 
@@ -12,13 +12,13 @@ A program to verify the identity of a Tillitis TKey.
 
 # DESCRIPTION
 
-*tkey-verify* is a program to verify the identity of a Tillitis TKey.
+*tkey-verify* verifies the identity of a Tillitis TKey.
 
-To use, first insert a TKey and then run the command. If one is
-already running a TKey program, remove it and re-insert before running
-the program.
+To use, first insert a TKey, then run the command. If a TKey is
+already running a device app, remove the TKey and insert again before
+running the command.
 
-Options:
+## OPTIONS
 
 *--base-url* url
 
@@ -47,16 +47,15 @@ Options:
 
 ## Verification on a machine without network
 
-If you're on a machine without network and need to verify a TKey you
-can run
+On a machine without network you can run
 
 ```
 $ tkey-verify ---show-url
 ```
 
 which will output the URL to the verification file. Download the file
-using another, networked, computer and somehow bring the file or type
-it in again on your airgapped computer. Then run:
+using another, networked, computer and bring the file or type it in
+again on your airgapped computer. Then run:
 
 ```
 tkey-verify -d=.
@@ -74,7 +73,7 @@ TKey UDI: 0x0133708100000002(BE) VendorID: 0x1337 ProductID: 2 ProductRev: 1
 TKey is genuine!
 ```
 
-Verifying the identity with a non-networked computer: First
+Verifying the identity on an airgapped computer: First
 
 ```
 $ tkey-verify --show-url
@@ -91,13 +90,17 @@ Reading verification data from file ./0133708100000002 ...
 TKey is genuine!
 ```
 
+# SEE ALSO
+
+*tkey-verification*(1) *tkey-sigsum-submit*(1)
+
 # AUTHORS
 
 Tillitis AB, https://tillitis.se/
 
 # SECURITY CONSIDERATIONS
 
-*tkey-verify* only verifies the /identity/ of the TKey hasn't changed
+*tkey-verify* only verifies the *identity* of the TKey hasn't changed
 since signing by the vendor. It might have been manipulated in other
 ways.
 
