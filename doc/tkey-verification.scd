@@ -2,7 +2,7 @@ tkey-verification(1)
 
 # NAME
 
-A program to sign or verify the identity of a Tillitis TKey.
+tkey-verification - sign the identity of a Tillitis TKey.
 
 # SYNOPSIS
 
@@ -13,28 +13,23 @@ A program to sign or verify the identity of a Tillitis TKey.
 *tkey-verification* serve-signer [--config path] [--check-config] [--port
 port] [--speed speed]
 
-*tkey-verification* show-pubkey [--port port] [--speed speed]
-
-*tkey-verification* verify [--base-url url] [-d | --base-dir] [--port
-port] [-u | --show-url] [--speed speed]
+*tkey-verification* show-pubkey [--port port] [--speed speed] --app path
 
 # DESCRIPTION
 
-*tkey-verification* is a program to sign or verify the identity of a
-Tillitis TKey.
+*tkey-verification* signs the identity of a Tillitis TKey.
 
-A typical end user will only be interested in the *verify* command.
+A typical end user will only be interested in the *tkey-verify*(1)
+command. *tkey-verification* is for the vendor.
 
 The commands are as follows:
 
 *remote-sign*
 
-	Request that the tkey-verification serve-signer sign the identity
+	Request that the *tkey-verification* serve-signer sign the identity
 	of a TKey.
 
-	To use, first insert a TKey and then run the command. If one is
-	already running a TKey program, remove it and re-insert before
-	running the command.
+	To use, first insert a TKey and then run the command.
 
 	Options:
 
@@ -51,8 +46,9 @@ The commands are as follows:
 
 	Provide a signing server with its own TKey, the vendor key.
 
-	When it receives a signing request it signs the data and creates a new
-	file with metadata and a signature. See FILES.
+	When it receives a signing request from *remote-sign* it signs the
+	message and creates a new file with metadata and a Sigsum log
+	request. See FILES.
 
 	Options:
 
@@ -100,127 +96,49 @@ The commands are as follows:
 
 		Speed in bit/s of the TKey device port.
 
-*verify*
-
-	Verify a TKey identity.
-
-	To use, first insert a TKey and then run the command. If one is
-	already running a TKey program, remove it and re-insert before running
-	the command.
-
-	Options:
-
-	*--base-url* url
-
-		Set the base URL of verification server for fetching verification
-		data. Default is "https://example.com/verify".
-
-	*-d* | *--base-dir* directory
-
-		Read verification data from a file located in directory
-		and named after the TKey Unique Device Identifier in hex, instead of
-		from a URL.
-
-	*--port* port
-
-		Path to the TKey device port. If not given, autodetection will be
-		attempted.
-
-	*-u* | *--show-url*
-
-		Only output the URL to the verification data that should be
-		downloaded, then exit.
-
-	*--speed* speed
-
-		Speed in bit/s of the TKey device port.
-
-## Verification on a machine without network
-
-If you're on a machine without network and need to verify a TKey you
-can run
-
-```
-$ tkey-verification verify ---show-url
-```
-
-which will output the URL to the verification file. Download the file
-using another, networked, computer and somehow bring the file or type
-it in again on your airgapped computer. Then run:
-
-```
-tkey-verification verify -d=.
-```
-
-to read from the current directory.
-
 # FILES
 
-*tkey-verification* serve-signer produces a file which is named after
-the Unique Device Identifier (in hexadecimal) for every signature
-made. An example filename would be "signatures/0133704100000015".
+*tkey-verification* serve-signer produces a submission file which is
+named after the Unique Device Identifier (in hexadecimal) for every
+signature made. An example filename would be
+"signatures/0133704100000015".
 
 The file contains:
 
 - timestamp: RFC3339 UTC timestamp when the signature was done.
 - tag: The Git tag of the signer program used on the device under
   verification,
-- signature: Vendor ed25519 signature of the device public key. Stored
-  in hexadecimal.
+- request: A Sigsum request to log a digest of our message.
 
-The files generated will later be published on a public web server.
-The publication is out of scope for the current program.
-
-*tkey-verification* show-pubkey generates output for the embedded
-vendor pubkeys to be included in the build of a new
-*tkey-verification*. It's output is:
-
-- Ed25519 public key
-- app name and tag.
-- digest of hash
-
-Example file:
-
-```
-038dd0b898c601517a09cd249d3c4f2de8e9aab38c5fa02701ae29bb41a6d863 verisigner-v0.0.1 9598910ec9ebe2504a5f894de6f8e0677dc94c156c7bd6f7e805a35354b3c85daa4ca66ab93f4d75221b501def457b4cafc933c6cdcf16d1eb8ccba6cccf6630
-```
+The files generated can be submitted to a Sigsum log with
+*tkey-sigsum-submit*(1).
 
 # EXAMPLES
 
-Verifying the identity of a Tillitis TKey using a networked computer.
+Run the signing server with a vendor key TKey inserted:
 
 ```
-$ tkey-verification verify
-TKey UDI: 0x0133708100000002(BE) VendorID: 0x1337 ProductID: 2 ProductRev: 1
-TKey is genuine!
+$ tkey-verification serve-signer --config tkey-verification-server.yaml
 ```
 
-Verifying the identity with a non-networked computer: First
+On the provisioning computer, insert the new TKey and run:
 
 ```
-$ tkey-verification --show-url
+$ tkey-verification remote-sign --config tkey-verification-client.yaml
 ```
 
-Then download the file and move it to your current working directory.
-Keep the name of the file intact since it's named after the TKey
-Unique Device Identifier. and run:
+In order to include a new vendor signing key and Sigsum submit key, use:
 
 ```
-$ tkey-verification verify -d=.
-TKey UDI: 0x0133708100000002(BE) VendorID: 0x1337 ProductID: 2 ProductRev: 1
-Reading verification data from file ./0133708100000002 ...
-TKey is genuine!
-```
-
-In order to include a new vendor signing key, use:
-
-```
-% ./tkey-verification show-pubkey --port /dev/pts/12 --app cmd/tkey-verification/bins/signer-v1.0.0.bin
-Connecting to device on serial port /dev/pts/12 ...
-Firmware name0:'tk1 ' name1:'mkdf' version:5
+$ tkey-verification show-pubkey --app internal/appbins/bins/signer-v1.0.1.bin
 Public Key, app tag, and app hash for embedded vendor pubkeys follows on stdout:
-038dd0b898c601517a09cd249d3c4f2de8e9aab38c5fa02701ae29bb41a6d863 verisigner-v0.0.1 9598910ec9ebe2504a5f894de6f8e0677dc94c156c7bd6f7e805a35354b3c85daa4ca66ab93f4d75221b501def457b4cafc933c6cdcf16d1eb8ccba6cccf6630
+03a7bd3be67cb466869904ec14b9974ebcc6e593abdc4151315ace2511b9c94d signer-v1.0.1 cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4
+SSH version: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAOnvTvmfLRmhpkE7BS5l068xuWTq9xBUTFaziURuclN sigsum key
 ```
+
+## SEE ALSO
+
+*tkey-sigsum-submit*(1) *tkey-verify*(1)
 
 # AUTHORS
 
@@ -230,17 +148,9 @@ Tillitis AB, https://tillitis.se/
 
 You can currently not use several TKeys on the same computer at the
 same time, which means you can't use *serve-signer* and the other
-commands on the same computer.
+commands on the same computer, unless you start them with *--port*.
 
 # SECURITY CONSIDERATIONS
-
-*tkey-verification* only verifies the /identity/ of the TKey hasn't
-changed since signing by the vendor. It might have been manipulated in
-other ways.
-
-The device public key isn't published in the files generated by the
-*serve-signer* but is retrievable by anyone with access to the device
-under verification.
 
 You probably shouldn't expose the computers running *serve-signer* or
 *remote-sign* on the Internet.
