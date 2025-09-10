@@ -33,6 +33,8 @@ path = [
      "doc/implementation-notes.md",
      "doc/tkey-verification.1",
      "doc/tkey-verification.scd",
+     "doc/tkey-verify.1",
+     "doc/tkey-verify.scd",
      "doc/tkey-sigsum-submit.1",
      "doc/tkey-sigsum-submit.scd",
      "go.mod",
