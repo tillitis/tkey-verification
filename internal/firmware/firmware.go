@@ -182,7 +182,7 @@ func (f *Firmwares) addFirmware(udi0BEhex string, vendorID uint16, productID uin
 		return fmt.Errorf("too small firmware size")
 	}
 	if fwSize > fwSizeMax {
-		return fmt.Errorf("to large firmware size")
+		return fmt.Errorf("too large firmware size")
 	}
 
 	var fwHash [sha512.Size]byte
