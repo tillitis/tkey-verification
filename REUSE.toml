@@ -46,6 +46,7 @@ path = [
      "internal/appbins/bins/verisigner-v0.0.3.bin",
      "internal/appbins/bins/verisigner-v0.0.3.bin.deps",
      "internal/appbins/bins/verisigner-v0.0.3.bin.sha512",
+     "internal/ssh/README.md",
      "release-builds/tkey-verification_0.0.2_macos-amd64.sha512",
      "release-builds/tkey-verification_0.0.2_macos-arm64.sha512",
      "release-builds/tkey-verification_0.0.2_macos-universal.sha512",
