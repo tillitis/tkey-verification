@@ -5,11 +5,11 @@
 .nh
 .ad l
 .\" Begin generated content:
-.TH "tkey-verification" "1" "2025-09-08"
+.TH "tkey-verify" "1" "2025-09-10"
 .PP
 .SH NAME
 .PP
-A program to verify the identity of a Tillitis TKey.\&
+tkey-verify - Verify the identity of a Tillitis TKey.\&
 .PP
 .SH SYNOPSIS
 .PP
@@ -19,13 +19,13 @@ A program to verify the identity of a Tillitis TKey.\&
 .PP
 .SH DESCRIPTION
 .PP
-\fBtkey-verify\fR is a program to verify the identity of a Tillitis TKey.\&
+\fBtkey-verify\fR verifies the identity of a Tillitis TKey.\&
 .PP
-To use, first insert a TKey and then run the command.\& If one is
-already running a TKey program, remove it and re-insert before running
-the program.\&
+To use, first insert a TKey, then run the command.\& If a TKey is
+already running a device app, remove the TKey and insert again before
+running the command.\&
 .PP
-Options:
+.SS OPTIONS
 .PP
 \fB--base-url\fR url
 .PP
@@ -64,8 +64,7 @@ Speed in bit/s of the TKey device port.\&
 .RE
 .SS Verification on a machine without network
 .PP
-If you'\&re on a machine without network and need to verify a TKey you
-can run
+On a machine without network you can run
 .PP
 .nf
 .RS 4
@@ -74,12 +73,12 @@ $ tkey-verify ---show-url
 .RE
 .PP
 which will output the URL to the verification file.\& Download the file
-using another, networked, computer and somehow bring the file or type
-it in again on your airgapped computer.\& Then run:
+using another, networked, computer and bring the file or type it in
+again on your airgapped computer.\& Then run:
 .PP
 .nf
 .RS 4
-tkey-verification verify -d=\&.
+tkey-verify -d=\&.
 .fi
 .RE
 .PP
@@ -97,7 +96,7 @@ TKey is genuine!
 .fi
 .RE
 .PP
-Verifying the identity with a non-networked computer: First
+Verifying the identity on an airgapped computer: First
 .PP
 .nf
 .RS 4
@@ -118,13 +117,17 @@ TKey is genuine!
 .fi
 .RE
 .PP
+.SH SEE ALSO
+.PP
+\fBtkey-verification\fR(1) \fBtkey-sigsum-submit\fR(1)
+.PP
 .SH AUTHORS
 .PP
 Tillitis AB, https://tillitis.\&se/
 .PP
 .SH SECURITY CONSIDERATIONS
 .PP
-\fBtkey-verify\fR only verifies the /identity/ of the TKey hasn'\&t changed
+\fBtkey-verify\fR only verifies the \fBidentity\fR of the TKey hasn'\&t changed
 since signing by the vendor.\& It might have been manipulated in other
 ways.\&
 .PP
