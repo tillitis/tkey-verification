@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/tillitis/tkey-verification/internal/data"
 	"github.com/tillitis/tkey-verification/internal/submission"
+	"github.com/tillitis/tkey-verification/internal/util"
 	"github.com/tillitis/tkey-verification/internal/verification"
 	"sigsum.org/sigsum-go/pkg/policy"
 	"sigsum.org/sigsum-go/pkg/proof"
@@ -21,13 +22,14 @@ import (
 	"sigsum.org/sigsum-go/pkg/submit"
 )
 
+const progname = "tkey-sigsum-submit"
+
+var version string
 var le = log.New(os.Stderr, "", 0)
 
 func main() {
 	var verificationsDir, submissionsDir, processedSubmissionsDir string
-	var helpOnly bool
-
-	// TODO: Add version command
+	var helpOnly, versionOnly bool
 
 	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.CommandLine.SortFlags = false
@@ -38,10 +40,16 @@ func main() {
 	pflag.StringVarP(&verificationsDir, "verifications-dir", "d", "",
 		"Write verification data to a file located in `DIRECTORY` with the same name as the submission file")
 	pflag.BoolVar(&helpOnly, "help", false, "Output this help.")
+	pflag.BoolVar(&versionOnly, "version", false, "Output version information.")
 	pflag.Parse()
 
 	if helpOnly {
 		pflag.Usage()
+		os.Exit(0)
+	}
+
+	if versionOnly {
+		fmt.Printf("%s %s\n", progname, util.Version(version))
 		os.Exit(0)
 	}
 

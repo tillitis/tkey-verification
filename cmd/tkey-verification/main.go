@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
+	"github.com/tillitis/tkey-verification/internal/util"
 	"github.com/tillitis/tkeyclient"
 )
 
@@ -36,10 +37,6 @@ func main() {
 	var dev Device
 	var baseURL, baseDir, configFile, binPath string
 	var sigsum, checkConfigOnly, verbose, showURLOnly, versionOnly, build, helpOnly bool
-
-	if version == "" {
-		version = readBuildInfo()
-	}
 
 	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.CommandLine.SortFlags = false
@@ -74,7 +71,7 @@ func main() {
 		os.Exit(0)
 	}
 	if versionOnly {
-		fmt.Printf("%s %s\n", progname, version)
+		fmt.Printf("%s %s\n", progname, util.Version(version))
 		os.Exit(0)
 	}
 
