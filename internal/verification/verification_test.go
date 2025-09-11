@@ -4,15 +4,12 @@
 package verification
 
 import (
-	"bytes"
 	"crypto/ed25519"
-	"crypto/sha512"
 	"encoding/hex"
-	"fmt"
 	"testing"
 
 	"github.com/tillitis/tkey-verification/internal/sigsum"
-	"github.com/tillitis/tkey-verification/internal/tkey"
+	"github.com/tillitis/tkey-verification/internal/util"
 	"github.com/tillitis/tkey-verification/internal/vendorkey"
 	sumcrypto "sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
@@ -81,7 +78,7 @@ func TestVerifySignature(t *testing.T) {
 
 	// Build a message.
 	// Let's just reuse the test vendor pubkey as the signer's pubkey
-	msg, err := buildMessage(udi, fwDigest, pubKey.PubKey[:])
+	msg, err := util.BuildMessage(udi, fwDigest, pubKey.PubKey[:])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +145,7 @@ func TestVerifyProof(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	msg, err := buildMessage(udi, fwDigest, signerPubKey)
+	msg, err := util.BuildMessage(udi, fwDigest, signerPubKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,28 +153,6 @@ func TestVerifyProof(t *testing.T) {
 	if err := v.VerifyProof(msg, *log.Policy, log.SubmitKeys); err != nil {
 		t.Fatal("vendor signature not verified")
 	}
-}
-
-// TODO copy from cmd/tkey-verification/common.go - Move?
-func buildMessage(udiBE, fwHash, pubKey []byte) ([]byte, error) {
-	var buf bytes.Buffer
-
-	if l := len(udiBE); l != tkey.UDISize {
-		return nil, fmt.Errorf("wrong length of UDI")
-	}
-	buf.Write(udiBE)
-
-	if l := len(fwHash); l != sha512.Size {
-		return nil, fmt.Errorf("wrong digest size")
-	}
-	buf.Write(fwHash)
-
-	if l := len(pubKey); l != ed25519.PublicKeySize {
-		return nil, fmt.Errorf("wrong public key size")
-	}
-	buf.Write(pubKey)
-
-	return buf.Bytes(), nil
 }
 
 func mustParsePublicKey(ascii string) sumcrypto.PublicKey {

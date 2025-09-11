@@ -5,8 +5,6 @@ package main
 
 import (
 	"bytes"
-	"crypto/ed25519"
-	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -17,6 +15,7 @@ import (
 	"github.com/tillitis/tkey-verification/internal/firmware"
 	"github.com/tillitis/tkey-verification/internal/sigsum"
 	"github.com/tillitis/tkey-verification/internal/tkey"
+	"github.com/tillitis/tkey-verification/internal/util"
 	"github.com/tillitis/tkey-verification/internal/vendorkey"
 	"github.com/tillitis/tkey-verification/internal/verification"
 	"github.com/tillitis/tkeyclient"
@@ -193,7 +192,7 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 	}
 
 	// Recreate message the vendor signed
-	msg, err := buildMessage(tk.Udi.Bytes, expectedFW.Hash[:], pubKey)
+	msg, err := util.BuildMessage(tk.Udi.Bytes, expectedFW.Hash[:], pubKey)
 	if err != nil {
 		parseFailure(err.Error())
 		exit(1)
@@ -267,26 +266,4 @@ func notFound(msg string) {
 func verificationFailed(msg string) {
 	fmt.Printf("VERIFICATION FAILED: %s\n", msg)
 	fmt.Printf("Please visit %s to understand what this might mean.\n", verifyInfoURL)
-}
-
-// TODO move to some internal package?
-func buildMessage(udiBE, fwHash, pubKey []byte) ([]byte, error) {
-	var buf bytes.Buffer
-
-	if l := len(udiBE); l != tkey.UDISize {
-		return nil, fmt.Errorf("wrong length of UDI")
-	}
-	buf.Write(udiBE)
-
-	if l := len(fwHash); l != sha512.Size {
-		return nil, fmt.Errorf("wrong length of digest")
-	}
-	buf.Write(fwHash)
-
-	if l := len(pubKey); l != ed25519.PublicKeySize {
-		return nil, fmt.Errorf("wrong length of pubkey")
-	}
-	buf.Write(pubKey)
-
-	return buf.Bytes(), nil
 }
