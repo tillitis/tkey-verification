@@ -123,7 +123,7 @@ func vendorSign(server *Server, udi []byte, pubKey []byte, fw firmware.Firmware,
 
 	client := rpc.NewClient(conn)
 
-	msg, err := buildMessage(udi, fw.Hash[:], pubKey)
+	msg, err := util.BuildMessage(udi, fw.Hash[:], pubKey)
 	if err != nil {
 		return fmt.Errorf("building message to sign failed: %w", err)
 	}
