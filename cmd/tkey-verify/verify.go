@@ -63,7 +63,7 @@ func verifyShowUrl(dev Device, verifyBaseURL string) {
 //   - Recreates the vendor signed message.
 //
 //   - Verify the vendor signature over the message.
-func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, sigsum bool) {
+func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useSigsum bool) {
 	var firmwares firmware.Firmwares
 
 	firmwares.MustDecodeString(data.FirmwaresConf)
@@ -71,6 +71,18 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, sigs
 	appBins, err := appbins.NewAppBins()
 	if err != nil {
 		missing(fmt.Sprintf("no embedded device apps: %v", err))
+		os.Exit(1)
+	}
+
+	var vendorKeys vendorkey.VendorKeys
+	if err := vendorKeys.FromEmbedded(appBins); err != nil {
+		missing(fmt.Sprintf("no vendor signing public key: %v", err))
+		os.Exit(1)
+	}
+
+	var log sigsum.SigsumLog
+	if err := log.FromString(data.SubmitKey, data.PolicyStr); err != nil {
+		missing("Sigsum configuration missing")
 		os.Exit(1)
 	}
 
@@ -101,13 +113,13 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, sigs
 	if tk.Udi.VendorID == 0x1337 {
 		switch tk.Udi.ProductID {
 		case tkeyclient.UDIPIDBellatrix:
-			sigsum = false
+			useSigsum = false
 		case tkeyclient.UDIPIDCastor:
-			sigsum = true
+			useSigsum = true
 		default:
 			// Not sure!
 			le.Printf("Unknown Product ID: Don't know if we need signature or Sigsum proof.")
-			os.Exit(1)
+			exit(1)
 		}
 
 	}
@@ -167,6 +179,7 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, sigs
 	fwHash, err := tk.GetFirmwareHash(expectedFW.Size)
 	if err != nil {
 		commFailed("couldn't get firmware digest from TKey")
+		exit(1)
 	}
 
 	if !bytes.Equal(expectedFW.Hash[:], fwHash) {
@@ -189,21 +202,32 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, sigs
 	// Verify the vendor signature or Sigsum proof over the
 	// recreated message.
 	if verification.IsProof() {
-		if sigsum {
-			verifyProof(msg, verification)
+		if useSigsum {
+			if err := verification.VerifyProof(msg, *log.Policy, log.SubmitKeys); err != nil {
+				verificationFailed(err.Error())
+				exit(1)
+			}
+
+			le.Printf("Verified with Sigsum proof using submit key %x\n", data.SubmitKey)
 		} else {
 			// Strange. Exit.
 			verificationFailed("Expected vendor signature but got a Sigsum proof")
-			os.Exit(1)
+			exit(1)
 		}
 	} else {
-		if sigsum {
+		if useSigsum {
 			// Strange. Exit.
 			verificationFailed("Sigsum proof required but not available")
-			os.Exit(1)
+			exit(1)
 		}
 
-		verifySig(msg, verification, appBins)
+		verifiedWith, err := verification.VerifySig(msg, vendorKeys)
+		if err != nil {
+			verificationFailed(err.Error())
+			exit(1)
+		}
+
+		le.Printf("Verified with vendor key %x\n", verifiedWith)
 	}
 
 	fmt.Printf("TKey is genuine!\n")
@@ -243,37 +267,6 @@ func notFound(msg string) {
 func verificationFailed(msg string) {
 	fmt.Printf("VERIFICATION FAILED: %s\n", msg)
 	fmt.Printf("Please visit %s to understand what this might mean.\n", verifyInfoURL)
-}
-
-func verifyProof(msg []byte, verification verification.Verification) {
-	var log sigsum.SigsumLog
-
-	if err := log.FromString(data.SubmitKey, data.PolicyStr); err != nil {
-		panic(err)
-	}
-
-	if err := verification.VerifyProof(msg, *log.Policy, log.SubmitKeys); err != nil {
-		verificationFailed("vendor signature not verified")
-		os.Exit(1)
-	}
-
-	le.Printf("Verified with Sigsum proof using submit key %x\n", data.SubmitKey)
-}
-
-func verifySig(msg []byte, verification verification.Verification, appBins appbins.AppBins) {
-	var vendorKeys vendorkey.VendorKeys
-	if err := vendorKeys.FromEmbedded(appBins); err != nil {
-		missing(fmt.Sprintf("no vendor signing public key: %v", err))
-		os.Exit(1)
-	}
-
-	verifiedWith, err := verification.VerifySig(msg, vendorKeys)
-	if err != nil {
-		verificationFailed("vendor signature not verified")
-		os.Exit(1)
-	}
-
-	le.Printf("Verified with vendor key %x\n", verifiedWith.PubKey)
 }
 
 // TODO move to some internal package?
