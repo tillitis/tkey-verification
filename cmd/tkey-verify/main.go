@@ -9,14 +9,16 @@ import (
 	"os"
 
 	"github.com/spf13/pflag"
+	"github.com/tillitis/tkey-verification/internal/util"
 	"github.com/tillitis/tkeyclient"
 )
 
-const progname = "tkey-verify"
-
 const (
+	progname       = "tkey-verify"
 	defaultBaseURL = "https://tkey.tillitis.se/verify"
 )
+
+var version string
 
 // Use when printing err/diag msgs
 var le = log.New(os.Stderr, "", 0)
@@ -57,8 +59,9 @@ func main() {
 		pflag.Usage()
 		os.Exit(0)
 	}
+
 	if versionOnly {
-		fmt.Printf("%s\n", progname)
+		fmt.Printf("%s %s\n", progname, util.Version(version))
 		os.Exit(0)
 	}
 

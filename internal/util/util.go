@@ -9,6 +9,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
+	"runtime/debug"
 
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
@@ -45,4 +46,18 @@ func BuildMessage(udiBE, fwHash, pubKey []byte) ([]byte, error) {
 	buf.Write(pubKey)
 
 	return buf.Bytes(), nil
+}
+
+func Version(version string) string {
+	if version == "" {
+		if info, ok := debug.ReadBuildInfo(); ok {
+			// When built with go install ...@version
+			version = info.Main.Version
+			if version != "(devel)" {
+				return version
+			}
+		}
+	}
+
+	return version
 }

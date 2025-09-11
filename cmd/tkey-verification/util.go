@@ -6,7 +6,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"runtime/debug"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -14,21 +13,6 @@ import (
 	"github.com/tillitis/tkey-verification/internal/firmware"
 	"github.com/tillitis/tkey-verification/internal/vendorkey"
 )
-
-func readBuildInfo() string {
-	version := "devel without BuildInfo"
-	if info, ok := debug.ReadBuildInfo(); ok {
-		sb := strings.Builder{}
-		sb.WriteString("devel")
-		for _, setting := range info.Settings {
-			if strings.HasPrefix(setting.Key, "vcs") {
-				sb.WriteString(fmt.Sprintf(" %s=%s", setting.Key, setting.Value))
-			}
-		}
-		version = sb.String()
-	}
-	return version
-}
 
 func builtWith() {
 	appBins, err := appbins.NewAppBins()
