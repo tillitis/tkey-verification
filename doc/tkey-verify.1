@@ -5,7 +5,7 @@
 .nh
 .ad l
 .\" Begin generated content:
-.TH "tkey-verify" "1" "2025-09-10"
+.TH "tkey-verify" "1" "2025-09-11"
 .PP
 .SH NAME
 .PP
@@ -25,7 +25,7 @@ To use, first insert a TKey, then run the command.\& If a TKey is
 already running a device app, remove the TKey and insert again before
 running the command.\&
 .PP
-.SS OPTIONS
+.SH OPTIONS
 .PP
 \fB--base-url\fR url
 .PP
@@ -68,7 +68,7 @@ On a machine without network you can run
 .PP
 .nf
 .RS 4
-$ tkey-verify ---show-url
+$ tkey-verify --show-url
 .fi
 .RE
 .PP
@@ -127,9 +127,8 @@ Tillitis AB, https://tillitis.\&se/
 .PP
 .SH SECURITY CONSIDERATIONS
 .PP
-\fBtkey-verify\fR only verifies the \fBidentity\fR of the TKey hasn'\&t changed
-since signing by the vendor.\& It might have been manipulated in other
-ways.\&
+\fBtkey-verify\fR only verifies that the \fBidentity\fR of the TKey hasn'\&t changed since
+signing by the vendor.\& It might have been manipulated in other ways.\&
 .PP
 The device public key isn'\&t published in the verification files but is
 retrievable by anyone with access to the device under verification.\&

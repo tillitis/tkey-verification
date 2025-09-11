@@ -18,7 +18,7 @@ To use, first insert a TKey, then run the command. If a TKey is
 already running a device app, remove the TKey and insert again before
 running the command.
 
-## OPTIONS
+# OPTIONS
 
 *--base-url* url
 
@@ -50,7 +50,7 @@ running the command.
 On a machine without network you can run
 
 ```
-$ tkey-verify ---show-url
+$ tkey-verify --show-url
 ```
 
 which will output the URL to the verification file. Download the file
@@ -100,9 +100,8 @@ Tillitis AB, https://tillitis.se/
 
 # SECURITY CONSIDERATIONS
 
-*tkey-verify* only verifies the *identity* of the TKey hasn't changed
-since signing by the vendor. It might have been manipulated in other
-ways.
+*tkey-verify* only verifies that the *identity* of the TKey hasn't changed since
+signing by the vendor. It might have been manipulated in other ways.
 
 The device public key isn't published in the verification files but is
 retrievable by anyone with access to the device under verification.
