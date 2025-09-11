@@ -1,37 +1,88 @@
+version: "2"
 linters:
-  presets:
-    # found in: golangci-lint help linters
-    - bugs
-    - comment
-    - complexity
-    - error
-    - format
-    - import
-    - metalinter
-    - module
-    - performance
-    - sql
-    # - style  # turned off, can be too much
-    - test
-    - unused
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - contextcheck
+    - dupword
+    - durationcheck
+    - errchkjson
+    - errorlint
+    - exhaustive
+    - fatcontext
+    - gocheckcompilerdirectives
+    - gochecksumtype
+    - gocritic
+    - gocyclo
+    - godox
+    - gomoddirectives
+    - gomodguard
+    - gosec
+    - gosmopolitan
+    - loggercheck
+    - maintidx
+    - makezero
+    - misspell
+    - musttag
+    - nilerr
+    - nilnesserr
+    - perfsprint
+    - prealloc
+    - protogetter
+    - reassign
+    - recvcheck
+    - revive
+    - rowserrcheck
+    - spancheck
+    - sqlclosecheck
+    - testableexamples
+    - testifylint
+    - testpackage
+    - thelper
+    - tparallel
+    - usetesting
+    - wrapcheck
+    - zerologlint
   disable:
     - cyclop
-    - funlen
-    - gci
-    - gocognit
-    - gofumpt
-    - nestif
-    - exhaustruct  # TODO? annoying for now
-    - godot
     - depguard
+    - exhaustruct
+    - funlen
+    - gocognit
+    - godot
+    - nestif
     - noctx
     - unparam
-
+    - err113
+    - paralleltest
+    - recvcheck
+  settings:
+    govet:
+      enable:
+        - shadow
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-
-linters-settings:
-  govet:
-    enable:
-      - shadow
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
