@@ -294,10 +294,10 @@ node_hash=9ca6b461d616cf790a32a967574087298abb4cd0c3da938b7fed143b7d92b5ec
 
 		if ts.getLeafWasCalled(ft) {
 			return &http.Response{StatusCode: http.StatusOK}, nil
-		} else {
-			ts.setLeafWasCalled(ft)
-			return &http.Response{StatusCode: http.StatusAccepted}, nil
 		}
+		ts.setLeafWasCalled(ft)
+
+		return &http.Response{StatusCode: http.StatusAccepted}, nil
 	case getTreeHeadURL:
 		return &http.Response{
 			StatusCode: http.StatusOK,
