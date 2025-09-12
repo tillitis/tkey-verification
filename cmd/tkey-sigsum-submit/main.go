@@ -148,7 +148,10 @@ func processSubmissionFile(fn, submDir, verDir, doneSubmDir string, submitConfig
 		return fmt.Errorf("failed to store verification file: %w", err)
 	}
 
-	os.Rename(submissionPath, doneSubmissionPath)
+	err = os.Rename(submissionPath, doneSubmissionPath)
+	if err != nil {
+		return fmt.Errorf("failed to move verification file: %w", err)
+	}
 
 	return nil
 }
