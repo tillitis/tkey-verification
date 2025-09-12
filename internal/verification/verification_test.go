@@ -12,7 +12,6 @@ import (
 	"github.com/tillitis/tkey-verification/internal/util"
 	"github.com/tillitis/tkey-verification/internal/vendorkey"
 	sumcrypto "sigsum.org/sigsum-go/pkg/crypto"
-	"sigsum.org/sigsum-go/pkg/key"
 )
 
 const submitKey = `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIONFrsjCVeDB3KwJVsfr/kphaZZZ9Sypuu42ahZBjeya sigsum key`
@@ -153,12 +152,4 @@ func TestVerifyProof(t *testing.T) {
 	if err := v.VerifyProof(msg, *log.Policy, log.SubmitKeys); err != nil {
 		t.Fatal("vendor signature not verified")
 	}
-}
-
-func mustParsePublicKey(ascii string) sumcrypto.PublicKey {
-	key, err := key.ParsePublicKey(ascii)
-	if err != nil {
-		panic(err)
-	}
-	return key
 }
