@@ -39,7 +39,6 @@ linters:
     - sqlclosecheck
     - testableexamples
     - testifylint
-    - testpackage
     - thelper
     - tparallel
     - usetesting
@@ -58,6 +57,7 @@ linters:
     - err113
     - paralleltest
     - recvcheck
+    - testpackage
   settings:
     govet:
       enable:
