@@ -17,7 +17,7 @@ import (
 	"sigsum.org/sigsum-go/pkg/requests"
 )
 
-type SubmissionJSON struct {
+type submissionJSON struct {
 	Timestamp string `json:"timestamp"`
 	AppTag    string `json:"apptag"`
 	AppHash   string `json:"apphash"`
@@ -31,8 +31,8 @@ type Submission struct {
 	Request   requests.Leaf
 }
 
-func (s *Submission) FromJson(b []byte) error {
-	var sJ SubmissionJSON
+func (s *Submission) FromJSON(b []byte) error {
+	var sJ submissionJSON
 
 	if err := json.Unmarshal(b, &sJ); err != nil {
 		return fmt.Errorf("couldn't unmarshal JSON: %w", err)
@@ -67,8 +67,8 @@ func (s *Submission) FromJson(b []byte) error {
 	return nil
 }
 
-func (s *Submission) ToJson() ([]byte, error) {
-	var sJ SubmissionJSON
+func (s *Submission) ToJSON() ([]byte, error) {
+	var sJ submissionJSON
 
 	sJ.Timestamp = s.Timestamp.UTC().Format(time.RFC3339)
 	sJ.AppTag = s.AppTag
@@ -95,11 +95,11 @@ func (s *Submission) FromFile(fn string) error {
 		return err
 	}
 
-	return s.FromJson(submissionJSON)
+	return s.FromJSON(submissionJSON)
 }
 
 func (s *Submission) ToFile(fn string) error {
-	sJ, err := s.ToJson()
+	sJ, err := s.ToJSON()
 	if err != nil {
 		return err
 	}

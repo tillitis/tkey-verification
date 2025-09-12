@@ -16,7 +16,7 @@ import (
 	"sigsum.org/sigsum-go/pkg/requests"
 )
 
-const submissionJSON = `
+const submJSON = `
 {
   "timestamp":"2025-09-02T10:56:48Z",
   "apptag":"signer-v1.0.1",
@@ -28,7 +28,7 @@ const submissionJSON = `
 func TestJSONDecodeSubmission(t *testing.T) {
 	var s Submission
 
-	if err := s.FromJson([]byte(submissionJSON)); err != nil {
+	if err := s.FromJSON([]byte(submJSON)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -81,12 +81,12 @@ func TestJSONEncodeSubmission(t *testing.T) {
 		},
 	}
 
-	wantJSONStr := submissionJSON
+	wantJSONStr := submJSON
 	wantJSONStr = strings.ReplaceAll(wantJSONStr, "\n", "")
 	wantJSONStr = strings.ReplaceAll(wantJSONStr, " ", "")
 	wantJSON := []byte(wantJSONStr)
 
-	js, err := s.ToJson()
+	js, err := s.ToJSON()
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -76,7 +76,7 @@ func main() {
 	}
 
 	if showURLOnly {
-		verifyShowUrl(dev, baseURL)
+		verifyShowURL(dev, baseURL)
 	}
 
 	verify(dev, verbose, baseDir, baseURL, sigsum)

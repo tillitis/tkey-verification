@@ -23,7 +23,7 @@ import (
 
 const verifyInfoURL = "https://www.tillitis.se/verify"
 
-func verifyShowUrl(dev Device, verifyBaseURL string) {
+func verifyShowURL(dev Device, verifyBaseURL string) {
 	// Connect to a TKey
 	tk, err := tkey.NewTKey(dev.Path, dev.Speed, false)
 	if err != nil {

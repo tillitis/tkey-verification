@@ -23,8 +23,8 @@ const (
 
 type Hardware struct {
 	Udi        string
-	VendorId   uint16
-	ProductId  uint8
+	VendorID   uint16
+	ProductID  uint8
 	ProductRev uint8
 	FwSize     int
 	FwHash     [sha512.Size]byte
@@ -103,7 +103,7 @@ func (f *Firmwares) FromString(fwStr string) error {
 			return err
 		}
 
-		hw.VendorId = uint16(vid)
+		hw.VendorID = uint16(vid)
 
 		var prod uint64
 		prod, err = strconv.ParseUint(productStr, 10, 8)
@@ -111,7 +111,7 @@ func (f *Firmwares) FromString(fwStr string) error {
 			return err
 		}
 
-		hw.ProductId = uint8(prod)
+		hw.ProductID = uint8(prod)
 
 		var rev uint64
 		rev, err = strconv.ParseUint(revStr, 10, 8)
@@ -126,7 +126,7 @@ func (f *Firmwares) FromString(fwStr string) error {
 			return err
 		}
 
-		if err := f.addFirmware(hw.Udi, hw.VendorId, hw.ProductId, hw.ProductRev, hw.FwSize, hashStr); err != nil {
+		if err := f.addFirmware(hw.Udi, hw.VendorID, hw.ProductID, hw.ProductRev, hw.FwSize, hashStr); err != nil {
 			return err
 		}
 	}

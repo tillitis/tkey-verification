@@ -30,7 +30,7 @@ const (
 	VerProof
 )
 
-type VerificationJson struct {
+type verificationJSON struct {
 	Timestamp string `json:"timestamp"`
 	AppTag    string `json:"apptag"`
 	AppHash   string `json:"apphash"`
@@ -47,8 +47,8 @@ type Verification struct {
 	Proof     proof.SigsumProof
 }
 
-func (v *Verification) FromJson(b []byte) error {
-	var vJ VerificationJson
+func (v *Verification) FromJSON(b []byte) error {
+	var vJ verificationJSON
 
 	if err := json.Unmarshal(b, &vJ); err != nil {
 		return fmt.Errorf("couldn't unmarshal JSON: %w", err)
@@ -94,8 +94,8 @@ func (v *Verification) FromJson(b []byte) error {
 	return nil
 }
 
-func (v *Verification) ToJson() ([]byte, error) {
-	var vJ VerificationJson
+func (v *Verification) ToJSON() ([]byte, error) {
+	var vJ verificationJSON
 
 	vJ.Timestamp = v.Timestamp.UTC().Format(time.RFC3339)
 	vJ.AppTag = v.AppTag
@@ -130,11 +130,11 @@ func (v *Verification) FromFile(fn string) error {
 		return err
 	}
 
-	return v.FromJson(verificationJSON)
+	return v.FromJSON(verificationJSON)
 }
 
 func (v *Verification) ToFile(fn string) error {
-	vJ, err := v.ToJson()
+	vJ, err := v.ToJSON()
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func (v *Verification) FromURL(verifyURL string) error {
 		return fmt.Errorf("couldn't ready body: %w", err)
 	}
 
-	return v.FromJson(verificationJSON)
+	return v.FromJSON(verificationJSON)
 }
 
 func (v *Verification) IsProof() bool {
