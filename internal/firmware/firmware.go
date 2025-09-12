@@ -87,7 +87,7 @@ func (f *Firmwares) FromString(fwStr string) error {
 		}
 
 		if len(fields) != 6 {
-			return errors.New("Expected 6 fields: UDI0 vendor product rev size hash")
+			return errors.New("expected 6 fields: UDI0 vendor product rev size hash")
 		}
 
 		udi0Str, vendorStr, productStr, revStr, sizeStr, hashStr := fields[0], fields[1], fields[2], fields[3], fields[4], fields[5]

@@ -61,7 +61,7 @@ func (v *VendorKeys) FromString(pubkeys string, appBins appbins.AppBins) error {
 		}
 
 		if len(fields) != 3 {
-			return errors.New("Expected 3 space-separated fields: pubkey in hex, signer-app tag, and its hash in hex")
+			return errors.New("expected 3 space-separated fields: pubkey in hex, signer-app tag, and its hash in hex")
 		}
 
 		pubKeyHex, tag, appHashHex := fields[0], fields[1], fields[2]

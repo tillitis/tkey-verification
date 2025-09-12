@@ -77,30 +77,30 @@ func main() {
 func processSubmissionDir(submDir, verDir, doneSubmDir string, submitConfig submit.Config) error {
 	verFileCount, err := os.ReadDir(verDir)
 	if err != nil {
-		return fmt.Errorf("Failed to read directory '%s': %w", verDir, err)
+		return fmt.Errorf("failed to read directory '%s': %w", verDir, err)
 	}
 	if len(verFileCount) != 0 {
-		return errors.New("Verification directory must be empty")
+		return errors.New("verification directory must be empty")
 	}
 
 	doneSubmFileCount, err := os.ReadDir(doneSubmDir)
 	if err != nil {
-		return fmt.Errorf("Failed to read directory '%s': %w", doneSubmDir, err)
+		return fmt.Errorf("failed to read directory '%s': %w", doneSubmDir, err)
 	}
 	if len(doneSubmFileCount) != 0 {
-		return errors.New("Processed submission directory must be empty")
+		return errors.New("processed submission directory must be empty")
 	}
 
 	entries, err := os.ReadDir(submDir)
 	if err != nil {
-		return fmt.Errorf("Failed to read directory '%s': %w", submDir, err)
+		return fmt.Errorf("failed to read directory '%s': %w", submDir, err)
 	}
 
 	for _, entry := range entries {
 		var submission submission.Submission
 		err := submission.FromFile(path.Join(submDir, entry.Name()))
 		if err != nil {
-			return fmt.Errorf("Invalid submission file: %w", err)
+			return fmt.Errorf("invalid submission file: %w", err)
 		}
 	}
 
@@ -113,7 +113,7 @@ func processSubmissionDir(submDir, verDir, doneSubmDir string, submitConfig subm
 			submitConfig,
 		)
 		if err != nil {
-			return fmt.Errorf("Failed to process submission file: %v", err)
+			return fmt.Errorf("failed to process submission file: %w", err)
 		}
 	}
 
@@ -128,12 +128,12 @@ func processSubmissionFile(fn, submDir, verDir, doneSubmDir string, submitConfig
 	var submission submission.Submission
 	err := submission.FromFile(submissionPath)
 	if err != nil {
-		return fmt.Errorf("Failed to open submission file: %w", err)
+		return fmt.Errorf("failed to open submission file: %w", err)
 	}
 
 	proofText, err := logDevice(submission.Request, submitConfig)
 	if err != nil {
-		return fmt.Errorf("Failed to log device: %w", err)
+		return fmt.Errorf("failed to log device: %w", err)
 	}
 
 	verification := verification.Verification{
@@ -145,7 +145,7 @@ func processSubmissionFile(fn, submDir, verDir, doneSubmDir string, submitConfig
 	}
 	err = verification.ToFile(verificationPath)
 	if err != nil {
-		return fmt.Errorf("Failed to store verification file: %w", err)
+		return fmt.Errorf("failed to store verification file: %w", err)
 	}
 
 	os.Rename(submissionPath, doneSubmissionPath)
@@ -159,10 +159,10 @@ func logDevice(req requests.Leaf, submitConfig submit.Config) (proof.SigsumProof
 
 	proofs, err := submit.SubmitLeafRequests(ctx, &submitConfig, reqs)
 	if err != nil {
-		return proof.SigsumProof{}, fmt.Errorf("Failed to submit sigsum log request: %w", err)
+		return proof.SigsumProof{}, fmt.Errorf("failed to submit sigsum log request: %w", err)
 	}
 	if len(proofs) != 1 {
-		return proof.SigsumProof{}, fmt.Errorf("Expected one proof from log, got %d", len(proofs))
+		return proof.SigsumProof{}, fmt.Errorf("expected one proof from log, got %d", len(proofs))
 	}
 
 	return proofs[0], nil

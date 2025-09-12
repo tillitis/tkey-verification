@@ -74,7 +74,7 @@ func Test_processSubmissionDir(t *testing.T) {
 			postSubmFiles:     map[string]string{"0001020304050607-subm-valid": "0001020304050607"},
 			postDoneSubmFiles: map[string]string{},
 			postVerFiles:      map[string]string{"0001020304050607-ver-valid": "0001020304050607"},
-			errString:         "Verification directory must be empty",
+			errString:         "verification directory must be empty",
 		},
 		{
 			name:              "Should abort if processed submissions directory is not empty on start",
@@ -84,7 +84,7 @@ func Test_processSubmissionDir(t *testing.T) {
 			postSubmFiles:     map[string]string{"0001020304050607-subm-valid": "0001020304050607"},
 			postDoneSubmFiles: map[string]string{"0001020304050607-subm-valid": "0001020304050607"},
 			postVerFiles:      map[string]string{},
-			errString:         "Processed submission directory must be empty",
+			errString:         "processed submission directory must be empty",
 		},
 		{
 			name: "Should abort if any submission file is invalid",
@@ -100,7 +100,7 @@ func Test_processSubmissionDir(t *testing.T) {
 			},
 			postDoneSubmFiles: map[string]string{},
 			postVerFiles:      map[string]string{},
-			errString:         "Invalid submission file",
+			errString:         "invalid submission file",
 		},
 	}
 	for _, tt := range tests {
