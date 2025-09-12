@@ -106,7 +106,7 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 	// If it's not Tillitis we use default false, but let the user
 	// set their expectations with -sigsum.
 	//
-	// TODO: What do do if it's not Tillitis? Tolerate whatever is
+	// TODO: What to do if it's not Tillitis? Tolerate whatever is
 	// in the Verification File? Make it configurable at build
 	// time?
 	if tk.Udi.VendorID == 0x1337 {
