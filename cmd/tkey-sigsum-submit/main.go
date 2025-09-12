@@ -6,6 +6,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -79,7 +80,7 @@ func processSubmissionDir(submDir, verDir, doneSubmDir string, submitConfig subm
 		return fmt.Errorf("Failed to read directory '%s': %w", verDir, err)
 	}
 	if len(verFileCount) != 0 {
-		return fmt.Errorf("Verification directory must be empty")
+		return errors.New("Verification directory must be empty")
 	}
 
 	doneSubmFileCount, err := os.ReadDir(doneSubmDir)
@@ -87,7 +88,7 @@ func processSubmissionDir(submDir, verDir, doneSubmDir string, submitConfig subm
 		return fmt.Errorf("Failed to read directory '%s': %w", doneSubmDir, err)
 	}
 	if len(doneSubmFileCount) != 0 {
-		return fmt.Errorf("Processed submission directory must be empty")
+		return errors.New("Processed submission directory must be empty")
 	}
 
 	entries, err := os.ReadDir(submDir)

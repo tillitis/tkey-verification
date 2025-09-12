@@ -7,6 +7,7 @@ import (
 	"crypto/sha512"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -55,7 +56,7 @@ func (f Firmwares) GetFirmware(udi tkey.UDI) (Firmware, error) {
 
 	fw, ok = f.firmwares[*hw]
 	if !ok {
-		return fw, fmt.Errorf("firmware not found")
+		return fw, errors.New("firmware not found")
 	}
 
 	return fw, nil
@@ -86,7 +87,7 @@ func (f *Firmwares) FromString(fwStr string) error {
 		}
 
 		if len(fields) != 6 {
-			return fmt.Errorf("Expected 6 fields: UDI0 vendor product rev size hash")
+			return errors.New("Expected 6 fields: UDI0 vendor product rev size hash")
 		}
 
 		udi0Str, vendorStr, productStr, revStr, sizeStr, hashStr := fields[0], fields[1], fields[2], fields[3], fields[4], fields[5]
@@ -170,7 +171,7 @@ func (f *Firmwares) addFirmware(udi0BEhex string, vendorID uint16, productID uin
 		return fmt.Errorf("couldn't decode UDI: %w", err)
 	}
 	if l := len(udi0BE); l != tkey.UDISize/2 {
-		return fmt.Errorf("wrong length of UDI0")
+		return errors.New("wrong length of UDI0")
 	}
 
 	hw, err := newHardware(vendorID, productID, productRev)
@@ -179,10 +180,10 @@ func (f *Firmwares) addFirmware(udi0BEhex string, vendorID uint16, productID uin
 	}
 
 	if fwSize < fwSizeMin {
-		return fmt.Errorf("too small firmware size")
+		return errors.New("too small firmware size")
 	}
 	if fwSize > fwSizeMax {
-		return fmt.Errorf("too large firmware size")
+		return errors.New("too large firmware size")
 	}
 
 	var fwHash [sha512.Size]byte
@@ -195,11 +196,11 @@ func (f *Firmwares) addFirmware(udi0BEhex string, vendorID uint16, productID uin
 	// we computed from vendor ID, product ID, and product
 	// revision. If it's not the same, we bail.
 	if udi0BEhex != hw.toUDI0BEhex() {
-		return fmt.Errorf("udi0BEhex arg != calculated")
+		return errors.New("udi0BEhex arg != calculated")
 	}
 
 	if _, ok := f.firmwares[*hw]; ok {
-		return fmt.Errorf("hardware with same UDI0")
+		return errors.New("hardware with same UDI0")
 	}
 
 	f.firmwares[*hw] = Firmware{
@@ -222,10 +223,10 @@ func newHardware(vendorID uint16, productID uint8, productRev uint8) (*hardware,
 	const sixBitsMax = 2*2*2*2*2*2 - 1
 
 	if productID > sixBitsMax {
-		return nil, fmt.Errorf("product ID out of range")
+		return nil, errors.New("product ID out of range")
 	}
 	if productRev > sixBitsMax {
-		return nil, fmt.Errorf("product revision out of range")
+		return nil, errors.New("product revision out of range")
 	}
 
 	return &hardware{

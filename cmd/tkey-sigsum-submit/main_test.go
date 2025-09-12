@@ -310,7 +310,7 @@ node_hash=9ca6b461d616cf790a32a967574087298abb4cd0c3da938b7fed143b7d92b5ec
 		}, nil
 	}
 
-	errStr := fmt.Sprintf("Fake server got unexpected URL: %s", req.URL.String())
+	errStr := "Fake server got unexpected URL: %s" + req.URL.String()
 	panic(errStr)
 }
 

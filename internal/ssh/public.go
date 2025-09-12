@@ -8,6 +8,7 @@ import (
 	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -59,7 +60,7 @@ func parsePublicEd25519(blob []byte) (PublicKey, error) {
 	}, nil))
 
 	if pub == nil {
-		return PublicKey{}, fmt.Errorf("invalid public key blob prefix")
+		return PublicKey{}, errors.New("invalid public key blob prefix")
 	}
 	if len(pub) != crypto.PublicKeySize {
 		return PublicKey{}, fmt.Errorf("invalid public key length: %v", len(blob))
@@ -75,7 +76,7 @@ func ParsePublicEd25519(asciiKey string) (PublicKey, error) {
 		return c == ' ' || c == '\t'
 	})
 	if len(fields) < 2 {
-		return PublicKey{}, fmt.Errorf("invalid public key, splitting line failed")
+		return PublicKey{}, errors.New("invalid public key, splitting line failed")
 	}
 	if fields[0] != "ssh-ed25519" {
 		return PublicKey{}, fmt.Errorf("unsupported public key type: %v", fields[0])

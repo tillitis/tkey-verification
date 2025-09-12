@@ -8,6 +8,7 @@ import (
 	"crypto/ed25519"
 	"crypto/sha512"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"runtime/debug"
 
@@ -31,17 +32,17 @@ func BuildMessage(udiBE, fwHash, pubKey []byte) ([]byte, error) {
 	var buf bytes.Buffer
 
 	if l := len(udiBE); l != tkey.UDISize {
-		return nil, fmt.Errorf("wrong length of UDI")
+		return nil, errors.New("wrong length of UDI")
 	}
 	buf.Write(udiBE)
 
 	if l := len(fwHash); l != sha512.Size {
-		return nil, fmt.Errorf("wrong length of digest")
+		return nil, errors.New("wrong length of digest")
 	}
 	buf.Write(fwHash)
 
 	if l := len(pubKey); l != ed25519.PublicKeySize {
-		return nil, fmt.Errorf("wrong length of pubkey")
+		return nil, errors.New("wrong length of pubkey")
 	}
 	buf.Write(pubKey)
 

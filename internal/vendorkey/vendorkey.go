@@ -8,6 +8,7 @@ import (
 	"crypto/ed25519"
 	"crypto/sha512"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -60,7 +61,7 @@ func (v *VendorKeys) FromString(pubkeys string, appBins appbins.AppBins) error {
 		}
 
 		if len(fields) != 3 {
-			return fmt.Errorf("Expected 3 space-separated fields: pubkey in hex, signer-app tag, and its hash in hex")
+			return errors.New("Expected 3 space-separated fields: pubkey in hex, signer-app tag, and its hash in hex")
 		}
 
 		pubKeyHex, tag, appHashHex := fields[0], fields[1], fields[2]
@@ -70,7 +71,7 @@ func (v *VendorKeys) FromString(pubkeys string, appBins appbins.AppBins) error {
 			return fmt.Errorf("couldn't decode public key: %w", err)
 		}
 		if l := len(pubKey); l != ed25519.PublicKeySize {
-			return fmt.Errorf("public key has wrong length")
+			return errors.New("public key has wrong length")
 		}
 
 		var appHash [sha512.Size]byte
@@ -83,7 +84,7 @@ func (v *VendorKeys) FromString(pubkeys string, appBins appbins.AppBins) error {
 		if _, ok := appBins.Bins[appHash]; ok {
 			appBin = appBins.Bins[appHash]
 			if appBin.Tag != tag {
-				return fmt.Errorf("embedded app tag != vendor signing app tag")
+				return errors.New("embedded app tag != vendor signing app tag")
 			}
 
 		} else {
@@ -92,7 +93,7 @@ func (v *VendorKeys) FromString(pubkeys string, appBins appbins.AppBins) error {
 
 		for _, pk := range v.Keys {
 			if bytes.Compare(pubKey, pk.PubKey[:]) == 0 {
-				return fmt.Errorf("public key already exists")
+				return errors.New("public key already exists")
 			}
 		}
 

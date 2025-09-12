@@ -8,6 +8,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -46,12 +47,12 @@ func (s *Submission) FromJSON(b []byte) error {
 	}
 
 	if sJ.AppTag == "" {
-		return fmt.Errorf("app-tag empty")
+		return errors.New("app-tag empty")
 	}
 	s.AppTag = sJ.AppTag
 
 	if err := util.DecodeHex(s.AppHash[:], sJ.AppHash); err != nil {
-		return fmt.Errorf("couldn't decode app digest")
+		return errors.New("couldn't decode app digest")
 	}
 
 	err = s.Request.FromASCII(bytes.NewBufferString(sJ.Request))

@@ -5,6 +5,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 
 	"github.com/tillitis/tkey-verification/internal/firmware"
@@ -17,7 +18,7 @@ func verifyFirmwareHash(tk tkey.TKey, firmwares firmware.Firmwares) (firmware.Fi
 
 	expectedFW, err = firmwares.GetFirmware(tk.Udi)
 	if err != nil {
-		return expectedFW, fmt.Errorf("no firmware for UDI")
+		return expectedFW, errors.New("no firmware for UDI")
 	}
 
 	fwHash, err := tk.GetFirmwareHash(expectedFW.Size)

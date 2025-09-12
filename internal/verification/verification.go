@@ -9,6 +9,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -62,16 +63,16 @@ func (v *Verification) FromJSON(b []byte) error {
 	}
 
 	if vJ.AppTag == "" {
-		return fmt.Errorf("app-tag empty")
+		return errors.New("app-tag empty")
 	}
 	v.AppTag = vJ.AppTag
 
 	if err := util.DecodeHex(v.AppHash[:], vJ.AppHash); err != nil {
-		return fmt.Errorf("couldn't decode app digest")
+		return errors.New("couldn't decode app digest")
 	}
 
 	if vJ.Proof != "" && vJ.Signature != "" {
-		return fmt.Errorf("verification file contains both Sigsum proof and vendor signature")
+		return errors.New("verification file contains both Sigsum proof and vendor signature")
 	}
 
 	if vJ.Proof != "" {
@@ -87,7 +88,7 @@ func (v *Verification) FromJSON(b []byte) error {
 
 		v.Signature, err = hex.DecodeString(vJ.Signature)
 		if err != nil {
-			return fmt.Errorf("couldn't decode vendor signature")
+			return errors.New("couldn't decode vendor signature")
 		}
 	}
 
@@ -102,7 +103,7 @@ func (v *Verification) ToJSON() ([]byte, error) {
 	vJ.AppHash = hex.EncodeToString(v.AppHash[:])
 
 	if v.Type == VerSig || len(v.Signature) != 0 {
-		return nil, fmt.Errorf("vendor signature not supported")
+		return nil, errors.New("vendor signature not supported")
 	}
 
 	if v.Type == VerProof {
@@ -113,7 +114,7 @@ func (v *Verification) ToJSON() ([]byte, error) {
 		}
 		vJ.Proof = proofTextBuilder.String()
 	} else {
-		return nil, fmt.Errorf("unknown verification type")
+		return nil, errors.New("unknown verification type")
 	}
 
 	json, err := json.Marshal(vJ)
@@ -189,7 +190,7 @@ func (v *Verification) VerifySig(msg []byte, vendorKeys vendorkey.VendorKeys) (v
 		}
 	}
 
-	return vendorkey.PubKey{}, fmt.Errorf("vendor signature not verified")
+	return vendorkey.PubKey{}, errors.New("vendor signature not verified")
 }
 
 func (v *Verification) VerifyProofDigest(digest sumcrypto.Hash, policy policy.Policy, sigsumKeys map[sumcrypto.Hash]sumcrypto.PublicKey) error {
