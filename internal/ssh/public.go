@@ -83,7 +83,7 @@ func ParsePublicEd25519(asciiKey string) (PublicKey, error) {
 	}
 	blob, err := base64.StdEncoding.DecodeString(fields[1])
 	if err != nil {
-		return PublicKey{}, err
+		return PublicKey{}, fmt.Errorf("%w", err)
 	}
 	return parsePublicEd25519(blob)
 }

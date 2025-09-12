@@ -101,7 +101,7 @@ func (f *Firmwares) FromString(fwStr string) error {
 
 		vid, err = strconv.ParseUint(vendorStr, 16, 16)
 		if err != nil {
-			return err
+			return fmt.Errorf("%w", err)
 		}
 
 		hw.VendorID = uint16(vid)
@@ -109,7 +109,7 @@ func (f *Firmwares) FromString(fwStr string) error {
 		var prod uint64
 		prod, err = strconv.ParseUint(productStr, 10, 8)
 		if err != nil {
-			return err
+			return fmt.Errorf("%w", err)
 		}
 
 		hw.ProductID = uint8(prod)
@@ -117,14 +117,14 @@ func (f *Firmwares) FromString(fwStr string) error {
 		var rev uint64
 		rev, err = strconv.ParseUint(revStr, 10, 8)
 		if err != nil {
-			return err
+			return fmt.Errorf("%w", err)
 		}
 
 		hw.ProductRev = uint8(rev)
 
 		hw.FwSize, err = strconv.Atoi(sizeStr)
 		if err != nil {
-			return err
+			return fmt.Errorf("%w", err)
 		}
 
 		if err := f.addFirmware(hw.Udi, hw.VendorID, hw.ProductID, hw.ProductRev, hw.FwSize, hashStr); err != nil {
@@ -189,7 +189,7 @@ func (f *Firmwares) addFirmware(udi0BEhex string, vendorID uint16, productID uin
 	var fwHash [sha512.Size]byte
 
 	if err := util.DecodeHex(fwHash[:], fwHashHex); err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	// Safety check. We compare the passed UDI0 argument to what

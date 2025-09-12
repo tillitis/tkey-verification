@@ -5,6 +5,7 @@ package sigsum
 
 import (
 	"bytes"
+	"fmt"
 
 	sumcrypto "sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
@@ -19,14 +20,14 @@ type SigsumLog struct {
 func (s *SigsumLog) FromString(submitkey string, policyStr string) error {
 	submitKey, err := key.ParsePublicKey(submitkey)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	s.SubmitKeys = map[sumcrypto.Hash]sumcrypto.PublicKey{sumcrypto.HashBytes(submitKey[:]): submitKey}
 
 	s.Policy, err = policy.ParseConfig(bytes.NewBufferString(policyStr))
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil

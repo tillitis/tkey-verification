@@ -128,7 +128,7 @@ func (v *Verification) ToJSON() ([]byte, error) {
 func (v *Verification) FromFile(fn string) error {
 	verificationJSON, err := os.ReadFile(fn)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	return v.FromJSON(verificationJSON)
@@ -142,7 +142,7 @@ func (v *Verification) ToFile(fn string) error {
 
 	err = os.WriteFile(fn, append(vJ, '\n'), 0o600)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil
@@ -195,7 +195,7 @@ func (v *Verification) VerifySig(msg []byte, vendorKeys vendorkey.VendorKeys) (v
 
 func (v *Verification) VerifyProofDigest(digest sumcrypto.Hash, policy policy.Policy, sigsumKeys map[sumcrypto.Hash]sumcrypto.PublicKey) error {
 	if err := v.Proof.Verify(&digest, sigsumKeys, &policy); err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil

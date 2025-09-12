@@ -95,7 +95,7 @@ func NewAppBins() (AppBins, error) {
 		var hash [sha512.Size]byte
 
 		if err := util.DecodeHex(hash[:], string(hashHex[:sha512.Size*2])); err != nil {
-			return appBins, err
+			return appBins, fmt.Errorf("%w", err)
 		}
 
 		appBin := AppBin{

@@ -143,7 +143,7 @@ func (s TkeySigsumSigner) Public() sigsumcrypto.PublicKey {
 func (s TkeySigsumSigner) Sign(msg []byte) (sigsumcrypto.Signature, error) {
 	sig, err := s.tk.Sign(msg)
 	if err != nil {
-		return sigsumcrypto.Signature{}, err
+		return sigsumcrypto.Signature{}, fmt.Errorf("%w", err)
 	}
 	if len(sig) != sigsumcrypto.SignatureSize {
 		return sigsumcrypto.Signature{}, fmt.Errorf("internal error, unexpected signature size %d: ", len(sig))

@@ -93,7 +93,7 @@ func (s *Submission) ToJSON() ([]byte, error) {
 func (s *Submission) FromFile(fn string) error {
 	submissionJSON, err := os.ReadFile(fn)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	return s.FromJSON(submissionJSON)
@@ -107,7 +107,7 @@ func (s *Submission) ToFile(fn string) error {
 
 	err = os.WriteFile(fn, append(sJ, '\n'), 0o600)
 	if err != nil {
-		return err
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil

@@ -77,7 +77,7 @@ func (v *VendorKeys) FromString(pubkeys string, appBins appbins.AppBins) error {
 		var appHash [sha512.Size]byte
 
 		if err := util.DecodeHex(appHash[:], appHashHex); err != nil {
-			return err
+			return fmt.Errorf("%w", err)
 		}
 
 		var appBin appbins.AppBin
