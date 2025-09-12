@@ -31,12 +31,13 @@ func (u *UDI) fromRawLE(udiLE []byte) error {
 	}
 
 	vpr := binary.LittleEndian.Uint32(udiLE[0:4])
-	if reserved := uint8((vpr >> 28) & 0xf); reserved != 0 {
+	if reserved := uint8((vpr >> 28) & 0xf); reserved != 0 { // nolint:gosec
+
 		return ErrWrongUDIData
 	}
-	u.VendorID = uint16((vpr >> 12) & 0xffff)
-	u.ProductID = uint8((vpr >> 6) & 0x3f)
-	u.ProductRev = uint8(vpr & 0x3f)
+	u.VendorID = uint16((vpr >> 12) & 0xffff) // nolint:gosec
+	u.ProductID = uint8((vpr >> 6) & 0x3f)    // nolint:gosec
+	u.ProductRev = uint8(vpr & 0x3f)          // nolint:gosec
 	// u.Serial = binary.LittleEndian.Uint32(udiLE[4:8])
 
 	u.Bytes = make([]byte, 8)
