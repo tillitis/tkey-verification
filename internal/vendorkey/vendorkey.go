@@ -92,7 +92,7 @@ func (v *VendorKeys) FromString(pubkeys string, appBins appbins.AppBins) error {
 		}
 
 		for _, pk := range v.Keys {
-			if bytes.Compare(pubKey, pk.PubKey[:]) == 0 {
+			if bytes.Equal(pubKey, pk.PubKey[:]) {
 				return errors.New("public key already exists")
 			}
 		}

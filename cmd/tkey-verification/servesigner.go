@@ -78,7 +78,7 @@ func serveSigner(conf ServerConfig, dev Device, verbose bool, checkConfigOnly bo
 		fmt.Printf("Couldn't load device app: %v\n", err)
 		exit(1)
 	}
-	if bytes.Compare(vendorPubKey.PubKey[:], foundPubKey) != 0 {
+	if !bytes.Equal(vendorPubKey.PubKey[:], foundPubKey) {
 		le.Printf("The public key of the found TKey (\"%s\") does not match the embedded vendor signing public key in use\n", hex.EncodeToString(foundPubKey))
 		exit(1)
 	}
