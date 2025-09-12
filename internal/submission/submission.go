@@ -105,7 +105,7 @@ func (s *Submission) ToFile(fn string) error {
 		return err
 	}
 
-	err = os.WriteFile(fn, append(sJ, '\n'), 0o644)
+	err = os.WriteFile(fn, append(sJ, '\n'), 0o600)
 	if err != nil {
 		return err
 	}

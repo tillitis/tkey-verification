@@ -140,7 +140,7 @@ func (v *Verification) ToFile(fn string) error {
 		return err
 	}
 
-	err = os.WriteFile(fn, append(vJ, '\n'), 0o644)
+	err = os.WriteFile(fn, append(vJ, '\n'), 0o600)
 	if err != nil {
 		return err
 	}
