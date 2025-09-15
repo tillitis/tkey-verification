@@ -73,6 +73,10 @@ linters:
       - third_party$
       - builtin$
       - examples$
+    rules:
+      - linters:
+          - revive
+        text: "var-naming: avoid meaningless package names"
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
