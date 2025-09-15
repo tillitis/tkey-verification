@@ -74,13 +74,13 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 	}
 
 	var vendorKeys vendorkey.VendorKeys
-	if err := vendorKeys.FromEmbedded(appBins); err != nil {
+	if err = vendorKeys.FromEmbedded(appBins); err != nil {
 		missing(fmt.Sprintf("no vendor signing public key: %v", err))
 		os.Exit(1)
 	}
 
 	var log sigsum.Log
-	if err := log.FromString(data.SubmitKey, data.PolicyStr); err != nil {
+	if err = log.FromString(data.SubmitKey, data.PolicyStr); err != nil {
 		missing("Sigsum configuration missing")
 		os.Exit(1)
 	}
@@ -123,7 +123,7 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 
 	if baseDir != "" {
 		p := path.Join(baseDir, hex.EncodeToString(tk.Udi.Bytes))
-		if err := verification.FromFile(p); err != nil {
+		if err = verification.FromFile(p); err != nil {
 			commFailed(err.Error())
 			exit(1)
 		}
@@ -135,7 +135,7 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 			le.Printf("Fetching verification data from %s ...\n", verifyURL)
 		}
 
-		if err := verification.FromURL(verifyURL); err != nil {
+		if err = verification.FromURL(verifyURL); err != nil {
 			commFailed(err.Error())
 			exit(1)
 		}
@@ -159,7 +159,7 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 	}
 
 	// Check device identity
-	if err := tk.Challenge(pubKey); err != nil {
+	if err = tk.Challenge(pubKey); err != nil {
 		verificationFailed("challenge/response failed")
 		exit(1)
 	}

@@ -98,7 +98,7 @@ func processSubmissionDir(submDir, verDir, doneSubmDir string, submitConfig subm
 
 	for _, entry := range entries {
 		var submission submission.Submission
-		err := submission.FromFile(path.Join(submDir, entry.Name()))
+		err = submission.FromFile(path.Join(submDir, entry.Name()))
 		if err != nil {
 			return fmt.Errorf("invalid submission file: %w", err)
 		}

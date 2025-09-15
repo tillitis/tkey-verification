@@ -51,7 +51,7 @@ func (s *Submission) FromJSON(b []byte) error {
 	}
 	s.AppTag = sJ.AppTag
 
-	if err := util.DecodeHex(s.AppHash[:], sJ.AppHash); err != nil {
+	if err = util.DecodeHex(s.AppHash[:], sJ.AppHash); err != nil {
 		return errors.New("couldn't decode app digest")
 	}
 

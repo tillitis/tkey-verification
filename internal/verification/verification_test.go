@@ -86,7 +86,7 @@ func TestVerifySignature(t *testing.T) {
 	// sig := ed25519.Sign(privKey, msg)
 	// fmt.Printf("privkey: %x\npubkey: %x\nsig: %x\ndigest: %x\n", privKey, pubKey.PubKey, sig, sha256.Sum256(msg))
 
-	if err := v.FromJSON([]byte(verificationSigJSON)); err != nil {
+	if err = v.FromJSON([]byte(verificationSigJSON)); err != nil {
 		t.Fatal(err)
 	}
 

@@ -67,7 +67,7 @@ func (v *Verification) FromJSON(b []byte) error {
 	}
 	v.AppTag = vJ.AppTag
 
-	if err := util.DecodeHex(v.AppHash[:], vJ.AppHash); err != nil {
+	if err = util.DecodeHex(v.AppHash[:], vJ.AppHash); err != nil {
 		return errors.New("couldn't decode app digest")
 	}
 
@@ -79,7 +79,7 @@ func (v *Verification) FromJSON(b []byte) error {
 		// This contains a Sigsum proof
 		v.Type = VerProof
 
-		if err := v.Proof.FromASCII(bytes.NewBufferString(vJ.Proof)); err != nil {
+		if err = v.Proof.FromASCII(bytes.NewBufferString(vJ.Proof)); err != nil {
 			return fmt.Errorf("couldn't parse proof: %w", err)
 		}
 	} else {
