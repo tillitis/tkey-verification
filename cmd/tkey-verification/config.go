@@ -17,11 +17,11 @@ type Server struct {
 }
 
 type ServerConfig struct {
-	CACert               string `yaml:"cacert"`
-	ServerCert           string `yaml:"servercert"`
-	ServerKey            string `yaml:"serverkey"`
-	ListenAddr           string `yaml:"listen"`
-	VendorSigningAppHash string `yaml:"vendorapphash"`
+	CACert     string `yaml:"cacert"`
+	ServerCert string `yaml:"servercert"`
+	ServerKey  string `yaml:"serverkey"`
+	ListenAddr string `yaml:"listen"`
+	ActiveKey  string `yaml:"activekey"`
 }
 
 type ProvConfig struct {

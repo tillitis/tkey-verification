@@ -80,7 +80,7 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 	}
 
 	var log sigsum.Log
-	if err = log.FromString(data.SubmitKey, data.PolicyStr); err != nil {
+	if err = log.FromEmbedded(); err != nil {
 		missing("Sigsum configuration missing")
 		os.Exit(1)
 	}
@@ -203,7 +203,7 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 				exit(1)
 			}
 
-			le.Printf("Verified with Sigsum proof using submit key %x\n", data.SubmitKey)
+			le.Printf("Verified with Sigsum proof\n")
 		} else {
 			// Strange. Exit.
 			verificationFailed("Expected vendor signature but got a Sigsum proof")
@@ -222,7 +222,7 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 			exit(1)
 		}
 
-		le.Printf("Verified with vendor key %x\n", verifiedWith)
+		le.Printf("Verified with vendor key %x\n", verifiedWith.PubKey)
 	}
 
 	fmt.Printf("TKey is genuine!\n")

@@ -6,15 +6,14 @@ package main
 import (
 	"bytes"
 	"crypto/tls"
-	"encoding/hex"
 	"fmt"
 	"net"
 	"net/rpc"
 	"os"
 
-	"github.com/tillitis/tkey-verification/internal/appbins"
+	"github.com/tillitis/tkey-verification/internal/sigsum"
+	"github.com/tillitis/tkey-verification/internal/ssh"
 	"github.com/tillitis/tkey-verification/internal/tkey"
-	"github.com/tillitis/tkey-verification/internal/vendorkey"
 )
 
 func serveSigner(conf ServerConfig, dev Device, verbose bool, checkConfigOnly bool) {
@@ -33,26 +32,22 @@ func serveSigner(conf ServerConfig, dev Device, verbose bool, checkConfigOnly bo
 		os.Exit(1)
 	}
 
-	appBins, err := appbins.NewAppBins()
+	var log sigsum.Log
+	if err = log.FromEmbedded(); err != nil {
+		le.Printf("Found no usable Sigsum configuration: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Do we have the configured pubkey to use for Sigsum submit key
+	activeKey, err := ssh.ParsePublicEd25519(conf.ActiveKey)
 	if err != nil {
-		fmt.Printf("Failed to init embedded device apps: %v\n", err)
+		le.Printf("parse error in config: %v\n", err)
 		os.Exit(1)
 	}
 
-	var vendorKeys vendorkey.VendorKeys
-
-	if err = vendorKeys.FromEmbedded(appBins); err != nil {
-		le.Printf("Found no usable embedded vendor signing public key: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Do we have the configured pubkey to use for vendor signing?
-	var vendorPubKey vendorkey.PubKey
-
-	if pubkey, ok := vendorKeys.Keys[conf.VendorSigningAppHash]; ok {
-		vendorPubKey = pubkey
-	} else {
-		fmt.Printf("Compiled in vendor key corresponding to signing app hash %v not found\n", conf.VendorSigningAppHash)
+	submitKey, ok := log.Keys[activeKey]
+	if !ok {
+		le.Printf("Compiled in submit key indexed by %x not found\n", activeKey)
 		os.Exit(1)
 	}
 
@@ -71,15 +66,22 @@ func serveSigner(conf ServerConfig, dev Device, verbose bool, checkConfigOnly bo
 		os.Exit(code)
 	}
 
-	le.Printf("Vendor signing: %s\n", vendorPubKey.String())
-	le.Printf("Loading device app built from %s ...\n", vendorPubKey.AppBin.String())
-	foundPubKey, err := tk.LoadSigner(vendorPubKey.AppBin.Bin)
+	le.Printf("Sigsum signing: %s\n", submitKey.String())
+	le.Printf("Loading device app built from %s ...\n", submitKey.AppBin.String())
+	foundPubKey, err := tk.LoadSigner(submitKey.AppBin.Bin)
 	if err != nil {
 		fmt.Printf("Couldn't load device app: %v\n", err)
 		exit(1)
 	}
-	if !bytes.Equal(vendorPubKey.PubKey[:], foundPubKey) {
-		le.Printf("The public key of the found TKey (\"%s\") does not match the embedded vendor signing public key in use\n", hex.EncodeToString(foundPubKey))
+
+	if !bytes.Equal(submitKey.Key[:], foundPubKey) {
+		var key1 ssh.PublicKey
+		var key2 ssh.PublicKey
+
+		key1 = submitKey.Key
+		key2 = ssh.PublicKey(foundPubKey)
+
+		le.Printf("TKey pubkey does not match active embedded pubkey\nExpected: %v\nReceived: %v\n", ssh.FormatPublicEd25519(&key1), ssh.FormatPublicEd25519(&key2))
 		exit(1)
 	}
 	le.Printf("Found signing TKey with the expected public key and UDI: %s\n", tk.Udi.String())
@@ -89,7 +91,7 @@ func serveSigner(conf ServerConfig, dev Device, verbose bool, checkConfigOnly bo
 		exit(1)
 	}
 
-	if err = rpc.Register(NewAPI(vendorPubKey.PubKey[:], *tk)); err != nil {
+	if err = rpc.Register(NewAPI(submitKey.Key[:], *tk)); err != nil {
 		le.Printf("Register failed: %s\n", err)
 		exit(1)
 	}

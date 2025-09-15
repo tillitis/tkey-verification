@@ -16,11 +16,21 @@ const VendorPubKeys = `14274d3570097aea209af1c23b64aa439a4d0d32c62735c5f6d6a2960
 /// Sigsum
 //////////////////////////////////////////////////////////////////////
 
-// Public part of the Sigsum Submit key
-const SubmitKey = `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIONFrsjCVeDB3KwJVsfr/kphaZZZ9Sypuu42ahZBjeya sigsum key`
+// const SigsumConf = `
+// # This Sigsum submit key is the exact same key as the first vendor pubkey above
+// tillitis-sigsum1
+// ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIONFrsjCVeDB3KwJVsfr/kphaZZZ9Sypuu42ahZBjeya sigsum key
+// verisigner-v0.0.3
+// f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142
+// `
 
 // Test Sigsum submit key corresponding to verisigner-0.3 running on QEMU with test UDS.
-// const SubmitKey = `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDZoSX1HYX/ofsSARva4F054DzaKjXQ2vMHcHLaq7sQ sigsum key`
+const SigsumConf = `
+tillitis-sigsum-test
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDZoSX1HYX/ofsSARva4F054DzaKjXQ2vMHcHLaq7sQ sigsum key
+verisigner-v0.0.3
+f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142
+`
 
 // Sigsum policy
 const PolicyStr = `log 4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6 https://test.sigsum.org/barreleye
