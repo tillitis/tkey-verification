@@ -98,7 +98,7 @@ func TestVerifySignature(t *testing.T) {
 
 func TestVerifyProofRawHash(t *testing.T) {
 	var v Verification
-	var log sigsum.SigsumLog
+	var log sigsum.Log
 
 	if err := log.FromString(submitKey, policyStr); err != nil {
 		t.Fatal(err)
@@ -120,7 +120,7 @@ func TestVerifyProofRawHash(t *testing.T) {
 
 func TestVerifyProof(t *testing.T) {
 	var v Verification
-	var log sigsum.SigsumLog
+	var log sigsum.Log
 
 	if err := log.FromString(submitKey, policyStr); err != nil {
 		t.Fatal(err)

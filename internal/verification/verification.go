@@ -24,10 +24,10 @@ import (
 	"sigsum.org/sigsum-go/pkg/proof"
 )
 
-type VerificationType int
+type Type int
 
 const (
-	VerSig VerificationType = iota
+	VerSig Type = iota
 	VerProof
 )
 
@@ -40,7 +40,7 @@ type verificationJSON struct {
 }
 
 type Verification struct {
-	Type      VerificationType
+	Type      Type
 	Timestamp time.Time
 	AppTag    string
 	AppHash   [sha512.Size]byte

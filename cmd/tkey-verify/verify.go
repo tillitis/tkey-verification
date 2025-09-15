@@ -79,7 +79,7 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 		os.Exit(1)
 	}
 
-	var log sigsum.SigsumLog
+	var log sigsum.Log
 	if err := log.FromString(data.SubmitKey, data.PolicyStr); err != nil {
 		missing("Sigsum configuration missing")
 		os.Exit(1)

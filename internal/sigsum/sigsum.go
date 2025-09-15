@@ -12,12 +12,12 @@ import (
 	"sigsum.org/sigsum-go/pkg/policy"
 )
 
-type SigsumLog struct {
+type Log struct {
 	SubmitKeys map[sumcrypto.Hash]sumcrypto.PublicKey
 	Policy     *policy.Policy
 }
 
-func (s *SigsumLog) FromString(submitkey string, policyStr string) error {
+func (s *Log) FromString(submitkey string, policyStr string) error {
 	submitKey, err := key.ParsePublicKey(submitkey)
 	if err != nil {
 		return fmt.Errorf("%w", err)
