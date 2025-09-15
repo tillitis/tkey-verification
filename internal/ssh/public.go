@@ -29,11 +29,12 @@ func serializeUint32(x uint32) []byte {
 }
 
 func serializeString[T bytesOrString](s T) []byte {
-	if len(s) > math.MaxInt32 {
-		log.Panicf("string too large for ssh, length %d", len(s))
+	slen := len(s)
+	if slen > math.MaxInt32 {
+		log.Panicf("string too large for ssh, length %d", slen)
 	}
-	buffer := make([]byte, 4+len(s))
-	binary.BigEndian.PutUint32(buffer, uint32(len(s)))
+	buffer := make([]byte, 4+slen)
+	binary.BigEndian.PutUint32(buffer, uint32(slen))
 	copy(buffer[4:], s)
 	return buffer
 }
