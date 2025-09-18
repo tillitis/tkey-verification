@@ -13,6 +13,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/tillitis/tkey-verification/internal/appbins"
 	"github.com/tillitis/tkey-verification/internal/data"
@@ -28,10 +29,12 @@ type PubKey struct {
 	Tag     string                      // Name and tag of the device app
 	AppHash [sha512.Size]byte           // Hash of app binary used for signing with this key
 	AppBin  appbins.AppBin              // The actual device app binary
+	Start   time.Time
+	End     time.Time
 }
 
 func (p PubKey) String() string {
-	return fmt.Sprintf("%v using %v: %x\n", p.Name, p.Tag, p.Key)
+	return fmt.Sprintf("%v using app %v: %x\n  Valid: %v-%v\n", p.Name, p.Tag, p.Key, p.Start.Format(time.RFC3339), p.End.Format(time.RFC3339))
 }
 
 type Log struct {
@@ -47,6 +50,8 @@ const (
 	sKey
 	sTag
 	sAppHash
+	sStart
+	sEnd
 )
 
 func ParseKeys(r io.Reader, appBins appbins.AppBins) (map[[ed25519.PublicKeySize]byte]PubKey, error) {
@@ -54,6 +59,7 @@ func ParseKeys(r io.Reader, appBins appbins.AppBins) (map[[ed25519.PublicKeySize
 	var state State
 
 	pubKeys := map[[ed25519.PublicKeySize]byte]PubKey{}
+
 	state = sName
 	scanner := bufio.NewScanner(r)
 
@@ -85,7 +91,7 @@ func ParseKeys(r io.Reader, appBins appbins.AppBins) (map[[ed25519.PublicKeySize
 
 		case sAppHash:
 			if err := util.DecodeHex(pubkey.AppHash[:], line); err != nil {
-				return nil, errors.New("couldn't decode apphash when parsing keys")
+				return nil, fmt.Errorf("couldn't decode pubkey app hash: %w", err)
 			}
 
 			// Do we have the app?
@@ -96,6 +102,25 @@ func ParseKeys(r io.Reader, appBins appbins.AppBins) (map[[ed25519.PublicKeySize
 			}
 
 			pubkey.AppBin = app
+
+			state = sStart
+
+		case sStart:
+			startTime, err := time.Parse(time.RFC3339, line)
+			if err != nil {
+				return nil, fmt.Errorf("couldn't parse key start time: %w", err)
+			}
+
+			pubkey.Start = startTime
+			state = sEnd
+
+		case sEnd:
+			endTime, err := time.Parse(time.RFC3339, line)
+			if err != nil {
+				return nil, fmt.Errorf("couldn't parse key end time: %w", err)
+			}
+
+			pubkey.End = endTime
 
 			// This is the last, store away and reset state to begin again
 			pubKeys[pubkey.Key] = pubkey
@@ -127,7 +152,7 @@ func (s *Log) FromString(sigsumConf string, policyStr string) error {
 
 	keys, err := ParseKeys(bytes.NewBufferString(sigsumConf), appBins)
 	if err != nil {
-		return fmt.Errorf("parse error in embedded submit keys: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	s.Keys = keys

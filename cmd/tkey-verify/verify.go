@@ -198,7 +198,7 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 	// recreated message.
 	if verification.IsProof() {
 		if useSigsum {
-			if err := verification.VerifyProof(msg, *log.Policy, log.SubmitKeys); err != nil {
+			if err := verification.VerifyProof(msg, log); err != nil {
 				verificationFailed(err.Error())
 				exit(1)
 			}

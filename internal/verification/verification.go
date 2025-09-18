@@ -12,15 +12,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/tillitis/tkey-verification/internal/sigsum"
 	"github.com/tillitis/tkey-verification/internal/util"
 	"github.com/tillitis/tkey-verification/internal/vendorkey"
 	sumcrypto "sigsum.org/sigsum-go/pkg/crypto"
-	"sigsum.org/sigsum-go/pkg/policy"
 	"sigsum.org/sigsum-go/pkg/proof"
 )
 
@@ -193,17 +194,49 @@ func (v *Verification) VerifySig(msg []byte, vendorKeys vendorkey.VendorKeys) (v
 	return vendorkey.PubKey{}, errors.New("vendor signature not verified")
 }
 
-func (v *Verification) VerifyProofDigest(digest sumcrypto.Hash, policy policy.Policy, sigsumKeys map[sumcrypto.Hash]sumcrypto.PublicKey) error {
-	if err := v.Proof.Verify(&digest, sigsumKeys, &policy); err != nil {
+func (v *Verification) VerifyProofDigest(digest sumcrypto.Hash, log sigsum.Log) error {
+	if err := v.Proof.Verify(&digest, log.SubmitKeys, log.Policy); err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	return nil
+	var ourPubkey sigsum.PubKey
 
+	for keyindex, key := range log.Keys {
+		if sumcrypto.HashBytes(keyindex[:]) == v.Proof.Leaf.KeyHash {
+			// Found it!
+			ourPubkey = key
+		}
+	}
+
+	// Also check that all cosigning witness signatures timestamps are
+	// within the submit key lifetime
+	for _, c := range v.Proof.TreeHead.Cosignatures {
+		if c.Timestamp > math.MaxInt64 {
+			return fmt.Errorf("invalid timestamp: %d", c.Timestamp)
+		}
+
+		ts := time.Unix(int64(c.Timestamp), 0)
+
+		if !ts.After(ourPubkey.Start) {
+			return fmt.Errorf("witness cosignature outside of lifetime, %v not in %v - %v",
+				ts.Format(time.RFC3339),
+				ourPubkey.Start.Format(time.RFC3339),
+				ourPubkey.End.Format(time.RFC3339))
+		}
+
+		if !ts.Before(ourPubkey.End) {
+			return fmt.Errorf("witness cosignature outside of lifetime, %v not in %v - %v",
+				ts.Format(time.RFC3339),
+				ourPubkey.Start.Format(time.RFC3339),
+				ourPubkey.End.Format(time.RFC3339))
+		}
+	}
+
+	return nil
 }
 
-func (v *Verification) VerifyProof(msg []byte, policy policy.Policy, sigsumKeys map[sumcrypto.Hash]sumcrypto.PublicKey) error {
+func (v *Verification) VerifyProof(msg []byte, log sigsum.Log) error {
 	digest := sumcrypto.HashBytes(msg)
 
-	return v.VerifyProofDigest(digest, policy, sigsumKeys)
+	return v.VerifyProofDigest(digest, log)
 }

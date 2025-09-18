@@ -6,6 +6,8 @@ package verification
 import (
 	"crypto/ed25519"
 	"encoding/hex"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/tillitis/tkey-verification/internal/sigsum"
@@ -18,6 +20,16 @@ const submitKey = `tillitis-sigsum-test
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIONFrsjCVeDB3KwJVsfr/kphaZZZ9Sypuu42ahZBjeya sigsum key
 verisigner-v0.0.3
 f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142
+2025-08-16T08:10:33+02:00
+2125-09-16T08:11:33+02:00
+`
+
+const oldSubmitKey = `tillitis-sigsum-test
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIONFrsjCVeDB3KwJVsfr/kphaZZZ9Sypuu42ahZBjeya sigsum key
+verisigner-v0.0.3
+f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142
+2023-09-16T08:10:33+02:00
+2023-09-16T08:11:33+02:00
 `
 
 const policyStr = `log 4644af2abd40f4895a003bca350f9d5912ab301a49c77f13e5b6d905c20a5fe6 https://test.sigsum.org/barreleye
@@ -117,7 +129,8 @@ func TestVerifyProofRawHash(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := v.VerifyProofDigest(digest, *log.Policy, log.SubmitKeys); err != nil {
+	if err := v.VerifyProofDigest(digest, log); err != nil {
+		fmt.Printf("err %v\n", err)
 		t.Fatal("vendor signature not verified")
 	}
 }
@@ -153,7 +166,59 @@ func TestVerifyProof(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := v.VerifyProof(msg, *log.Policy, log.SubmitKeys); err != nil {
+	if err := v.VerifyProof(msg, log); err != nil {
 		t.Fatal("vendor signature not verified")
+	}
+}
+
+// TestVerifyProofWrongTime verifies a proof with a pubkey that is end
+// of life. Verification should fail.
+func TestVerifyProofKeyLifetime(t *testing.T) {
+	var v Verification
+	var log sigsum.Log
+
+	if err := log.FromString(oldSubmitKey, policyStr); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := v.FromJSON([]byte(verificationProofJSON)); err != nil {
+		t.Fatal(err)
+	}
+
+	// Build a message
+
+	udi := []byte{0, 1, 2, 3, 4, 5, 6, 7}
+
+	fwDigest, err := hex.DecodeString("3769540390ee3d990ea3f9e4cc9a0d1af5bcaebb82218185a78c39c6bf01d9cdc305ba253a1fb9f3f9fcc63d97c8e5f34bbb1f7bec56a8f246f1d2239867b623")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	signerPubKey, err := hex.DecodeString("3b6a27bcceb6a42d62a3a8d02a6f0d73653215771de243a63ac048a18b59da29")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	msg, err := util.BuildMessage(udi, fwDigest, signerPubKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = v.VerifyProof(msg, log)
+	assertErrorMsgStartsWith(t, err, "witness cosignature outside of lifetime")
+}
+
+func assertErrorMsgStartsWith(t *testing.T, err error, want string) {
+	t.Helper()
+
+	if err == nil {
+		t.Log("Expected error")
+		t.Fail()
+		return
+	}
+
+	if !strings.HasPrefix(err.Error(), want) {
+		t.Logf("Unexpected error '%v', should start with '%v'", err, want)
+		t.Fail()
 	}
 }

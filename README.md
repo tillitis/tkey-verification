@@ -74,6 +74,9 @@ log](https://sigsum.org/). We want to:
   it's leaked.
 - Increase trust in the identities by having our signatures logged and
   witnessed.
+- From our Sigsum release we introduce lifetimes of our vendor keys.
+  This means that if a Sigsum proof has witness timestamps outside of
+  the lifetime of the vendor key, it isn't valid.
 
 We don't store or publish the TKey identities, so we can't actually
 verify the identities ourselves. See "Why is the TKey identity not
