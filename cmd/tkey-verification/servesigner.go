@@ -81,7 +81,7 @@ func serveSigner(conf ServerConfig, dev Device, verbose bool, checkConfigOnly bo
 		key1 = submitKey.Key
 		key2 = ssh.PublicKey(foundPubKey)
 
-		le.Printf("TKey pubkey does not match active embedded pubkey\nExpected: %v\nReceived: %v\n", ssh.FormatPublicEd25519(&key1), ssh.FormatPublicEd25519(&key2))
+		le.Printf("TKey pubkey does not match active embedded pubkey\nExpected: %v\nReceived: %v\n", ssh.FormatPublicEd25519(key1), ssh.FormatPublicEd25519(key2))
 		exit(1)
 	}
 	le.Printf("Found signing TKey with the expected public key and UDI: %s\n", tk.Udi.String())

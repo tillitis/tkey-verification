@@ -129,7 +129,7 @@ func TestVerifyProofRawHash(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := v.VerifyProofDigest(digest, log); err != nil {
+	if _, err := v.VerifyProofDigest(digest, log); err != nil {
 		fmt.Printf("err %v\n", err)
 		t.Fatal("vendor signature not verified")
 	}
@@ -166,7 +166,7 @@ func TestVerifyProof(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := v.VerifyProof(msg, log); err != nil {
+	if _, err := v.VerifyProof(msg, log); err != nil {
 		t.Fatal("vendor signature not verified")
 	}
 }
@@ -204,7 +204,7 @@ func TestVerifyProofKeyLifetime(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = v.VerifyProof(msg, log)
+	_, err = v.VerifyProof(msg, log)
 	assertErrorMsgStartsWith(t, err, "witness cosignature outside of lifetime")
 }
 

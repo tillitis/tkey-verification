@@ -89,8 +89,8 @@ func ParsePublicEd25519(asciiKey string) (PublicKey, error) {
 	return parsePublicEd25519(blob)
 }
 
-func FormatPublicEd25519(pub *PublicKey) string {
+func FormatPublicEd25519(pub PublicKey) string {
 	return "ssh-ed25519 " +
-		base64.StdEncoding.EncodeToString(serializePublicEd25519(pub)) +
+		base64.StdEncoding.EncodeToString(serializePublicEd25519(&pub)) +
 		" sigsum key\n"
 }

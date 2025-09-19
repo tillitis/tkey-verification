@@ -148,7 +148,7 @@ func processSubmissionFile(fn, submDir, verDir, doneSubmDir string, submitConfig
 		return errors.New("sigsum configuration missing")
 	}
 
-	err = verification.VerifyProofDigest(submission.Request.Message, log)
+	_, err = verification.VerifyProofDigest(submission.Request.Message, log)
 	if err != nil {
 		return fmt.Errorf("got invalid proof: %w", err)
 	}

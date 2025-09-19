@@ -14,6 +14,7 @@ import (
 	"github.com/tillitis/tkey-verification/internal/data"
 	"github.com/tillitis/tkey-verification/internal/firmware"
 	"github.com/tillitis/tkey-verification/internal/sigsum"
+	"github.com/tillitis/tkey-verification/internal/ssh"
 	"github.com/tillitis/tkey-verification/internal/tkey"
 	"github.com/tillitis/tkey-verification/internal/util"
 	"github.com/tillitis/tkey-verification/internal/vendorkey"
@@ -199,12 +200,13 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 	// recreated message.
 	if verification.IsProof() {
 		if useSigsum {
-			if err := verification.VerifyProof(msg, log); err != nil {
+			submitKey, err := verification.VerifyProof(msg, log)
+			if err != nil {
 				verificationFailed(err.Error())
 				exit(1)
 			}
 
-			le.Printf("Verified with Sigsum proof\n")
+			le.Printf("Verified Sigsum proof. Submitted by key: %s\n", ssh.FormatPublicEd25519((ssh.PublicKey(submitKey.Key))))
 		} else {
 			// Strange. Exit.
 			verificationFailed("Expected vendor signature but got a Sigsum proof")

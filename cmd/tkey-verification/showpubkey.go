@@ -49,7 +49,7 @@ func showPubkey(binPath string, dev Device, verbose bool) {
 	var sshPubKey ssh.PublicKey
 
 	copy(sshPubKey[:], pubKey)
-	fmt.Printf("SSH version: %v\n", ssh.FormatPublicEd25519(&sshPubKey))
+	fmt.Printf("SSH version: %v\n", ssh.FormatPublicEd25519(sshPubKey))
 
 	exit(0)
 }
