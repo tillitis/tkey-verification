@@ -14,6 +14,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/tillitis/tkey-verification/internal/data"
+	"github.com/tillitis/tkey-verification/internal/sigsum"
 	"github.com/tillitis/tkey-verification/internal/submission"
 	"github.com/tillitis/tkey-verification/internal/util"
 	"github.com/tillitis/tkey-verification/internal/verification"
@@ -131,7 +132,7 @@ func processSubmissionFile(fn, submDir, verDir, doneSubmDir string, submitConfig
 		return fmt.Errorf("failed to open submission file: %w", err)
 	}
 
-	proofText, err := logDevice(submission.Request, submitConfig)
+	proof, err := logDevice(submission.Request, submitConfig)
 	if err != nil {
 		return fmt.Errorf("failed to log device: %w", err)
 	}
@@ -141,8 +142,19 @@ func processSubmissionFile(fn, submDir, verDir, doneSubmDir string, submitConfig
 		Timestamp: submission.Timestamp,
 		AppTag:    submission.AppTag,
 		AppHash:   submission.AppHash,
-		Proof:     proofText,
+		Proof:     proof,
 	}
+
+	var log sigsum.Log
+	if err = log.FromEmbedded(); err != nil {
+		return errors.New("sigsum configuration missing")
+	}
+
+	err = verification.VerifyProofDigest(submission.Request.Message, log)
+	if err != nil {
+		return fmt.Errorf("got invalid proof: %w", err)
+	}
+
 	err = verification.ToFile(verificationPath)
 	if err != nil {
 		return fmt.Errorf("failed to store verification file: %w", err)
