@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path"
 
@@ -64,53 +65,60 @@ func main() {
 		le.Fatalf("Sigsum configuration missing")
 	}
 
-	submitConfig := submit.Config{}
-	submitConfig.Policy = log.Policy
+	submit := SigsumSubmit{
+		submDir:     submissionsDir,
+		doneSubmDir: processedSubmissionsDir,
+		verDir:      verificationsDir,
+		log:         log,
+	}
 
-	err = processSubmissionDir(submissionsDir, verificationsDir, processedSubmissionsDir, submitConfig)
+	err = submit.processSubmissions()
 	if err != nil {
 		le.Fatalf("Submission failed: %v", err)
 	}
 }
 
-func processSubmissionDir(submDir, verDir, doneSubmDir string, submitConfig submit.Config) error {
-	verFileCount, err := os.ReadDir(verDir)
+type SigsumSubmit struct {
+	submDir, verDir, doneSubmDir string
+	log                          sigsum.Log
+
+	// HTTPClient specifies the HTTP client to use when making requests to the
+	// log.  If nil, a default client is created.
+	HTTPClient *http.Client
+}
+
+func (s SigsumSubmit) processSubmissions() error {
+	verFileCount, err := os.ReadDir(s.verDir)
 	if err != nil {
-		return fmt.Errorf("failed to read directory '%s': %w", verDir, err)
+		return fmt.Errorf("failed to read directory '%s': %w", s.verDir, err)
 	}
 	if len(verFileCount) != 0 {
 		return errors.New("verification directory must be empty")
 	}
 
-	doneSubmFileCount, err := os.ReadDir(doneSubmDir)
+	doneSubmFileCount, err := os.ReadDir(s.doneSubmDir)
 	if err != nil {
-		return fmt.Errorf("failed to read directory '%s': %w", doneSubmDir, err)
+		return fmt.Errorf("failed to read directory '%s': %w", s.doneSubmDir, err)
 	}
 	if len(doneSubmFileCount) != 0 {
 		return errors.New("processed submission directory must be empty")
 	}
 
-	entries, err := os.ReadDir(submDir)
+	entries, err := os.ReadDir(s.submDir)
 	if err != nil {
-		return fmt.Errorf("failed to read directory '%s': %w", submDir, err)
+		return fmt.Errorf("failed to read directory '%s': %w", s.submDir, err)
 	}
 
 	for _, entry := range entries {
 		var submission submission.Submission
-		err = submission.FromFile(path.Join(submDir, entry.Name()))
+		err = submission.FromFile(path.Join(s.submDir, entry.Name()))
 		if err != nil {
 			return fmt.Errorf("invalid submission file: %w", err)
 		}
 	}
 
 	for _, entry := range entries {
-		err = processSubmissionFile(
-			entry.Name(),
-			submDir,
-			verDir,
-			doneSubmDir,
-			submitConfig,
-		)
+		err = s.processSubmissionFile(entry.Name())
 		if err != nil {
 			return fmt.Errorf("failed to process submission file: %w", err)
 		}
@@ -119,15 +127,20 @@ func processSubmissionDir(submDir, verDir, doneSubmDir string, submitConfig subm
 	return nil
 }
 
-func processSubmissionFile(fn, submDir, verDir, doneSubmDir string, submitConfig submit.Config) error {
-	submissionPath := path.Join(submDir, fn)
-	doneSubmissionPath := path.Join(doneSubmDir, fn)
-	verificationPath := path.Join(verDir, fn)
+func (s SigsumSubmit) processSubmissionFile(fn string) error {
+	submissionPath := path.Join(s.submDir, fn)
+	doneSubmissionPath := path.Join(s.doneSubmDir, fn)
+	verificationPath := path.Join(s.verDir, fn)
 
 	var submission submission.Submission
 	err := submission.FromFile(submissionPath)
 	if err != nil {
 		return fmt.Errorf("failed to open submission file: %w", err)
+	}
+
+	submitConfig := submit.Config{
+		Policy:     s.log.Policy,
+		HTTPClient: s.HTTPClient,
 	}
 
 	proof, err := logDevice(submission.Request, submitConfig)
@@ -143,12 +156,7 @@ func processSubmissionFile(fn, submDir, verDir, doneSubmDir string, submitConfig
 		Proof:     proof,
 	}
 
-	var log sigsum.Log
-	if err = log.FromEmbedded(); err != nil {
-		return errors.New("sigsum configuration missing")
-	}
-
-	_, err = verification.VerifyProofDigest(submission.Request.Message, log)
+	_, err = verification.VerifyProofDigest(submission.Request.Message, s.log)
 	if err != nil {
 		return fmt.Errorf("got invalid proof: %w", err)
 	}

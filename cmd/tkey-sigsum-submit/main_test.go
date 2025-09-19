@@ -15,27 +15,47 @@ import (
 	"path"
 	"testing"
 
-	"sigsum.org/sigsum-go/pkg/policy"
-	"sigsum.org/sigsum-go/pkg/submit"
+	"github.com/tillitis/tkey-verification/internal/sigsum"
 )
 
-func Test_processSubmissionFileShouldGenerateVerificationFileFromSubmissionFile(t *testing.T) {
-	submDir := t.TempDir()
-	doneSubmDir := t.TempDir()
-	verDir := t.TempDir()
-	fn := "0001020304050607"
-	submFile := path.Join(submDir, fn)
-	verFile := path.Join(verDir, fn)
+// Test Sigsum submit key corresponding to verisigner-0.3 running on QEMU with test UDS.
+const TestSigsumConf = `
+tillitis-sigsum-test
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDZoSX1HYX/ofsSARva4F054DzaKjXQ2vMHcHLaq7sQ sigsum key
+verisigner-v0.0.3
+f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142
+2024-09-16T08:10:33+02:00
+2125-09-16T08:11:33+02:00
+`
 
-	copyFile(submFile, "testdata/0001020304050607-subm-valid")
-	pol := mustReadPolicyFile("testdata/policy")
-	fakeClient := http.Client{Transport: ts.NewFakeTransport()}
-	submitConfig := submit.Config{
-		HTTPClient: &fakeClient,
-		Policy:     pol,
+func Test_processSubmissionFileShouldGenerateVerificationFileFromSubmissionFile(t *testing.T) {
+	submit := SigsumSubmit{
+		submDir:     t.TempDir(),
+		doneSubmDir: t.TempDir(),
+		verDir:      t.TempDir(),
+		HTTPClient:  &http.Client{Transport: ts.NewFakeTransport()},
 	}
 
-	err := processSubmissionFile(fn, submDir, verDir, doneSubmDir, submitConfig)
+	policyStr, err := os.ReadFile("testdata/policy")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var log sigsum.Log
+
+	if err = log.FromString(TestSigsumConf, string(policyStr)); err != nil {
+		t.Fatal(err)
+	}
+
+	submit.log = log
+
+	fn := "0001020304050607"
+	submFile := path.Join(submit.submDir, fn)
+	verFile := path.Join(submit.verDir, fn)
+
+	copyFile(submFile, "testdata/0001020304050607-subm-valid")
+
+	err = submit.processSubmissionFile(fn)
 	if err != nil {
 		t.Fatalf("Got error when running processSubmissionFile: %v", err)
 	}
@@ -44,6 +64,7 @@ func Test_processSubmissionFileShouldGenerateVerificationFileFromSubmissionFile(
 }
 
 func Test_processSubmissionDir(t *testing.T) {
+
 	type Params []struct {
 		name              string
 		preSubmFiles      map[string]string // Sample files to copy from testdata to submissions dir before running. Maps source->destination filename
@@ -103,33 +124,41 @@ func Test_processSubmissionDir(t *testing.T) {
 			errString:         "invalid submission file",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 
-			submDir := path.Join(tempDir, "submissions")
-			copySamplesToDir(submDir, tt.preSubmFiles)
-
-			verDir := path.Join(tempDir, "verifications")
-			copySamplesToDir(verDir, tt.preVerFiles)
-
-			doneSubmDir := path.Join(tempDir, "processed-submissions")
-			copySamplesToDir(doneSubmDir, tt.preDoneSubmFiles)
-
-			pol := mustReadPolicyFile("testdata/policy")
-			fakeClient := http.Client{Transport: ts.NewFakeTransport()}
-			submitConfig := submit.Config{
-				HTTPClient: &fakeClient,
-				Policy:     pol,
+			submit := SigsumSubmit{
+				submDir:     path.Join(tempDir, "submissions"),
+				doneSubmDir: path.Join(tempDir, "processed"),
+				verDir:      path.Join(tempDir, "verifications"),
+				HTTPClient:  &http.Client{Transport: ts.NewFakeTransport()},
 			}
 
-			err := processSubmissionDir(submDir, verDir, doneSubmDir, submitConfig)
+			copySamplesToDir(submit.submDir, tt.preSubmFiles)
+			copySamplesToDir(submit.verDir, tt.preVerFiles)
+			copySamplesToDir(submit.doneSubmDir, tt.preDoneSubmFiles)
+
+			policyStr, err := os.ReadFile("testdata/policy")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var log sigsum.Log
+
+			if err = log.FromString(TestSigsumConf, string(policyStr)); err != nil {
+				t.Fatal(err)
+			}
+
+			submit.log = log
+
+			err = submit.processSubmissions()
 
 			assertErrorMsgStartsWith(t, err, tt.errString)
-
-			assertDirContainsOnly(t, submDir, tt.postSubmFiles)
-			assertDirContainsOnly(t, doneSubmDir, tt.postDoneSubmFiles)
-			assertDirContainsOnly(t, verDir, tt.postVerFiles)
+			assertDirContainsOnly(t, submit.submDir, tt.postSubmFiles)
+			assertDirContainsOnly(t, submit.doneSubmDir, tt.postDoneSubmFiles)
+			assertDirContainsOnly(t, submit.verDir, tt.postVerFiles)
 		})
 	}
 }
@@ -236,16 +265,6 @@ func assertFileContentsEqual(t *testing.T, aPath string, bPath string) {
 		t.Logf("Contents of '%s' and '%s' are not equal", aPath, bPath)
 		t.Fail()
 	}
-}
-
-func mustReadPolicyFile(path string) *policy.Policy {
-	pol, err := policy.ReadPolicyFile(path)
-	if err != nil {
-		msg := fmt.Sprintf("Failed to read sigsum policy: %v", err)
-		panic(msg)
-	}
-
-	return pol
 }
 
 // fakeTransport is an HTTP Transport faking a Sigsum Log. Just enough behavior
