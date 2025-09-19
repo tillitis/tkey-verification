@@ -22,6 +22,7 @@ import (
 )
 
 const verifyInfoURL = "https://www.tillitis.se/verify"
+const vendorID = 0x1337
 
 func verifyShowURL(dev Device, verifyBaseURL string) {
 	// Connect to a TKey
@@ -99,13 +100,14 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 
 	le.Printf("TKey UDI: %s\n", tk.Udi.String())
 
-	// If this is a TKey from Tillitis (vendor 0x1337), product ID
+	if tk.Udi.VendorID != vendorID {
+		le.Printf("Unknown Vendor ID")
+		exit(1)
+	}
+
 	// Castor means we demand a Sigsum proof. Bellatrix means
-	// vendor signature.
-	//
-	// If it's not Tillitis we use default false, but let the user
-	// set their expectations with -sigsum.
-	if tk.Udi.VendorID == 0x1337 {
+	// vendor signature. Unless sigsum is forced.
+	if !useSigsum {
 		switch tk.Udi.ProductID {
 		case tkeyclient.UDIPIDBellatrix:
 			useSigsum = false
@@ -116,7 +118,6 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 			le.Printf("Unknown Product ID: Don't know if we need signature or Sigsum proof.")
 			exit(1)
 		}
-
 	}
 
 	var verification verification.Verification
