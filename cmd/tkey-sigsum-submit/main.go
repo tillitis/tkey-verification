@@ -4,7 +4,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -13,12 +12,10 @@ import (
 	"path"
 
 	"github.com/spf13/pflag"
-	"github.com/tillitis/tkey-verification/internal/data"
 	"github.com/tillitis/tkey-verification/internal/sigsum"
 	"github.com/tillitis/tkey-verification/internal/submission"
 	"github.com/tillitis/tkey-verification/internal/util"
 	"github.com/tillitis/tkey-verification/internal/verification"
-	"sigsum.org/sigsum-go/pkg/policy"
 	"sigsum.org/sigsum-go/pkg/proof"
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/submit"
@@ -61,13 +58,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	pol, err := policy.ParseConfig(bytes.NewBufferString(data.PolicyStr))
+	var log sigsum.Log
+	err := log.FromEmbedded()
 	if err != nil {
-		le.Fatalf("Failed to read sigsum policy: %v", err)
+		le.Fatalf("Sigsum configuration missing")
 	}
 
 	submitConfig := submit.Config{}
-	submitConfig.Policy = pol
+	submitConfig.Policy = log.Policy
 
 	err = processSubmissionDir(submissionsDir, verificationsDir, processedSubmissionsDir, submitConfig)
 	if err != nil {
