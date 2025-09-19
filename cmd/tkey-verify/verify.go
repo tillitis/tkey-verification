@@ -206,7 +206,7 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 				exit(1)
 			}
 
-			le.Printf("Verified Sigsum proof. Submitted by key: %s\n", ssh.FormatPublicEd25519((ssh.PublicKey(submitKey.Key))))
+			le.Printf("Verified Sigsum proof. Submit key: %s\n", ssh.FormatPublicEd25519(submitKey.Key))
 		} else {
 			// Strange. Exit.
 			verificationFailed("Expected vendor signature but got a Sigsum proof")

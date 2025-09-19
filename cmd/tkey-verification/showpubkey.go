@@ -4,6 +4,7 @@
 package main
 
 import (
+	"crypto/ed25519"
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
@@ -46,7 +47,7 @@ func showPubkey(binPath string, dev Device, verbose bool) {
 	le.Printf("Public Key, app tag, and app hash for embedded vendor pubkeys follows on stdout:\n")
 	fmt.Printf("%s %s %s\n", hex.EncodeToString(pubKey), tag, hex.EncodeToString(appHash[:]))
 
-	var sshPubKey ssh.PublicKey
+	var sshPubKey [ed25519.PublicKeySize]byte
 
 	copy(sshPubKey[:], pubKey)
 	fmt.Printf("SSH version: %v\n", ssh.FormatPublicEd25519(sshPubKey))
