@@ -201,11 +201,17 @@ func (v *Verification) VerifyProofDigest(digest sumcrypto.Hash, log sigsum.Log) 
 
 	var ourPubkey sigsum.PubKey
 
+	keyFound := false
 	for keyindex, key := range log.Keys {
 		if sumcrypto.HashBytes(keyindex[:]) == v.Proof.Leaf.KeyHash {
-			// Found it!
+			keyFound = true
 			ourPubkey = key
+			break
 		}
+	}
+
+	if !keyFound {
+		return errors.New("couldn't find submit key")
 	}
 
 	// Also check that all cosigning witness signatures timestamps are
