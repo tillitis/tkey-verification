@@ -30,7 +30,7 @@ path = [
      "cmd/tkey-sigsum-submit/testdata/0001020304050607-ver-valid",
      "cmd/tkey-sigsum-submit/testdata/000102030400DEAD-subm-invalid-sig",
      "cmd/tkey-sigsum-submit/testdata/policy",
-     "doc/implementation-notes.md",
+     "doc/design.md",
      "doc/tkey-verification.1",
      "doc/tkey-verification.scd",
      "doc/tkey-verify.1",

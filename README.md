@@ -1,7 +1,9 @@
 # Tillitis TKey Verification
 
-`tkey-verification` is a tool used for signing a TKey identity and
-verifying that the same TKey still has the same identity later.
+`tkey-verification` and its associated programs are tools used for
+signing a TKey identity and verifying that the same TKey still has the
+same identity later. See [Design of the TKey verification
+process](doc/design.md) for all the details.
 
 The verification of this identity does not prove that the TKey hasn't
 been tampered with, only that the identity of an app running on it is
@@ -18,20 +20,30 @@ their version of the `tkey-verification` program instead of this one.
 instructions](https://www.tillitis.se/applications/tkey-device-verification/)
 on Tillitis' web.
 
-You can download a release of the tool at:
+There are three programs:
+
+- tkey-verification: Used for provisioning by the vendor.
+- tkey-sigsum-submit: Used for submitting signed requests to a Sigsum
+  log by the vendor.
+- tkey-verify: Used to verify a Tillitis TKey.
+
+You can download releases of the tools at:
 
 https://github.com/tillitis/tkey-verification/releases
 
-Or do:
+Or use `go install`. If you're and end user you probably only want
+`tkey-verify`, like this:
 
 ```
-$ go install github.com/tillitis/tkey-verification/cmd/tkey-verification@latest
+$ go install github.com/tillitis/tkey-verification/cmd/tkey-verify@latest
 ```
 
-Please note that if you install with `go install` you won't get the
-tag in `--version`.
+If you want to build static binaries from source running `make` or
+`make podman` using our tkey-builder OCI image should suffice, but
+note [Releases of tkey-verification and reproducible
+builds](releases-of-tkey-verification-and-reproducible builds) below.
 
-## Usage
+## Usage by end user
 
 For the typical end user with network access, insert the TKey and run:
 
@@ -39,379 +51,170 @@ For the typical end user with network access, insert the TKey and run:
 $ tkey-verify
 ```
 
-For more advanced use and for provisioning, see the man page in
-`doc/tkey-verify.1`.
+For more advanced use, see the man page in `doc/tkey-verify.1`.
+
+## Usage by vendor
 
 For use during provisioning, use the `tkey-verification` and
-`tkey-sigsum-submit` instead. See the man page in
-`doc/tkey-verification.1`.
+`tkey-sigsum-submit` programs. See the man pages in
+`doc/tkey-verification.1` and `doc/tkey-sigsum-submit.1` for details.
 
-## Introduction
+Basically, `tkey-verification` has two sub-commands, *serve-signer*
+for use as a server on a HSM-like machine with a vendor TKey, and
+*remote-sign* for the provisioning station.
 
-Think of a TKey identity as a message made up of:
+The server produces submission files with a signed request to log to a
+Sigsum transparency log.
 
-- Unique Device Identifier (UDI)
-- the public key of a signing device app, typically
-  [signer](https://github.com/tillitis/tkey-device-signer), running on
-  the TKey
-- digest of the firmware of this TKey
+Use `tkey-sigsum-request` to submit the submission files to the log,
+collect Sigsum proofs, and to produce verification files.
 
-This identity is what we want to prove is the same to the end user. We
-do this by signing a digest of the identity, logging the digest into a
-transparency log, and publishing a [verification
-file](verification-file) about it.
-
-The user can later download the verification file, recreate the
-message, and verify that we signed a digest of it with the included
-Sigsum proof.
-
-## Sigsum transparency log
-
-We submit signed checksums of all identities in [a Sigsum transparency
-log](https://sigsum.org/). We want to:
-
-- Be able to monitor when our private key is used and signal to us if
-  it's leaked.
-- Increase trust in the identities by having our signatures logged and
-  witnessed.
-- From our Sigsum release we introduce lifetimes of our vendor keys.
-  This means that if a Sigsum proof has witness timestamps outside of
-  the lifetime of the vendor key, it isn't valid.
-
-We don't store or publish the TKey identities, so we can't actually
-verify the identities ourselves. See "Why is the TKey identity not
-published?" below.
-
-We plan to run a Sigsum monitor tailing the log to see when our key is
-used. To make it easier to find illicit use of the key we will store
-the *digest* of the TKey identity, but not the identity itself.
-
-If the monitor finds our key has been used, it uses the digest
-reported from the log and checks if this is indeed a known digest we
-have signed. If not, it alerts us.
-
-The timestamps by the witnesses should give us a hint when this was
-first used. We can compare with the timestamps in our verification
-files to see the last good verification file.
-
-## Provisioning
-
-Done by the vendor, maybe during provisioning of the FPGA bitstream,
-but not necessarily.
-
-- Create and [check](#check-identity) a TKey identity, sign a hash
-  digest of the identity and submit the signed digest to a Sigsum log.
-
-- Publish the Sigsum proof and some metadata, a [verification
-  file](#verification-file), reachable by HTTP, indexed by the UDI,
-  typically: https://tkey.tillitis.se/UDI-in-hex
-
-## Verification
-
-Done by end user.
-
-- Recreate and [check](#check-identity) the TKey identity by loading
-  the same app on the same TKey and doing a challenge/response.
-
-- Verify the TKey identity with a Sigsum proof.
-
-All data needed to recreate and verify the identity is provided in the
-[verification file](#verification-file).
-
-## Verification file
-
-The verification file contains:
-
-- `timestamp`: RFC3339 timestamp when the signature was done.
-- `apptag`: a human readable hint for anyone who wants to reproduce the
-  procedure manually.
-- `apphash`: hash digest for the specific device app to run.
-- `proof`: Sigsum proof that this TKey identity is signed and logged.
-
-In older versions of the verification file, instead of `proof`:
-
-- `signature`: Ed25519 vendor's signature.
-
-For compatibility with older TKeys we continue to support being able
-to verify the vendor's signature. We identify what kind (proof or
-signature) we need to use by the product ID of the TKey. Older TKeys:
-require a signature, newer: require a Sigsum proof.
-
-The canonical URL for this file in a TKey provisioned by Tillitis is:
+Finally, publish the verification files in the URL `tkey-verify` uses.
+For Tillitis, this is:
 
 https://tkey.tillitis.se/verify/UDI-in-hex
 
-like:
+like this:
 
-https://tkey.tillitis.se/verify/0133704100000015
+https://tkey.tillitis.se/verify/0133708100000002
 
-## Submit request file
-
-The submit request file contains:
-
-- `timestamp`: RFC3339 timestamp when the signature was done.
-- `apptag`: a human readable hint for anyone who wants to reproduce the
-  procedure manually.
-- `apphash`: hash digest for the specific device app to run.
-- `request`: sigsum add-leaf-request data.
-
-## Check identity
-
-Both during provisioning and verification we need to authenticate the
-TKey identity, to see that the combination of device app and hardware
-is the expected.
-
-- Load the signer device app.
-
-- Retrieve its public key.
-
-- Do a challenge/response, asking the running app to make a signature
-  over some random data.
-
-- Verify the signature with the already retrieved public key.
-
-## What is verified?
-
-What does verifying a TKey with `tkey-verify` prove?
-
-To explain the verification and what it proves, first we need a brief
-explanation on how the TKey works. The TKey uses measured boot. The
-measured boot guarantees that every app that starts on the TKey gets a
-unique identity called the Compound Device Identity (CDI).
-
-The CDI is a combination of:
-
-- a per-device unique secret embedded in the hardware, the Unique
-  Device Secret (UDS),
-
-- the integrity of the software before it is started, as measured by
-  immutable and thefore trusted firmware, and,
-
-- an optional User Supplied Secret (not used in this case).
-
-The CDI is computed like this:
-
-```
-CDI = blake2s(UDS, blake2s(application), USS)
-```
-
-where `blake2s` is the hash function BLAKE2s from [RFC
-7693](https://www.rfc-editor.org/info/rfc7693).
-
-There are two parts to verifying a TKey. First what the vendor does
-during provisioning, then what the user does during verification:
-
-- Provisioning: The vendor signs a message containing the Unique
-  Device Identifier (UDI), a digest over the observed firmware, and
-  the signer's public key.
-
-  The message itself is not published, but the signature and some
-  metadata is (see [Verification file](#verification-file) for
-  details). The message can later be recreated by the verification
-  process.
-
-- Verification: `tkey-verification` first recreates the message (UDI,
-  firmware digest, signer's public key), checks the vendor's
-  signature over the message, and finally does a challenge/response to
-  prove that the device has the corresponding private key.
-
-**Proven**: It's now proven that the currently used TKey device,
-running this device app is the same as the TKey device (or at least a
-device with the exact same UDS) that was running the same device app
-during provisioning.
-
-Less strongly shown:
-
-- The firmware check assumes that a hash digest over the part of
-  memory where the firmware is supposed to be suffices. In a
-  manipulated TKey the real firmware might be somewhere else, with a
-  copy of the expected firmware in the right place in the memory map.
-- The authenticity of the RISC-V softcore isn't proven, but it was at
-  least able to run the device app successfully.
-- The rest of the FPGA design isn't proven either, except the UDS, but
-  at least it worked as expected with the loaded signer app.
-
-Not proved at all:
-
-- USB controller CH552 firmware and hardware.
-- PCB design.
-
-## Why is the TKey identity not published?
-
-The TKey identity that is signed by the vendor's key is not published.
-It is, instead, recreated when verifying a TKey. This makes it
-impossible for anyone else, including the vendor, to verify the
-message if they haven't stored the message somewhere else.
-
-When originally designing this system we were afraid that publishing,
-or even keeping, the signer public key in a way that ties it very
-strongly to a certain UDI would be bad for the user.
-
-Since we're currently using the ordinary
-[signer](https://github.com/tillitis/tkey-device-signer) device app
-publishing the signer public key from this specific TKey would be
-equivalent of publishing the user's public SSH key (if they choose not
-to use an USS) to the entire world. We were not comfortable in doing
-that even if it would, in a way, be a way of doing hardware
-attestation of the TKey. We might need to revisit this.
-
-Note that we always recommend using an USS for all your own use of the
-TKey!
-
-## Weaknesses
-
-- The entire device is not proven.
-- The distribution of the vendor's public key is sensitive. Since
-  all trust is placed in the vendor's signature, all fails if the
-  end user is tricked to use the wrong public key. It's right now
-  embedded in tkey-verification.
-- The distribution of the tkey-verification client app is sensitive,
-  since if it is malicious it can just say "TKey is genuine!" without
-  actually doing much else.
-
-  However, the build of tkey-verification is reproducible if using
-  pinned versions of tools (but currently not the macOS binary). The
-  same verification can also be done independently by other tools.
-
-## Security Protocol
-
-Detailed step-by-step security protocol.
-
-### Terminology
-
-- "device under verification": The device the vendor is provisioning
-  or the user is verifying.
-- "device signature": A signature made on the device under
-  verification with the signer device app.
-- Unique Device Identifier (UDI): A unique identifier present in all
-  TKeys. The 1st half identifies the revision of the hardware, the 2nd
-  half is a serial number.
-- "signing server": An HSM-like machine providing signatures over
-  messages and producing files to be uploaded to some database.
-- "signer": A device app used for confirming the TKey's identity,
-  right now either verisigner (source in older versions in this
-  repository, look for verisigner tags) or
-  [tkey-device-signer](https://github.com/tillitis/tkey-device-signer).
-- "signer public key": The public key of signer running on the device
-  under verification.
-- "vendor's public key": The public key of the vendor, typically
-  Tillitis or an IT department, corresponding to a private key in a
-  TKey in the signing server.
-- "vendor's Sigsum private key": The private key the vendor uses to
-  sign a digest for logging in the Sigsum transparency log.
-- "vendor's Sigsum public key": The public key corresponding to the
-  vendor's Sigsum private key.
-- "vendor's signature": A signature made by the signing server.
-
-### During provisioning
-
-1. Retrieve the UDI from the device under verification.
-2. Run the signer with a specific tag on the device under
-   verification. This creates a unique key pair.
-3. Retrieve signer public key from the device under verification.
-4. Ask signer to sign a random challenge.
-5. Verify the signature of the random challenge with the retrieved
-   public key to let the device prove that it has the corresponding
-   private key.
-6. Ask signer for a digest of the firmware binary (in ROM). Consult
-   the internal firmware database to verify that the TKey, according
-   to its hardware revision, is running the expected firmware.
-7. Sign a digest of a message consisting of the UDI, firmware digest,
-   and signer public key with vendor's private Sigsum key, creating a
-   Sigsum log [request file](#submit-request-file).
-8. Publish the request file to the Sigsum monitor.
-9. Submit the sigsum request included in the request file to the
-   Sigsum log, collecting the proof.
-10. Build the verification file, including the Sigsum proof.
-11. Publish the [verification file](#verification-file), indexed by
-    the UDI.
-12. (Transfer the digest of the message to the future Sigsum monitor.)
-
-The checksum of a TKey must be present at the monitor before
-submitting the TKey identity to the log
-
-The following diagram contains an overview of how data flows during
+This diagram contains an overview of how data flows during
 provisioning at Tillitis:
 
 ![Data flow during provisioning](signing-procedure.svg)
 
-### Verifying
+## Test setup
 
-1. Retrieve the UDI from the device under verification.
-2. Get the [verification file](#verification-file) with the Sigsum
-   proof, app tag, and app digest for this UDI.
-3. Run the signer with the same tag and digest on the device under
-   verification.
-4. Retrieve the signer public key.
-5. Ask signer to sign a random challenge.
-6. Verify the signature of the random challenge with the signer public
-   key thus proving that the device under verification has access to the
-   corresponding private key.
-7. Ask signer for a digest of the firmware binary (in ROM). Consult
-   the internal firmware database to verify that the TKey, according
-   to its hardware revision, is running the expected firmware.
-8. Recreate the message of UDI, firmware digest and signer public key.
-9. Verify the Sigsum proof of the message, thus proving that the
-   UDI, the firmware, and this private/public key pair was the same
-   during vendor's signing.
+You need two TKeys. It might be easier to use one physical TKey and
+one emulated (see [QEMU chapter in Tillitis Developer
+Handbook](https://dev.tillitis.se/tools/#qemu-emulator). One is used
+for the vendor's signing TKey. The other is a TKey that you want to
+sign and then verify as genuine. You need to know the serial port
+device paths for both of them.
 
-Note that the exact same signer binary that was used for producing the
-signer signature during provisioning *must* be used when verifying it.
-If a different signer is used then the device private/public key will
-not match, even if the TKey is the same. A verifier must check the
-"hash" field and complain if it does not have a signer binary with the
-same digest.
-
-## Building tkey-verification
-
-Build the `tkey-verification` tool with the test vendor's public key
-by editing `internal/data/data.go`. Look for "Test vendor key" and
-change to use that one.
+Here we are using `run-tkey-qemu` from
+[tkey-devtools](https://github.com/tillitis/tkey-devtools) as the
+vendor TKey:
 
 ```
-$ make
+$ run-tkey-qemu
+$ ./tkey-verification serve-signer --config tkey-verification.yaml.example-serve-signer --port ./tkey-qemu-pty
 ```
 
-See below if you need to get hold of a different public key.
+Insert the device under verification, the TKey to be signed by the
+vendor, then:
 
-The device apps used for signing is included in binary form under
-`cmd/tkey-verification/bins/`. See more info under [Building included
-device apps](#building-included-device-apps) if you want to build them
-yourself.
+```
+$ ./tkey-verification remote-sign --config tkey-verification.yaml.example-remote-sign
+Auto-detected serial port /dev/ttyACM0
+Connecting to device on serial port /dev/ttyACM0 ...
+Firmware name0:'tk1 ' name1:'mkdf' version:4
+Loading verisigner-app built from tag:verisigner-v0.0.1 hash:9598910ec9ebe2504a5f894de6f8e067… ...
+App loaded.
+App name0:'veri' name1:'sign' version:1
+TKey UDI: 0x0001020304050607(BE) VendorID: 0x0010 ProductID: 8 ProductRev: 3
+TKey firmware with size:3204 and verified hash:31accb1c40febc2bf02f48656a943336…
+Remote Sign was successful
+```
+
+The signing server should now have signed and saved a submit request
+file under `signatures` with a filename generated from the Unique
+Device Identifier, typically something like `0133704100000015` if from
+Tillitis, but `0001020304050607` if the bitstream has been built
+directly from
+[tillitis-key1](https://github.com/tillitis/tillitis-key1).
+
+To submit the TKey Identity using the submit request file, first
+create two empty directories to hold the processed submit request file
+and the generated verification file. Then run `tkey-sigsum-submit`:
+
+```
+$ mkdir processed-submissions
+$ mkdir verifications
+$ ./tkey-sigsum-submit -m signatures -n processed-submissions -d verifications
+2025/05/04 12:04:34 [INFO] Attempting to submit checksum#1 to log: https://test.sigsum.org/barreleye
+2025/05/04 12:04:35 [INFO] Attempting to retrieve proof for checksum#1
+```
+
+There should now be a verification file in the `verifications` directory.
+
+Before trying to verify you need to remove and re-insert the device
+under verification to get it back to firmware mode. Then run
+`tkey-verify -d verifications` to point to local verification files in
+a directory rather than requesting them over the Internet:
+
+```
+$ ./tkey-verify -d verifications
+TKey UDI: 0x0001020304050607(BE) VendorID: 0x0010 ProductID: 8 ProductRev: 3
+Verified Sigsum proof. Submit key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDZoSX1HYX/ofsSARva4F054DzaKjXQ2vMHcHLaq7sQ sigsum key
+
+TKey is genuine!
+```
+
+For the complete set of commands, see the manual pages
+[tkey-verify(1)](doc/tkey-verify.1) and
+[tkey-verification(1)](doc/tkey-verification.1)
+
+## Certificates
+
+For your testing convenience we include a test CA and some test
+certificates in `certs`. They expire 10 years after being generated.
+
+If you need to rebuild CA, server, and client certs you can use any
+ordinary X.509 certificate tools like GnuTLS's certtool or OpenSSL to
+generate your certificates.
+
+You can also install the small [certstrap
+tool](https://github.com/square/certstrap) and run:
+
+```
+$ make certs
+```
 
 ## Maintenance
 
-See [Implementation notes](doc/implementation-notes.md) for more
-in-depth notes on the program.
+There are some compiled-in assets. Most of these of are in
+[internal/data/data.go](internal/data/data.go).
 
-`tkey-verification` and `tkey-verify` contain some embedded data. Most
-of them are in [internal/data/data.go](internal/data/data.go).
+- Application binaries: The device apps used for both vendor signing
+  and device authentication. See below how to maintain.
 
-- Vendor public keys, see the `VendorPubKeys` constant.
+- Vendor public keys: The public key from a vendor TKey used for
+  verification. Might be several, including historical keys. *No
+  longer* used for signing, but still used for verification. See the
+  constant `VendorPubKeys`.
 
 - Sigsum configuration including the Sigsum submit keys which replaces
   the old vendor public keys, see the `SigsumConf` and `PolicyStr`
   constants.
 
-- A database mapping known hardware revisions (first half of the
-  Unique Device Identifier) to their expected firmware size and hash.
-  See the `FirmwaresConf` constant.
+- Known firmwares: Expected firmwares for all known TKey models from
+  the vendor (first half of the Unique Device Identifier). See the
+  `FirmwaresConf` constant.
 
-- Included device apps. See below.
+Commands are responsible for initializing their own assets. For
+instance, `tkey-verify` needs all of the above, `remote-sign` needs
+the application binaries and the firmwares, `serve-signer` needs
+application binaries and the Sigsum configuration.
 
-## Building included device apps
+## Included device app binaries
 
 The device apps used for signing is included in binary form under
-`internal/appbins/bins`.
+`internal/appbins/bins`. They are stored like this:
 
-Reproducible versions of the device app `verisigner` binary included
-in this repo can be built from earlier verisigner tags. Checkout the
-wanted tag and follow the instructions there.
+- `name-tag`, like `signer-v1.0.1.bin`: the actual device app binary.
+- `name-tag.sha512`, like `signer-v1.0.1.bin.sha512`: the SHA-512
+  digest of the above file to help ensure we don't make mistakes.
 
-The [signer](https://github.com/tillitis/tkey-device-signer) binary
-can be built reproducible from the tags mentioned in the `bins`
-directory. Please note that you have to build without touch
-requirement, so set `TKEY_SIGNER_APP_NO_TOUCH=yes`.
+The source code from device app `verisigner` binary included under
+`bins` can be found using the `verisigner-` tags in this repo.
+
+The source code for the `signer-*` binaries is from:
+
+https://github.com/tillitis/tkey-device-signer
+
+Make reproducible builds of these binaries using the tag and building
+with `TKEY_SIGNER_APP_NO_TOUCH=yes`.
 
 To start using a new device app:
 
@@ -431,155 +234,52 @@ Then, if this app is meant to be used for TKey authentication:
   `remote-sign` configuration file by setting the new app's hash in
   `signingapphash`.
 
-If the app is meant to be used for the Sigsum submit key:
+If the app is meant to be used for the Sigsum submit key, see below.
 
-- Get the new public key using the vendor TKey by inserting the TKey
-  and running:
+## Creating the Sigsum keys
 
-  ```
-  tkey-verification show-pubkey --app internal/appbins/bins/signer-v1.0.1.bin
-  Public Key, app tag, and app hash for embedded vendor pubkeys follows on stdout:
-  03a7bd3be67cb466869904ec14b9974ebcc6e593abdc4151315ace2511b9c94d signer-v1.0.1 cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4
-  SSH version: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAOnvTvmfLRmhpkE7BS5l068xuWTq9xBUTFaziURuclN sigsum key
-  ```
+The vendor's public keys are built into the `tkey-verification` and
+`tkey-verify` binaries. Look for `SigsumConf` in
+`internal/data/data.go`.
 
-- Add the new key as a Sigsum key in the `SigsumConf` constant in
-  `internal/data/data.go` and rebuild `tkey-verification`.
+For each public key, provide, in this order:
 
-## Certificates
+- Name of the key.
+- SSH public key corresponding to the private key of that particular
+  device running the device app mentioned below.
+- Tag of the app to run.
+- SHA-512 digest of the device app binary.
+- Start time of the key.
+- End time.
 
-For your convenience we include a test CA and some test certificates
-in `certs`. They expire 10 years after being generated.
+Note that the device app *must* be known. See [Included device app
+binaries](included-device-app-binaries).
 
-If you need to rebuild CA, server, and client certs you can use any
-ordinary X.509 certificate tools like GnuTLS's certtool or OpenSSL to
-generate your certificates.
+A test vendor key is provided in `internal/data/data.go`. It contains
+the default public key of our QEMU emulator, which is generated when
+running verisigner v0.0.3.
 
-You can also install the small [certstrap
-tool](https://github.com/square/certstrap) and run:
-
-```
-$ make certs
-```
-
-## Testing
-
-- You need 1 TKey and 1 QEMU machine running to try this out (or 2
-  TKeys, or 2 QEMU machines, if you manage to get that working). One
-  is Tillitis' (vendor's) signing TKey, and the other is a TKey that
-  you want to sign and then verify as genuine. You need to know the
-  serial port device paths for these.
-
-- Run the signing server on QEMU (see [the Tillitis Developer
-  Handbook](https://dev.tillitis.se/tools/#qemu-emulator) for more
-  information on how to run QEMU). Notice the port QEMU provides when
-  starting.
-
-  ```
-  ./tkey-verification serve-signer --config tkey-verification.yaml.example-serve-signer --port /dev/pts/12
-  ```
-
-- Insert the device under verification, the TKey to be signed and verified.
-
-- Get the signing server to sign for a device under verification (here
-  a hardware TKey)
-
-  ```
-  $ ./tkey-verification remote-sign --config tkey-verification.yaml.example-remote-sign
-  Auto-detected serial port /dev/ttyACM0
-  Connecting to device on serial port /dev/ttyACM0 ...
-  Firmware name0:'tk1 ' name1:'mkdf' version:4
-  Loading verisigner-app built from tag:verisigner-v0.0.1 hash:9598910ec9ebe2504a5f894de6f8e067… ...
-  App loaded.
-  App name0:'veri' name1:'sign' version:1
-  TKey UDI: 0x0001020304050607(BE) VendorID: 0x0010 ProductID: 8 ProductRev: 3
-  TKey firmware with size:3204 and verified hash:31accb1c40febc2bf02f48656a943336…
-  Remote Sign was successful
-  ```
-
-- The signing server should now have signed and saved a submit request
-  file under `signatures` with a filename generated from the Unique
-  Device Identifier, typically something like `0133704100000015` if
-  from Tillitis, but `0001020304050607` if the bitstream has been
-  built directly from
-  [tillitis-key1](https://github.com/tillitis/tillitis-key1).
-
-- To submit the TKey Identity using the submit request file. First
-  create two empty directories to hold the processed submit request
-  file and the generated verification file. Then run
-  `tkey-sigsum-submit`:
-
-  ```
-  $ mkdir processed-submissions
-  $ mkdir verifications
-  $ ./tkey-sigsum-submit -m signatures -n processed-submissions/ -d verifications/
-  2025/05/04 12:04:34 [INFO] Attempting to submit checksum#1 to log: https://test.sigsum.org/barreleye
-  2025/05/04 12:04:35 [INFO] Attempting to retrieve proof for checksum#1
-  ```
-
-- Before trying to verify you need to remove and re-insert the device
-  under verification to get it back to firmware mode. `tkey-verify`
-  always requires to load the signer itself. Then try to verify
-  against local files in a directory using `tkey-verify -d signatures`
-  (the default is to query a web server):
-
-  ```
-  $ ./tkey-verify -d signatures
-  TKey UDI: 0x0001020304050607(BE) VendorID: 0x0010 ProductID: 8 ProductRev: 3
-  Reading verification data from file verifications/0001020304050607 ...
-  TKey is genuine!
-  ```
-
-For the complete set of commands, see the manual pages
-[tkey-verify(1)](doc/tkey-verify.1) and
-[tkey-verification(1)](doc/tkey-verification.1)
-
-## Creating the vendor's public key(s)
-
-The vendor's public key is built into the tkey-verification binary.
-Look for `SigsumConf` in `internal/data/data.go`.
-
-For each public key, the tag and hash digest of the device app used
-when extracting the public key is also provided. The signing server
-needs this so that its TKey can have the correct private key when
-signing. Note that these tags per public key are independent from and
-can be different from the tag used for device signing.
-
-A test vendor key is provided in `internal/data/data.go`. It
-contains the default public key of our QEMU machine, which is
-generated when running verisigner v0.0.3.
-
-If you want to use some other key(s) this is how:
-
-If you're just testing start a QEMU as a signing endpoint. See above.
-
-Get the public key from the TKey in the signing server. We provide a
-command in `tkey-verification`, `show-pubkey`, for that. The path to
-the app binary to use must be given as an argument.
-
-Example:
+If you want to use some other key(s), insert the vendor TKey you want
+to use, then list the public key of the device app you want to use:
 
 ```
-./tkey-verification show-pubkey --port /dev/pts/10 --app internal/appbins/bins/signer-v1.0.1.bin
+./tkey-verification show-pubkey --app internal/appbins/bins/signer-v1.0.1.bin
 Public Key, app tag, and app hash for embedded vendor pubkeys follows on stdout:
 03a7bd3be67cb466869904ec14b9974ebcc6e593abdc4151315ace2511b9c94d signer-v1.0.1 cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4
 SSH version: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAOnvTvmfLRmhpkE7BS5l068xuWTq9xBUTFaziURuclN sigsum key
 ```
 
 Enter the SSH key into `SigsumConf` in `internal/data/data.go`. Then
-build everything with this vendor key:
+build everything.
 
-```
-$ make
-```
+To set this Sigsum key to be the active one used for vendor signing,
+change the configuration file for `serve-signer` and change
+`activekey`.
 
 ## Example verification and submit request files
 
-For an example verification file see
-[cmd/tkey-sigsum-submit/testdata/0001020304050607-ver-valid](cmd/tkey-sigsum-submit/testdata/0001020304050607-ver-valid)
-
-For an example verification file see
-[cmd/tkey-sigsum-submit/testdata/0001020304050607-subm-valid](cmd/tkey-sigsum-submit/testdata/0001020304050607-subm-valid)
+- [Verification file](cmd/tkey-sigsum-submit/testdata/0001020304050607-ver-valid).
+- [Submission file](cmd/tkey-sigsum-submit/testdata/0001020304050607-subm-valid).
 
 ## Releases of tkey-verification and reproducible builds
 
@@ -648,25 +348,3 @@ https://spdx.org/licenses/
 
 We attempt to follow the [REUSE
 specification](https://reuse.software/).
-
-## Open questions
-
-- Can we use the exact same key pair as the Sigsum submit key as we
-  used as a vendor's key pair before? If not, why not?
-
-- Can we continue not to publish the TKey identity? See [Why is the
-  signed message not
-  published?](#why-is-the-signed-message-not-published). Is this even
-  a good idea?
-
-- Decide on the format of the proof in the verification file. Included
-  as an JSON-escaped string like in the example included here? As a
-  separate resource on another URL linked through the JSON file?
-
-- Should the timestamp when the signature was done be included in the
-  signed message? In the older design it was unprotected.
-
-- What do we do with all the older signatures? Keep them unlogged? If
-  we want to Sigsum log them we need to do it some other way than the
-  proposed new system, since we can't recreate the TKey identities and
-  sign them.
