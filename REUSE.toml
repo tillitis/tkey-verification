@@ -41,6 +41,8 @@ path = [
      "go.sum",
      "release-builds/tkey-verification_0.0.2_linux-amd64.sha512",
      "internal/appbins/bins/README.md",
+     "internal/appbins/bins/signer-tkey-verification-1.bin",
+     "internal/appbins/bins/signer-tkey-verification-1.bin.sha512",
      "internal/appbins/bins/signer-v1.0.1.bin",
      "internal/appbins/bins/signer-v1.0.1.bin.sha512",
      "internal/appbins/bins/verisigner-v0.0.3.bin",

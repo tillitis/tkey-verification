@@ -5,4 +5,4 @@ clientkey: "certs/client.key"
 server: "localhost:1337"
 
 # Hash digest of signing device app for device signature during provisioning.
-signingapphash: "cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4"
+signingapphash: "3493a20868b99897f0caff2f7b57b35ea3565c59f5ba353439d444cf8aac07e4899f260b98cb13f2fbb1bf6416ba8e2083d537391c1495ed1362c9008b7f8dff"
