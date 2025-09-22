@@ -500,7 +500,7 @@ For the complete set of commands, see the manual pages
 ## Creating the vendor's public key(s)
 
 The vendor's public key is built into the tkey-verification binary.
-Look for `VendorPubKeys` in `internal/data/data.go`.
+Look for `SigsumConf` in `internal/data/data.go`.
 
 For each public key, the tag and hash digest of the device app used
 when extracting the public key is also provided. The signing server
@@ -508,7 +508,7 @@ needs this so that its TKey can have the correct private key when
 signing. Note that these tags per public key are independent from and
 can be different from the tag used for device signing.
 
-A test vendor key is provided in in the `internal/data/data.go`. It
+A test vendor key is provided in `internal/data/data.go`. It
 contains the default public key of our QEMU machine, which is
 generated when running verisigner v0.0.3.
 
@@ -523,12 +523,13 @@ the app binary to use must be given as an argument.
 Example:
 
 ```
-./tkey-verification show-pubkey --port /dev/pts/10 --app cmd/tkey-verification/bins/signer-v1.0.1.bin
+./tkey-verification show-pubkey --port /dev/pts/10 --app internal/appbins/bins/signer-v1.0.1.bin
 Public Key, app tag, and app hash for embedded vendor pubkeys follows on stdout:
 03a7bd3be67cb466869904ec14b9974ebcc6e593abdc4151315ace2511b9c94d signer-v1.0.1 cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4
+SSH version: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAOnvTvmfLRmhpkE7BS5l068xuWTq9xBUTFaziURuclN sigsum key
 ```
 
-Enter that line into `VendorPubKeys` in `internal/data/data.go`. Then
+Enter the SSH key into `SigsumConf` in `internal/data/data.go`. Then
 build everything with this vendor key:
 
 ```
