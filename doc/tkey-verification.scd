@@ -98,8 +98,37 @@ The commands are as follows:
 
 # FILES
 
-*tkey-verification* serve-signer produces a submission file which is
-named after the Unique Device Identifier (in hexadecimal) for every
+Both *remote-sign* and *serve-signer* has YAML configuration files.
+
+In the *remote-sign* configuration file you need to specify:
+
+```
+---
+cacert: "path to the CA certificate"
+clientcert: "path to the client certificate used by remote-sign"
+clientkey: "path to the corresponding private key"
+server: "name:port of the server to contact"
+
+# Hash digest of active app to authenticate a TKey - has to be present
+# in internal/data/data.go
+signingapphash: "3493a20868b99897f0caff2f7b57b35ea3565c59f5ba353439d444cf8aac07e4899f260b98cb13f2fbb1bf6416ba8e2083d537391c1495ed1362c9008b7f8dff"
+```
+
+In the *serve-signer* configuration file you need to specify:
+
+```
+---
+cacert: "path to the CA certificate"
+servercert: "path to the server certificate used by serve-signer"
+serverkey: "path to the corresponding private key"
+listen: "name:port to listen to for requests"
+
+# Current active Sigsum submit key - needs to occur in SigsumConf in internal/data/data.go
+activekey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDZoSX1HYX/ofsSARva4F054DzaKjXQ2vMHcHLaq7sQ sigsum key"
+```
+
+The *serve-signer* command produces a submission file which is named
+after the Unique Device Identifier (in hexadecimal) for every
 signature made. An example filename would be
 "signatures/0133704100000015".
 
