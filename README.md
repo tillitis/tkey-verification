@@ -389,6 +389,10 @@ of them are in [internal/data/data.go](internal/data/data.go).
 
 - Vendor public keys, see the `VendorPubKeys` constant.
 
+- Sigsum configuration including the Sigsum submit keys which replaces
+  the old vendor public keys, see the `SigsumConf` and `PolicyStr`
+  constants.
+
 - A database mapping known hardware revisions (first half of the
   Unique Device Identifier) to their expected firmware size and hash.
   See the `FirmwaresConf` constant.
@@ -407,7 +411,40 @@ wanted tag and follow the instructions there.
 The [signer](https://github.com/tillitis/tkey-device-signer) binary
 can be built reproducible from the tags mentioned in the `bins`
 directory. Please note that you have to build without touch
-requirement.
+requirement, so set `TKEY_SIGNER_APP_NO_TOUCH=yes`.
+
+To start using a new device app:
+
+- Make sure there is a signed tag on the app's repo.
+- Build it in a reproducible way (typically using the tkey-builder OCI
+  image) with `TKEY_SIGNER_APP_NO_TOUCH=yes`.
+- Copy the binary and the hash digest file to `internal/appbins/bins/`
+  with matching names, like `signer-v1.0.1.bin` and the corresponding
+  `signer-v1.0.1.bin.sha512`. They are built in during compile time
+  and expects this exact name structure.
+- Update the `README.md` in bins to document where this device app
+  came from.
+
+Then, if this app is meant to be used for TKey authentication:
+
+- Set a new active device app for device authentication in the
+  `remote-sign` configuration file by setting the new app's hash in
+  `signingapphash`.
+
+If the app is meant to be used for the Sigsum submit key:
+
+- Get the new public key using the vendor TKey by inserting the TKey
+  and running:
+
+  ```
+  tkey-verification show-pubkey --app internal/appbins/bins/signer-v1.0.1.bin
+  Public Key, app tag, and app hash for embedded vendor pubkeys follows on stdout:
+  03a7bd3be67cb466869904ec14b9974ebcc6e593abdc4151315ace2511b9c94d signer-v1.0.1 cd3c4f433f84648428113bd0a0cc407b2150e925a51b478006321e5a903c1638ce807138d1cc1f8f03cfb6236a87de0febde3ce0ddf177208e5483d1c169bac4
+  SSH version: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAOnvTvmfLRmhpkE7BS5l068xuWTq9xBUTFaziURuclN sigsum key
+  ```
+
+- Add the new key as a Sigsum key in the `SigsumConf` constant in
+  `internal/data/data.go` and rebuild `tkey-verification`.
 
 ## Certificates
 
