@@ -31,7 +31,7 @@ type Device struct {
 func main() {
 	var dev Device
 	var baseURL, baseDir string
-	var sigsum, verbose, showURLOnly, versionOnly, build, helpOnly bool
+	var sigsum, verbose, showURLOnly, versionOnly, helpOnly bool
 
 	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.CommandLine.SortFlags = false
@@ -50,7 +50,6 @@ func main() {
 	pflag.BoolVar(&sigsum, "sigsum", false,
 		"Demand a Sigsum proof in the verification file (command: verify).")
 	pflag.BoolVar(&versionOnly, "version", false, "Output version information.")
-	pflag.BoolVar(&build, "build", false, "Output build data about included device apps and firmwares")
 	pflag.BoolVar(&helpOnly, "help", false, "Output this help.")
 	pflag.Usage = usage
 	pflag.Parse()
@@ -64,11 +63,6 @@ func main() {
 		fmt.Printf("%s %s\n", progname, util.Version(version))
 		os.Exit(0)
 	}
-
-	// if build {
-	// 	builtWith()
-	// 	os.Exit(0)
-	// }
 
 	if baseDir != "" && (showURLOnly || pflag.CommandLine.Lookup("base-url").Changed) {
 		le.Printf("Cannot combine --base-dir and --show-url/--base-url\n")
