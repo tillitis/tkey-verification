@@ -51,7 +51,7 @@ func remoteSign(conf ProvConfig, dev Device, verbose bool) {
 	}
 
 	// Authenticate the device
-	message, err := authDevice(dev, bin, firmwares)
+	message, err := authDevice(dev, bin, firmwares, verbose)
 	if err != nil {
 		le.Printf("Couldn't authenticate device: %s\n", err)
 		os.Exit(1)
@@ -78,11 +78,11 @@ func remoteSign(conf ProvConfig, dev Device, verbose bool) {
 	le.Printf("Remote Sign was successful\n")
 }
 
-func authDevice(dev Device, appBin appbins.AppBin, firmwares firmware.Firmwares) (Message, error) {
+func authDevice(dev Device, appBin appbins.AppBin, firmwares firmware.Firmwares, verbose bool) (Message, error) {
 	var message Message
 
 	// Load the app
-	tk, err := tkey.NewTKey(dev.Path, dev.Speed, false)
+	tk, err := tkey.NewTKey(dev.Path, dev.Speed, verbose)
 	if err != nil {
 		return message, fmt.Errorf("%w", err)
 	}
