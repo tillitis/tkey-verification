@@ -34,13 +34,30 @@ type PubKey struct {
 }
 
 func (p PubKey) String() string {
-	return fmt.Sprintf("%v using app %v: %x\n  Valid: %v-%v\n", p.Name, p.Tag, p.Key, p.Start.Format(time.RFC3339), p.End.Format(time.RFC3339))
+	return fmt.Sprintf("%v using app %v: %x\n  Valid: %v - %v\n", p.Name, p.Tag, p.Key, p.Start.Format(time.RFC3339), p.End.Format(time.RFC3339))
 }
 
 type Log struct {
 	Keys       map[[ed25519.PublicKeySize]byte]PubKey // key -> PubKey
 	SubmitKeys map[sumcrypto.Hash]sumcrypto.PublicKey
 	Policy     *policy.Policy
+}
+
+func (s *Log) String() string {
+	var output string
+
+	output = "Logs:\n"
+	for _, log := range s.Policy.GetLogsWithUrl() {
+		output += fmt.Sprintf("  - Key: %x\n", log.PublicKey)
+		output += fmt.Sprintf("    URL: %v\n\n", log.URL)
+	}
+
+	output += "Submit keys:\n"
+	for _, key := range s.Keys {
+		output += fmt.Sprintf("  - %s", key)
+	}
+
+	return output
 }
 
 type State int

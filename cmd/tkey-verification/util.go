@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/tillitis/tkey-verification/internal/appbins"
 	"github.com/tillitis/tkey-verification/internal/firmware"
+	"github.com/tillitis/tkey-verification/internal/sigsum"
 	"github.com/tillitis/tkey-verification/internal/vendorkey"
 )
 
@@ -27,6 +28,12 @@ func builtWith() {
 		os.Exit(1)
 	}
 
+	var log sigsum.Log
+	if err = log.FromEmbedded(); err != nil {
+		le.Printf("Sigsum configuration missing")
+		os.Exit(1)
+	}
+
 	firmwares, err := firmware.NewFirmwares()
 	if err != nil {
 		le.Printf("Found no usable firmwares\n")
@@ -38,11 +45,15 @@ Supported verisigner-app tags:
   %s
 Known vendor signing keys:
   %s
+
+Known Sigsum configuration:
+%s
 Known firmwares:
   %s
 `,
 		strings.Join(appBins.Tags(), " \n  "),
 		vendorKeys.String(),
+		log.String(),
 		strings.Join(firmwares.List(), " \n  "))
 
 }
