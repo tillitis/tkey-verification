@@ -1,5 +1,22 @@
 # Release notes
 
+## Unreleased version
+
+- Add Sigsum transparency log support. See https://sigsum.org/
+- Remove vendor signing with vendor keys and instead uses the Sigsum
+  key pair. Vendor key support is retained for verification.
+- Introduce lifetime of vendor keys, but limited to Sigsum submit
+  keys.
+- Split out verification by end user to its own program: tkey-verify.
+- Introduce new program: tkey-sigsum-submit.
+- Lots of refactoring, again.
+- Include new signer app, signer-tkey-verification1, built from
+  https://github.com/tillitis/tkey-device-signer without touch. This
+  version supports both the older Bellatrix and the upcoming Castor
+  TKeys.
+- Bump Go package tkeyclient to v1.2.0
+- Change license to BSD-2-Clause.
+
 ## v1.0.0
 
 This version brings a lot of refactoring, aiming at simplifying
