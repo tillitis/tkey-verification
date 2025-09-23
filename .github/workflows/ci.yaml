@@ -29,6 +29,9 @@ jobs:
       - name: make
         run: make
 
+      - name: tests
+        run: go test ./...
+
   reuse-compliance-check:
     runs-on: ubuntu-latest
     steps:
