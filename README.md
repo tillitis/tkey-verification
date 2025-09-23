@@ -173,7 +173,7 @@ $ make certs
 
 ## Maintenance
 
-There are some compiled-in assets. Most of these of are in
+There are some compiled-in assets. Most of these are in
 [internal/data/data.go](internal/data/data.go).
 
 - Application binaries: The device apps used for both vendor signing
