@@ -278,13 +278,12 @@ Detailed step-by-step security protocol.
 7. Sign a digest of a message consisting of the UDI, firmware digest,
    and signer public key with vendor's private Sigsum key, creating a
    Sigsum log [request file](#submit-request-file).
-8. Publish the request file to the Sigsum monitor.
+8. Transfer the request file to the Sigsum monitor.
 9. Submit the sigsum request included in the request file to the
    Sigsum log, collecting the proof.
 10. Build the verification file, including the Sigsum proof.
 11. Publish the [verification file](#verification-file), indexed by
     the UDI.
-12. (Transfer the digest of the message to the future Sigsum monitor.)
 
 The checksum of a TKey must be present at the monitor before
 submitting the TKey identity to the log.
