@@ -13,7 +13,7 @@ Think of a TKey identity as a message made up of:
 This identity is what we want to prove is the same to the end user. We
 do this by signing a digest of the identity, logging the digest into a
 transparency log, and publishing a [verification
-file](verification-file) about it.
+file](#verification-file) about it.
 
 The user can later download the verification file, recreate the
 message, and verify that we signed a digest of it with the help of the

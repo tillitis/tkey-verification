@@ -41,7 +41,7 @@ $ go install github.com/tillitis/tkey-verification/cmd/tkey-verify@latest
 If you want to build static binaries from source running `make` or
 `make podman` using our tkey-builder OCI image should suffice, but
 note [Releases of tkey-verification and reproducible
-builds](releases-of-tkey-verification-and-reproducible builds) below.
+builds](#releases-of-tkey-verification-and-reproducible-builds) below.
 
 ## Usage by end user
 
@@ -253,7 +253,7 @@ For each public key, provide, in this order:
 - End time.
 
 Note that the device app *must* be known. See [Included device app
-binaries](included-device-app-binaries).
+binaries](#included-device-app-binaries).
 
 A test vendor key is provided in `internal/data/data.go`. It contains
 the default public key of our QEMU emulator, which is generated when
@@ -327,8 +327,8 @@ Until Nov 6, 2024, the license was GPL-2.0 Only.
 
 Please note that this project embeds binaries that are released under
 GPL-2.0 Only, see
-[cmd/tkey-verification/bins/README.md](cmd/tkey-verification/bins/README.md)
-for more details.
+[internal/appbins/bins/README.md](internal/appbins/bins/README.md) for
+more details.
 
 External source code we have imported are isolated in their own
 directories. They may be released under other licenses. This is noted
