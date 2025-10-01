@@ -38,7 +38,7 @@ func main() {
 	pflag.StringVar(&dev.Path, "port", "",
 		"Set serial port device `PATH`. If this is not passed, auto-detection will be attempted.")
 	pflag.IntVarP(&dev.Speed, "speed", "s", tkeyclient.SerialSpeed,
-		"Set serial port `speed` in bits per second.")
+		"Set serial port `SPEED` in bits per second.")
 	pflag.BoolVar(&verbose, "verbose", false,
 		"Enable verbose output.")
 	pflag.BoolVarP(&showURLOnly, "show-url", "u", false,
@@ -48,7 +48,7 @@ func main() {
 	pflag.StringVar(&baseURL, "base-url", defaultBaseURL,
 		"Set the base `URL` of verification server for fetching verification data.")
 	pflag.BoolVar(&sigsum, "sigsum", false,
-		"Demand a Sigsum proof in the verification file (command: verify).")
+		"Demand a Sigsum proof in the verification file.")
 	pflag.BoolVar(&versionOnly, "version", false, "Output version information.")
 	pflag.BoolVar(&helpOnly, "help", false, "Output this help.")
 	pflag.Usage = usage

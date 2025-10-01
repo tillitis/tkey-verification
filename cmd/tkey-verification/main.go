@@ -19,7 +19,6 @@ const progname = "tkey-verification"
 const signaturesDir = "signatures"
 
 const (
-	defaultBaseURL    = "https://tkey.tillitis.se/verify"
 	defaultConfigFile = "./tkey-verification.yaml"
 )
 
@@ -35,29 +34,21 @@ type Device struct {
 
 func main() {
 	var dev Device
-	var baseURL, baseDir, configFile, binPath string
-	var sigsum, checkConfigOnly, verbose, showURLOnly, versionOnly, build, helpOnly bool
+	var configFile, binPath string
+	var checkConfigOnly, verbose, versionOnly, build, helpOnly bool
 
 	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.CommandLine.SortFlags = false
 	pflag.StringVar(&dev.Path, "port", "",
 		"Set serial port device `PATH`. If this is not passed, auto-detection will be attempted.")
 	pflag.IntVarP(&dev.Speed, "speed", "s", tkeyclient.SerialSpeed,
-		"Set serial port `speed` in bits per second.")
+		"Set serial port `SPEED` in bits per second.")
 	pflag.BoolVar(&verbose, "verbose", false,
 		"Enable verbose output.")
 	pflag.StringVar(&configFile, "config", defaultConfigFile,
 		"`PATH` to configuration file (commands: serve-signer, remote-sign).")
 	pflag.BoolVar(&checkConfigOnly, "check-config", false,
 		"Only check that the configuration is usable, then exit (commands: serve-signer, remote-sign).")
-	pflag.BoolVarP(&showURLOnly, "show-url", "u", false,
-		"Only output the URL to the verification data that should be downloaded (command: verify).")
-	pflag.StringVarP(&baseDir, "base-dir", "d", "",
-		"Read verification data from a file located in `DIRECTORY` and named after the TKey UDI in hex, instead of from a URL. You can for example first use \"verify --show-url\" and download the verification file manually on some other computer, then transfer the file back and use \"verify --base-dir .\" (command: verify).")
-	pflag.StringVar(&baseURL, "base-url", defaultBaseURL,
-		"Set the base `URL` of verification server for fetching verification data (command: verify).")
-	pflag.BoolVar(&sigsum, "sigsum", false,
-		"Demand a Sigsum proof in the verification file (command: verify).")
 	pflag.StringVarP(&binPath, "app", "a", "",
 		"`PATH` to the device app to show vendor signing pubkey (command: show-pubkey).")
 	pflag.BoolVar(&versionOnly, "version", false, "Output version information.")
@@ -91,16 +82,6 @@ func main() {
 	}
 
 	cmd := pflag.Args()[0]
-
-	// Use Lookup to tell if user changed string with default value
-	if cmd == "verify" && (pflag.CommandLine.Lookup("config").Changed || checkConfigOnly) {
-		le.Printf("Cannot use --config/--check-config with this command.\n")
-		os.Exit(2)
-	}
-	if cmd != "verify" && (showURLOnly || baseDir != "" || pflag.CommandLine.Lookup("base-url").Changed) {
-		le.Printf("Cannot use --show-url/--base-dir/--base-url with this command.\n")
-		os.Exit(2)
-	}
 
 	// Command funcs exit to OS themselves for now
 	switch cmd {
