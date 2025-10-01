@@ -59,6 +59,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	if verificationsDir == processedSubmissionsDir {
+		le.Printf("processed-submissions-dir and verification-dir cannot be the same.\n\n")
+		pflag.Usage()
+		os.Exit(1)
+	}
+
 	var log sigsum.Log
 	err := log.FromEmbedded()
 	if err != nil {
