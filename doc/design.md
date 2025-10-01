@@ -141,7 +141,7 @@ The CDI is a combination of:
   Device Secret (UDS),
 
 - the integrity of the software before it is started, as measured by
-  immutable and thefore trusted firmware, and,
+  immutable and therefore trusted firmware, and,
 
 - an optional User Supplied Secret (not used in this case).
 

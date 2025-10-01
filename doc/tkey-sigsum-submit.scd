@@ -46,7 +46,7 @@ $ tkey-sigsum-submit -m signatures -n processed -d verifications
 The files in the submission directory (set with *-m*) are produced by
 *tkey-verification*(1) running the *serve-sign* command.
 
-After a succesful run of *tkey-sigsum-submit* the submitted submission
+After a successful run of *tkey-sigsum-submit* the submitted submission
 files are moved from the submissions directory to the processed
 submissions directory (*-n*). The generated verification files are
 placed in the verification directory (*-d*).
