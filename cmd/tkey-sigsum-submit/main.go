@@ -38,9 +38,10 @@ func main() {
 	pflag.StringVarP(&processedSubmissionsDir, "processed-submissions-dir", "n", "",
 		"Move submission data files to `DIRECTORY` after submission to log")
 	pflag.StringVarP(&verificationsDir, "verifications-dir", "d", "",
-		"Write verification data to a file located in `DIRECTORY` with the same name as the submission file")
-	pflag.BoolVar(&helpOnly, "help", false, "Output this help.")
-	pflag.BoolVar(&versionOnly, "version", false, "Output version information.")
+		"Write verification data to a file  in `DIRECTORY` ")
+	pflag.BoolVar(&helpOnly, "help", false, "Output this help")
+	pflag.BoolVar(&versionOnly, "version", false, "Output version information")
+	pflag.Usage = usage
 	pflag.Parse()
 
 	if helpOnly {
@@ -193,4 +194,17 @@ func logDevice(req requests.Leaf, submitConfig submit.Config) (proof.SigsumProof
 	}
 
 	return proofs[0], nil
+}
+
+func usage() {
+	desc := fmt.Sprintf(`Usage: %s <flags>
+
+Takes a sigsum submit request from each file in the "submissions-dir"
+directory and submits it to the log. Each submission file generates a
+corresponding verification file. The verification files are written to
+the "verifications-dir" directory, with the same name as the submission
+file.
+`, progname)
+
+	le.Printf("%s\n\nFlags:\n%s\n", desc, pflag.CommandLine.FlagUsagesWrapped(86))
 }
