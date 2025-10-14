@@ -166,10 +166,10 @@ during provisioning, then what the user does during verification:
   details). The message can later be recreated by the verification
   process.
 
-- Verification: `tkey-verification` first recreates the message (UDI,
-  firmware digest, signer's public key), checks the vendor's
-  signature over the message, and finally does a challenge/response to
-  prove that the device has the corresponding private key.
+- Verification: `tkey-verify` first recreates the message (UDI,
+  firmware digest, signer's public key), checks the vendor's signature
+  over the message, and finally does a challenge/response to prove
+  that the device has the corresponding private key.
 
 **Proven**: It's now proven that the currently used TKey device,
 running this device app is the same as the TKey device (or at least a
@@ -285,16 +285,12 @@ Detailed step-by-step security protocol.
 11. Publish the [verification file](#verification-file), indexed by
     the UDI.
 
-The checksum of a TKey must be present at the monitor before
-submitting the TKey identity to the log.
-
 ![Data flow during provisioning](../signing-procedure.svg)
 
 ### Verifying
 
 1. Retrieve the UDI from the device under verification.
-2. Get the [verification file](#verification-file) with the Sigsum
-   proof, app tag, and app digest for this UDI.
+2. Get the [verification file](#verification-file) for this UDI.
 3. Run the signer with the same tag and digest on the device under
    verification.
 4. Retrieve the signer public key.
