@@ -1,0 +1,10 @@
+---
+# SHA-512 digest of device app for device authentication of new device.
+# This is tag signer-tkey-verification-2
+authappdigest: "fd1bb113cad8373d3fef85ffbc5ff4bd2714fa471b2aa1c4cc8f707f61adb1157eda501fa46035545c256664f0f0ae3da2c56aa85dda9b99d6beebc41baadf6f"
+
+# Sigsum submit public key
+activekey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILr61E/1ABXtB+gsEcGpn6kIQk9XxJwUpf5npZak3A8m sigsum key"
+
+# USB serial of TKey used for Sigsum submission
+activeserial: "8e7473ea-e464-45a4-8096-2e61ed0a748e"

@@ -18,7 +18,7 @@ tkey-verify:
 
 .PHONY: tkey-verification
 tkey-verification:
-	CGO_ENABLED=$(CGO) go build -ldflags "-w -X main.version=$(APP_VERSION) -buildid=" -trimpath -buildvcs=false ./cmd/tkey-verification
+	go build -ldflags "-w -X main.version=$(APP_VERSION) -buildid=" -trimpath -buildvcs=false ./cmd/tkey-verification
 	./tkey-verification --version
 
 .PHONY: podman

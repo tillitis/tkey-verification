@@ -75,7 +75,7 @@ func main() {
 		if pflag.NArg() > 1 {
 			le.Printf("Unexpected argument: %s\n\n", strings.Join(pflag.Args()[1:], " "))
 		} else {
-			le.Printf("Please pass a command: serve-signer, remote-sign, or verify\n\n")
+			le.Printf("Please pass a command: sign, serve-signer, remote-sign, or verify\n\n")
 		}
 		pflag.Usage()
 		os.Exit(2)
@@ -85,10 +85,20 @@ func main() {
 
 	// Command funcs exit to OS themselves for now
 	switch cmd {
+	case "sign":
+		signConf, err := loadSignConfig(configFile)
+		if err != nil {
+			le.Printf("Couldn't load config: %v\n", err)
+			os.Exit(1)
+		}
+
+		sign(signConf, verbose)
+
 	case "serve-signer":
 		conf, err := loadServeSignerConfig(configFile)
 		if err != nil {
 			le.Printf("Couldn't load config: %v\n", err)
+			os.Exit(1)
 		}
 
 		serveSigner(conf, dev, verbose, checkConfigOnly)
@@ -97,6 +107,7 @@ func main() {
 		conf, err := loadRemoteSignConfig(configFile)
 		if err != nil {
 			le.Printf("Couldn't load config: %v\n", err)
+			os.Exit(1)
 		}
 
 		if checkConfigOnly {
