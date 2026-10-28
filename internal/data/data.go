@@ -16,6 +16,14 @@ const VendorPubKeys = `14274d3570097aea209af1c23b64aa439a4d0d32c62735c5f6d6a2960
 /// Sigsum
 //////////////////////////////////////////////////////////////////////
 
+// The embedded Sigsum submit key configuration is made up:
+// - name of the submit key
+// - key in SSH form
+// - name and tag of submit signing app
+// - submit signing app SHA-256 digest
+// - start time
+// - end time
+
 // const SigsumConf = `
 // # This Sigsum submit key is the exact same key as the first vendor pubkey above
 // tillitis-sigsum1
