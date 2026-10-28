@@ -59,12 +59,16 @@ For use during provisioning, use the `tkey-verification` and
 `tkey-sigsum-submit` programs. See the man pages in
 `doc/tkey-verification.1` and `doc/tkey-sigsum-submit.1` for details.
 
-Basically, `tkey-verification` has two sub-commands, *serve-signer*
-for use as a server on a HSM-like machine with a vendor TKey, and
-*remote-sign* for the provisioning station.
+`tkey-verification` can be used as a single process with the *sign*
+command. This will automatically detect the TKey to sign and the TKey
+to sign with.
 
-The server produces submission files with a signed request to log to a
-Sigsum transparency log.
+Used in a network scenario `tkey-verification` *serve-signer* creates
+a HSM-like machine with a vendor TKey which can be used with
+*remote-sign* for the separate provisioning station.
+
+The server or the command using the *sign* command produces submission
+files with a signed request to log to a Sigsum transparency log.
 
 Use `tkey-sigsum-request` to submit the submission files to the log,
 collect Sigsum proofs, and to produce verification files.
