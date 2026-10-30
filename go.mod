@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/google/gousb v1.1.3
 	github.com/spf13/pflag v1.0.5
-	github.com/tillitis/tkeyclient v1.2.0
+	github.com/tillitis/tkeyclient v1.3.2-0.20261001100427-28b2446edd3a
 	github.com/tillitis/tkeysign v1.0.1
 	go.bug.st/serial v1.6.2
 	gopkg.in/yaml.v2 v2.4.0
@@ -14,6 +14,7 @@ require (
 
 require (
 	github.com/ccoveille/go-safecast v1.1.0 // indirect
+	github.com/ccoveille/go-safecast/v2 v2.0.0 // indirect
 	github.com/creack/goselect v0.1.2 // indirect
 	golang.org/x/crypto v0.40.0 // indirect
 	golang.org/x/net v0.41.0 // indirect

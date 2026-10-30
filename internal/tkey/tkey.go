@@ -41,6 +41,36 @@ type TKey struct {
 	verbose bool
 }
 
+func possiblyReset(tk tkeyclient.TillitisKey) error {
+	isFirmware, err := tk.FirmwareActive()
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	if !isFirmware {
+		if !tk.CanRemoteClose {
+			return fmt.Errorf("no reset support in device")
+		}
+
+		err = tk.Reset(tkeyclient.RstTypeStartClient, tkeyclient.NextAppData{})
+		if err != nil {
+			return fmt.Errorf("reset failed")
+		}
+
+		err := tk.WaitClosed()
+		if err != nil {
+			return fmt.Errorf("waiting for port close: %w", err)
+		}
+
+		err = tk.Reconnect()
+		if err != nil {
+			return fmt.Errorf("couldn't reconnect: %w", err)
+		}
+	}
+
+	return nil
+}
+
 func NewTKey(devPath string, speed int, verbose bool) (*TKey, error) {
 	if !verbose {
 		tkeyclient.SilenceLogging()
@@ -77,16 +107,9 @@ func NewTKey(devPath string, speed int, verbose bool) (*TKey, error) {
 		os.Exit(1)
 	}, os.Interrupt, syscall.SIGTERM)
 
-	nameVer, err := tkey.client.GetNameVersion()
-	if err != nil {
-		le.Printf("Please unplug the TKey and plug it in again to put it in firmware-mode.\n")
-		le.Printf("Either the device path (%s) is wrong, or the TKey is not in firmware-mode (already running an app).\n", devPath)
+	if err := possiblyReset(tkey.client); err != nil {
+		fmt.Printf("strange: %v\n", err)
 		return nil, ErrNotFirmware
-	}
-
-	if verbose {
-		le.Printf("Firmware name0:'%s' name1:'%s' version:%d\n",
-			nameVer.Name0, nameVer.Name1, nameVer.Version)
 	}
 
 	tkUDI, err := tkey.client.GetUDI()
