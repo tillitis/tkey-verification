@@ -59,12 +59,16 @@ For use during provisioning, use the `tkey-verification` and
 `tkey-sigsum-submit` programs. See the man pages in
 `doc/tkey-verification.1` and `doc/tkey-sigsum-submit.1` for details.
 
-Basically, `tkey-verification` has two sub-commands, *serve-signer*
-for use as a server on a HSM-like machine with a vendor TKey, and
-*remote-sign* for the provisioning station.
+`tkey-verification` can be used as a single process with the *sign*
+command. This will automatically detect the TKey to sign and the TKey
+to sign with.
 
-The server produces submission files with a signed request to log to a
-Sigsum transparency log.
+Used in a network scenario `tkey-verification` *serve-signer* creates
+a HSM-like machine with a vendor TKey which can be used with
+*remote-sign* for the separate provisioning station.
+
+The server or the command using the *sign* command produces submission
+files with a signed request to log to a Sigsum transparency log.
 
 Use `tkey-sigsum-request` to submit the submission files to the log,
 collect Sigsum proofs, and to produce verification files.
@@ -180,13 +184,13 @@ There are some compiled-in assets. Most of these are in
   and device authentication. See below how to maintain.
 
 - Vendor public keys: The public key from a vendor TKey used for
-  verification. Might be several, including historical keys. *No
-  longer* used for signing, but still used for verification. See the
-  constant `VendorPubKeys`.
+  verification. Might be several, including historical keys which are
+  *no longer* used for signing, but still used for verification. See
+  the constant `VendorPubKeys`.
 
 - Sigsum configuration including the Sigsum submit keys which replaces
   the old vendor public keys, see the `SigsumConf` and `PolicyStr`
-  constants.
+  constants. See [Creating the Sigsum keys](#creating-the-sigsum-keys).
 
 - Known firmwares: Expected firmwares for all known TKey models from
   the vendor (first half of the Unique Device Identifier). See the
@@ -249,8 +253,8 @@ For each public key, provide, in this order:
   device running the device app mentioned below.
 - Tag of the app to run.
 - SHA-512 digest of the device app binary.
-- Start time of the key.
-- End time.
+- Start time of the key in ISO format like "2025-09-16T08:10:33+02:00".
+- End time in ISO formt.
 
 Note that the device app *must* be known. See [Included device app
 binaries](#included-device-app-binaries).

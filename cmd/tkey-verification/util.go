@@ -63,6 +63,8 @@ func usage() {
 	desc := fmt.Sprintf(`Usage: %s command [flags...]
 
 Commands:
+  sign		Sign a device.
+
   serve-signer  Run the server that offers an API for creating vendor signatures.
 
   remote-sign   Call the remote signing server to sign for a local TKey.
