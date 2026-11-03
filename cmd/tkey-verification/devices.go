@@ -86,7 +86,7 @@ func getTKeys(activeSerial string) (*usbDevice, *usbDevice, error) {
 	}
 
 	if vendorDev == nil {
-		return nil, nil, fmt.Errorf("no vendor device")
+		return nil, nil, fmt.Errorf("no vendor device %v", activeSerial)
 	}
 
 	if verDev == nil {
