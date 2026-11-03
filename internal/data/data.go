@@ -32,10 +32,20 @@ const VendorPubKeys = `14274d3570097aea209af1c23b64aa439a4d0d32c62735c5f6d6a2960
 // f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142
 // `
 
-// Test Sigsum submit key corresponding to verisigner-0.3 running on QEMU with test UDS.
+// // Test Sigsum submit key corresponding to verisigner-0.3 running on QEMU with test UDS.
+// const SigsumConf = `
+// tillitis-sigsum-test
+// ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDZoSX1HYX/ofsSARva4F054DzaKjXQ2vMHcHLaq7sQ sigsum key
+// verisigner-v0.0.3
+// f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142
+// 2025-09-16T08:10:33+02:00
+// 2125-09-16T08:11:33+02:00
+// `
+
+// Test Sigsum submit key corresponding to verisigner-0.3 running on MC's TKey
 const SigsumConf = `
 tillitis-sigsum-test
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDZoSX1HYX/ofsSARva4F054DzaKjXQ2vMHcHLaq7sQ sigsum key
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILr61E/1ABXtB+gsEcGpn6kIQk9XxJwUpf5npZak3A8m sigsum key
 verisigner-v0.0.3
 f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142
 2025-09-16T08:10:33+02:00
