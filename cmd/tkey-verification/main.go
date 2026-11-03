@@ -86,10 +86,10 @@ func main() {
 	// Command funcs exit to OS themselves for now
 	switch cmd {
 	case "sign":
-		// TODO Load from configuration file?
-		signConf := SigningConf{
-			SigningAppHash: "3493a20868b99897f0caff2f7b57b35ea3565c59f5ba353439d444cf8aac07e4899f260b98cb13f2fbb1bf6416ba8e2083d537391c1495ed1362c9008b7f8dff", // signer-tkey-verification-1
-			ActiveKey:      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKPDQDH18/UG47oY9NipGcnBglQRbcuBH5AUQlutusGw sigsum key",
+		signConf, err := loadSignConfig(configFile)
+		if err != nil {
+			le.Printf("Couldn't load config: %v\n", err)
+			os.Exit(1)
 		}
 
 		sign(dev, signConf, verbose)
@@ -98,6 +98,7 @@ func main() {
 		conf, err := loadServeSignerConfig(configFile)
 		if err != nil {
 			le.Printf("Couldn't load config: %v\n", err)
+			os.Exit(1)
 		}
 
 		serveSigner(conf, dev, verbose, checkConfigOnly)
@@ -106,6 +107,7 @@ func main() {
 		conf, err := loadRemoteSignConfig(configFile)
 		if err != nil {
 			le.Printf("Couldn't load config: %v\n", err)
+			os.Exit(1)
 		}
 
 		if checkConfigOnly {

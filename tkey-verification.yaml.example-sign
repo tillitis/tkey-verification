@@ -1,0 +1,10 @@
+---
+# Hash digest of signing device app for device signature during provisioning.
+# This is tag signer-tkey-verification-2
+signingapphash: "fc7c0ee1e050a56bc14ade34a6d6b06679d4f57d8002c714a684cba21cc086b44f49e3d78c3ab0485804e17cff4fd45fba28caf3a4eb6d4fb3fd2947254772b1"
+
+# Sigsum submit public key
+activekey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILr61E/1ABXtB+gsEcGpn6kIQk9XxJwUpf5npZak3A8m sigsum key"
+
+# USB serial of TKey used for Sigsum submission
+activeserial: "8e7473ea-e464-45a4-8096-2e61ed0a748e"

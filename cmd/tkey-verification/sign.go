@@ -21,6 +21,7 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 	"github.com/tillitis/tkey-verification/internal/util"
 	"github.com/tillitis/tkeyclient"
+	"gopkg.in/yaml.v2"
 	sigsumcrypto "sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
@@ -30,6 +31,22 @@ type SigningConf struct {
 	SigningAppHash string `yaml:"signingapphash"`
 	ActiveKey      string `yaml:"activekey"`    // Expected vendor public key
 	ActiveSerial   string `yaml:"activeserial"` // Expected serial number of vendor TKey
+}
+
+func loadSignConfig(fn string) (SigningConf, error) {
+	var conf SigningConf
+
+	rawConfig, err := os.ReadFile(fn)
+	if err != nil {
+		return conf, fmt.Errorf("couldn't read config file: %w", err)
+	}
+
+	err = yaml.Unmarshal(rawConfig, &conf)
+	if err != nil {
+		return conf, fmt.Errorf("parse error in config file: %w", err)
+	}
+
+	return conf, nil
 }
 
 func sign(dev Device, conf SigningConf, verbose bool) {
@@ -43,7 +60,7 @@ func sign(dev Device, conf SigningConf, verbose bool) {
 
 	appBin, ok := appbins.MustAppBins().Bins[appHash]
 	if !ok {
-		le.Printf("Couldn't find configure app %v\n", conf.SigningAppHash)
+		le.Printf("Couldn't find configured app %v\n", conf.SigningAppHash)
 		os.Exit(1)
 	}
 
@@ -52,11 +69,9 @@ func sign(dev Device, conf SigningConf, verbose bool) {
 	firmwares.MustDecodeString(data.FirmwaresConf)
 
 	// Find the devices to use
-	// TODO - should be in config file
-	conf.ActiveSerial = "8e7473ea-e464-45a4-8096-2e61ed0a748e"
 	vendorDev, verDev, err := getTKeys(conf.ActiveSerial)
 	if err != nil {
-		fmt.Printf("getting TKeys: %v\n", err)
+		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
 
