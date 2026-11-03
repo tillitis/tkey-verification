@@ -151,6 +151,17 @@ func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 		le.Printf("App loaded.\n")
 	}
 
+	// Before the device app starts, all the USB endpoints are
+	// turned off, so we wait until the port is closed and open
+	// again.
+	if err := t.client.WaitClosed(); err != nil {
+		return nil, fmt.Errorf("expected port close: %w", err)
+	}
+
+	if err := t.client.Reconnect(); err != nil {
+		return nil, fmt.Errorf("couldn't reconnect: %w", err)
+	}
+
 	t.signer = tkeysign.New(&t.client)
 
 	nameVer, err := t.signer.GetAppNameVersion()
