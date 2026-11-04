@@ -8,7 +8,7 @@ tkey-verification - sign the identity of a Tillitis TKey.
 
 *tkey-verification* -h/--help
 
-*tkey-verification* sign [--port port] [--speed speed]
+*tkey-verification* sign
 
 *tkey-verification* remote-sign [--port port] [--speed speed]
 
@@ -32,12 +32,6 @@ The commands are as follows:
 	vendor key.
 
 	The device port is autodected.
-
-	Options:
-
-	*--speed* speed
-
-		Speed in bit/s of the TKey device port.
 
 *remote-sign*
 
