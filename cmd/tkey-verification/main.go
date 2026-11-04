@@ -92,7 +92,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		sign(dev, signConf, verbose)
+		sign(signConf, verbose)
 
 	case "serve-signer":
 		conf, err := loadServeSignerConfig(configFile)
