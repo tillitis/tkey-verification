@@ -17,6 +17,7 @@ import (
 
 	"github.com/tillitis/tkey-verification/internal/appbins"
 	"github.com/tillitis/tkey-verification/internal/data"
+	"github.com/tillitis/tkey-verification/internal/ssh"
 	"github.com/tillitis/tkey-verification/internal/util"
 	sumcrypto "sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
@@ -58,6 +59,21 @@ func (s *Log) String() string {
 	}
 
 	return output
+}
+
+// FindSSHKey looks for a public key in SSH format and returns a sigsum.PubKey
+func (l *Log) FindSSHKey(sshKey string) (*PubKey, error) {
+	keyIndex, err := ssh.ParsePublicEd25519(sshKey)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	submitKey, ok := l.Keys[keyIndex]
+	if !ok {
+		return nil, fmt.Errorf("submit key indexed by %x not found", sshKey)
+	}
+
+	return &submitKey, nil
 }
 
 type State int
