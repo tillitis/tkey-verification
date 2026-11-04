@@ -17,6 +17,7 @@ import (
 
 	"github.com/tillitis/tkey-verification/internal/appbins"
 	"github.com/tillitis/tkey-verification/internal/data"
+	"github.com/tillitis/tkey-verification/internal/ssh"
 	"github.com/tillitis/tkey-verification/internal/util"
 	sumcrypto "sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/key"
@@ -43,21 +44,36 @@ type Log struct {
 	Policy     *policy.Policy
 }
 
-func (s *Log) String() string {
+func (l *Log) String() string {
 	var output string
 
 	output = "Logs:\n"
-	for _, log := range s.Policy.GetLogsWithUrl() {
+	for _, log := range l.Policy.GetLogsWithUrl() {
 		output += fmt.Sprintf("  - Key: %x\n", log.PublicKey)
 		output += fmt.Sprintf("    URL: %v\n\n", log.URL)
 	}
 
 	output += "Submit keys:\n"
-	for _, key := range s.Keys {
+	for _, key := range l.Keys {
 		output += fmt.Sprintf("  - %s", key)
 	}
 
 	return output
+}
+
+// FindSSHKey looks for a public key in SSH format and returns a sigsum.PubKey
+func (l *Log) FindSSHKey(sshKey string) (*PubKey, error) {
+	keyIndex, err := ssh.ParsePublicEd25519(sshKey)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	submitKey, ok := l.Keys[keyIndex]
+	if !ok {
+		return nil, fmt.Errorf("submit key indexed by %x not found", sshKey)
+	}
+
+	return &submitKey, nil
 }
 
 type State int
@@ -155,11 +171,11 @@ func ParseKeys(r io.Reader, appBins appbins.AppBins) (map[[ed25519.PublicKeySize
 	return pubKeys, nil
 }
 
-func (s *Log) FromEmbedded() error {
-	return s.FromString(data.SigsumConf, data.PolicyStr)
+func (l *Log) FromEmbedded() error {
+	return l.FromString(data.SigsumConf, data.PolicyStr)
 }
 
-func (s *Log) FromString(sigsumConf string, policyStr string) error {
+func (l *Log) FromString(sigsumConf string, policyStr string) error {
 	// Get all our embedded device apps used for vendor signing
 	appBins, err := appbins.NewAppBins()
 	if err != nil {
@@ -172,16 +188,16 @@ func (s *Log) FromString(sigsumConf string, policyStr string) error {
 		return fmt.Errorf("%w", err)
 	}
 
-	s.Keys = keys
+	l.Keys = keys
 
 	// Transform to Sigsum submitkeys
-	s.SubmitKeys = make(map[sumcrypto.Hash]sumcrypto.PublicKey)
+	l.SubmitKeys = make(map[sumcrypto.Hash]sumcrypto.PublicKey)
 	for _, key := range keys {
-		s.SubmitKeys[sumcrypto.HashBytes(key.Key[:])] = key.Key
+		l.SubmitKeys[sumcrypto.HashBytes(key.Key[:])] = key.Key
 	}
 
 	// Parse policy
-	s.Policy, err = policy.ParseConfig(bytes.NewBufferString(policyStr))
+	l.Policy, err = policy.ParseConfig(bytes.NewBufferString(policyStr))
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
