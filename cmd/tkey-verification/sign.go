@@ -33,6 +33,12 @@ type SigningConf struct {
 	ActiveSerial  string `yaml:"activeserial"`  // Serial number of submission TKey
 }
 
+type Message struct {
+	udi    tkey.UDI
+	pubKey []byte
+	fw     firmware.Firmware
+}
+
 func loadSignConfig(fn string) (SigningConf, error) {
 	var conf SigningConf
 
@@ -116,6 +122,43 @@ func sign(conf SigningConf, verbose bool) {
 		fmt.Printf("writing submission file: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func authDevice(dev Device, appBin appbins.AppBin, firmwares firmware.Firmwares, verbose bool) (Message, error) {
+	var message Message
+
+	// Load the app
+	tk, err := tkey.NewTKey(dev.Path, dev.Speed, verbose)
+	if err != nil {
+		return message, fmt.Errorf("%w", err)
+	}
+
+	defer tk.Close()
+
+	pubKey, err := tk.LoadSigner(appBin.Bin)
+	if err != nil {
+		return message, fmt.Errorf("%w", err)
+	}
+	le.Printf("TKey UDI: %s\n", tk.Udi.String())
+
+	// Authenticate against pubkey
+	err = tk.Challenge(pubKey)
+	if err != nil {
+		return message, fmt.Errorf("challenge/response failed: %w", err)
+	}
+
+	// Verify the firmware
+	fw, err := verifyFirmwareHash(*tk, firmwares)
+	if err != nil {
+		return message, fmt.Errorf("%w", err)
+	}
+	le.Printf("TKey firmware with size:%d and verified hash:%0x…\n", fw.Size, fw.Hash[:16])
+
+	message.udi = tk.Udi
+	message.pubKey = pubKey
+	message.fw = fw
+
+	return message, nil
 }
 
 func createDeviceMessage(verDev *usbDevice, signingAppHash string, firmwares firmware.Firmwares, verbose bool) (Message, appbins.AppBin, error) {
@@ -258,4 +301,37 @@ func writeSubmissionFile(signaturesDir string, appBin appbins.AppBin, message Me
 	le.Printf("Wrote %s\n", fn)
 
 	return nil
+}
+
+type TkeySigsumSigner struct {
+	tk tkey.TKey
+}
+
+func (s TkeySigsumSigner) Public() sigsumcrypto.PublicKey {
+	pubkey, err := s.tk.GetPubkey()
+	if err != nil {
+		s.tk.Close()
+		le.Fatal("GetPubKey failed: %w", err)
+	}
+	if len(pubkey) != sigsumcrypto.PublicKeySize {
+		le.Fatalf("internal error, unexpected public key size %d: ", len(pubkey))
+	}
+	var ret sigsumcrypto.PublicKey
+	copy(ret[:], pubkey)
+
+	return ret
+}
+
+func (s TkeySigsumSigner) Sign(msg []byte) (sigsumcrypto.Signature, error) {
+	sig, err := s.tk.Sign(msg)
+	if err != nil {
+		return sigsumcrypto.Signature{}, fmt.Errorf("%w", err)
+	}
+	if len(sig) != sigsumcrypto.SignatureSize {
+		return sigsumcrypto.Signature{}, fmt.Errorf("internal error, unexpected signature size %d: ", len(sig))
+	}
+	var ret sigsumcrypto.Signature
+	copy(ret[:], sig)
+
+	return ret, nil
 }

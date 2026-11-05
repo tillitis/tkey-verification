@@ -94,28 +94,6 @@ func main() {
 
 		sign(signConf, verbose)
 
-	case "serve-signer":
-		conf, err := loadServeSignerConfig(configFile)
-		if err != nil {
-			le.Printf("Couldn't load config: %v\n", err)
-			os.Exit(1)
-		}
-
-		serveSigner(conf, dev, verbose, checkConfigOnly)
-
-	case "remote-sign":
-		conf, err := loadRemoteSignConfig(configFile)
-		if err != nil {
-			le.Printf("Couldn't load config: %v\n", err)
-			os.Exit(1)
-		}
-
-		if checkConfigOnly {
-			os.Exit(0)
-		}
-
-		remoteSign(conf, dev, verbose)
-
 	case "show-pubkey":
 		if binPath == "" {
 			le.Printf("Needs the path to an app, use `--app PATH`\n")

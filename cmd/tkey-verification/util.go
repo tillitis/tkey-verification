@@ -63,11 +63,7 @@ func usage() {
 	desc := fmt.Sprintf(`Usage: %s command [flags...]
 
 Commands:
-  sign		Sign a device.
-
-  serve-signer  Run the server that offers an API for creating vendor signatures.
-
-  remote-sign   Call the remote signing server to sign for a local TKey.
+  sign		Sign an assertion about a new device with a Sigsum submit key.
 
   show-pubkey	Prints the info needed for the embedded vendor pubkeys to stdout.
 		This includes public key, app tag, and app hash in the right format.
