@@ -60,8 +60,7 @@ path = [
      "release-builds/tkey-verification_0.0.3_macos-arm64.sha512",
      "release-builds/tkey-verification_0.0.3_macos-universal.sha512",
      "release-builds/tkey-verification_0.0.3_windows-amd64.exe.sha512",
-     "tkey-verification.yaml.example-remote-sign",
-     "tkey-verification.yaml.example-serve-signer"
+     "tkey-verification.yaml",
 ]
 SPDX-FileCopyrightText = "2022 Tillitis AB <tillitis.se>"
 SPDX-License-Identifier = "BSD-2-Clause"
