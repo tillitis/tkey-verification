@@ -27,7 +27,7 @@ import (
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-type SigningConf struct {
+type Conf struct {
 	AuthAppDigest string `yaml:"authappdigest"` // Digest of app for device authentication
 	ActiveKey     string `yaml:"activekey"`     // Submission public key - needs to be in data.go, too.
 	ActiveSerial  string `yaml:"activeserial"`  // Serial number of submission TKey
@@ -39,8 +39,8 @@ type Message struct {
 	fw     firmware.Firmware
 }
 
-func loadSignConfig(fn string) (SigningConf, error) {
-	var conf SigningConf
+func loadConfig(fn string) (Conf, error) {
+	var conf Conf
 
 	rawConfig, err := os.ReadFile(fn)
 	if err != nil {
@@ -74,7 +74,7 @@ func loadSignConfig(fn string) (SigningConf, error) {
 // The message is then written into a Sigsum submission file.
 //
 // The functions logs and exits to OS itself.
-func sign(conf SigningConf, verbose bool) {
+func sign(conf Conf, verbose bool) {
 	// Find the devices to use.
 	subDev, assertDev, err := getTKeys(conf.ActiveSerial)
 	if err != nil {
