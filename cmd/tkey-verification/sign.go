@@ -135,7 +135,7 @@ func authDevice(dev Device, appBin appbins.AppBin, firmwares firmware.Firmwares,
 
 	defer tk.Close()
 
-	pubKey, err := tk.LoadSigner(appBin.Bin)
+	pubKey, err := tk.LoadSigner(appBin.Bin, false)
 	if err != nil {
 		return message, fmt.Errorf("%w", err)
 	}
@@ -223,7 +223,7 @@ func newSubmitDevice(path string, confActiveKey string) (*submitDevice, error) {
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	foundPubKey, err := tk.LoadSigner(submitKey.AppBin.Bin)
+	foundPubKey, err := tk.LoadSigner(submitKey.AppBin.Bin, true)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}

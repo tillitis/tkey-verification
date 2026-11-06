@@ -107,41 +107,87 @@ func NewTKey(devPath string, speed int, verbose bool) (*TKey, error) {
 		os.Exit(1)
 	}, os.Interrupt, syscall.SIGTERM)
 
-	if err := possiblyReset(tkey.client); err != nil {
-		fmt.Printf("strange: %v\n", err)
-		return nil, ErrNotFirmware
-	}
-
-	tkUDI, err := tkey.client.GetUDI()
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	var udi UDI
-
-	if err = udi.fromRawLE(tkUDI.RawBytes()); err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	tkey.Udi = udi
-
 	return &tkey, nil
 }
 
 // GetUDI gets the UDI of a TKey
-func (t TKey) GetUDI() UDI {
-	return t.Udi
+func (t TKey) GetUDI() (UDI, error) {
+	var udi UDI
+
+	tkUDI, err := t.client.GetUDI()
+	if err != nil {
+		return udi, fmt.Errorf("%w", err)
+	}
+
+	if err = udi.fromRawLE(tkUDI.RawBytes()); err != nil {
+		return udi, fmt.Errorf("%w", err)
+	}
+
+	return udi, nil
 }
 
 func (t TKey) Close() {
 	t.client.Close()
 }
 
+func checkApp(t *TKey) (bool, *tkeyclient.NameVersion, []byte, error) {
+	isFirmware, err := t.client.FirmwareActive()
+	if err != nil {
+		return false, nil, nil, fmt.Errorf("%w", err)
+	}
+
+	if isFirmware {
+		return false, nil, nil, nil
+	}
+
+	nameVer, err := t.signer.GetAppNameVersion()
+	if err != nil {
+		return false, nameVer, nil, fmt.Errorf("%w", err)
+	}
+
+	le.Printf("App name0:'%s' name1:'%s' version:%d\n",
+		nameVer.Name0, nameVer.Name1, nameVer.Version)
+
+	pubKey, err := t.signer.GetPubkey()
+	if err != nil {
+		return false, nameVer, nil, fmt.Errorf("%w", err)
+	}
+
+	return true, nameVer, pubKey, nil
+
+}
+
 // LoadSigner loads device app BIN without USS.
 //
 // Returns the public key and any error.
-func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
+func (t *TKey) LoadSigner(bin []byte, checkForApp bool) ([]byte, error) {
 	var err error
+
+	t.signer = tkeysign.New(&t.client)
+
+	// Check if a signer app is already loaded.
+	if checkForApp {
+		rightApp, _, pubKey, err := checkApp(t)
+		if err != nil {
+			return nil, fmt.Errorf("%w", err)
+		}
+
+		if rightApp {
+			return pubKey, nil
+		}
+	}
+
+	if err := possiblyReset(t.client); err != nil {
+		fmt.Printf("strange: %v\n", err)
+		return nil, ErrNotFirmware
+	}
+
+	udi, err := t.GetUDI()
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	t.Udi = udi
 
 	// No USS.
 	if err = t.client.LoadApp(bin, []byte{}); err != nil {
@@ -161,8 +207,6 @@ func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 	if err := t.client.Reconnect(); err != nil {
 		return nil, fmt.Errorf("couldn't reconnect: %w", err)
 	}
-
-	t.signer = tkeysign.New(&t.client)
 
 	nameVer, err := t.signer.GetAppNameVersion()
 	if err != nil {
