@@ -86,7 +86,7 @@ func main() {
 	// Command funcs exit to OS themselves for now
 	switch cmd {
 	case "sign":
-		signConf, err := loadSignConfig(configFile)
+		signConf, err := loadConfig(configFile)
 		if err != nil {
 			le.Printf("Couldn't load config: %v\n", err)
 			os.Exit(1)
