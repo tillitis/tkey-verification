@@ -161,8 +161,6 @@ func checkApp(t *TKey) (bool, *tkeyclient.NameVersion, []byte, error) {
 //
 // Returns the public key and any error.
 func (t *TKey) LoadSigner(bin []byte, checkForApp bool) ([]byte, error) {
-	var err error
-
 	t.signer = tkeysign.New(&t.client)
 
 	// Check if a signer app is already loaded.
@@ -182,15 +180,14 @@ func (t *TKey) LoadSigner(bin []byte, checkForApp bool) ([]byte, error) {
 		return nil, ErrNotFirmware
 	}
 
-	udi, err := t.GetUDI()
-	if err != nil {
+	if udi, err := t.GetUDI(); err != nil {
 		return nil, fmt.Errorf("%w", err)
+	} else {
+		t.Udi = udi
 	}
 
-	t.Udi = udi
-
 	// No USS.
-	if err = t.client.LoadApp(bin, []byte{}); err != nil {
+	if err := t.client.LoadApp(bin, []byte{}); err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
 	if t.verbose {
