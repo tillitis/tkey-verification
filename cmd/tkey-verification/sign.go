@@ -230,7 +230,7 @@ func newSubmitDevice(path string, confActiveKey string) (*submitDevice, error) {
 
 	// Check that the derived public key is indeed our configured
 	// submit key.
-	if !bytes.Equal(submitKey.Key[:], foundPubKey[:]) {
+	if !bytes.Equal(submitKey.Key[:], foundPubKey) {
 		le.Printf("TKey pubkey does not match active embedded pubkey\nExpected: %v\nReceived: %v\n",
 			ssh.FormatPublicEd25519(submitKey.Key),
 			ssh.FormatPublicEd25519(ssh.PublicKey(foundPubKey)))
