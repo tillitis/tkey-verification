@@ -18,7 +18,7 @@ linters:
     - gocyclo
     - godox
     - gomoddirectives
-    - gomodguard
+    - gomodguard_v2
     - gosec
     - gosmopolitan
     - loggercheck
