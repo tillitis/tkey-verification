@@ -30,7 +30,7 @@ const (
 func getUSBDevices() ([]usbDevice, error) {
 	portDetails, err := enumerator.GetDetailedPortsList()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to list serial ports: %w", err)
+		return nil, fmt.Errorf("failed to list serial ports: %w", err)
 	}
 
 	var devices []usbDevice
@@ -58,13 +58,13 @@ func getUSBDevices() ([]usbDevice, error) {
 		return false // not opening any
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Failed to list USB devices: %w", err)
+		return nil, fmt.Errorf("failed to list USB devices: %w", err)
 	}
 
 	return devices, nil
 }
 
-// Find the vendor TKey and the verification TKey
+// Find the submission TKey and the TKey to authenticate
 func getTKeys(activeSerial string) (*usbDevice, *usbDevice, error) {
 	devices, err := getUSBDevices()
 	if err != nil {
