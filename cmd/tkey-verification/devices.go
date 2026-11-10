@@ -4,6 +4,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/google/gousb"
@@ -30,7 +31,7 @@ const (
 func getUSBDevices() ([]usbDevice, error) {
 	portDetails, err := enumerator.GetDetailedPortsList()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to list serial ports: %w", err)
+		return nil, fmt.Errorf("failed to list serial ports: %w", err)
 	}
 
 	var devices []usbDevice
@@ -58,13 +59,13 @@ func getUSBDevices() ([]usbDevice, error) {
 		return false // not opening any
 	})
 	if err != nil {
-		return nil, fmt.Errorf("Failed to list USB devices: %w", err)
+		return nil, fmt.Errorf("failed to list USB devices: %w", err)
 	}
 
 	return devices, nil
 }
 
-// Find the vendor TKey and the verification TKey
+// Find the submission TKey and the TKey to authenticate
 func getTKeys(activeSerial string) (*usbDevice, *usbDevice, error) {
 	devices, err := getUSBDevices()
 	if err != nil {
@@ -72,7 +73,7 @@ func getTKeys(activeSerial string) (*usbDevice, *usbDevice, error) {
 	}
 
 	if len(devices) > 2 {
-		return nil, nil, fmt.Errorf("too many devices")
+		return nil, nil, errors.New("too many devices")
 	}
 
 	var vendorDev, verDev *usbDevice
@@ -90,7 +91,7 @@ func getTKeys(activeSerial string) (*usbDevice, *usbDevice, error) {
 	}
 
 	if verDev == nil {
-		return nil, nil, fmt.Errorf("no device under verification")
+		return nil, nil, errors.New("no device under verification")
 	}
 
 	return vendorDev, verDev, nil
