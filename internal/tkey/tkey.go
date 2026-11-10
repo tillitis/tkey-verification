@@ -22,6 +22,7 @@ package tkey
 import (
 	"crypto/ed25519"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -49,12 +50,12 @@ func possiblyReset(tk tkeyclient.TillitisKey) error {
 
 	if !isFirmware {
 		if !tk.CanRemoteClose {
-			return fmt.Errorf("no reset support in device")
+			return errors.New("no reset support in device")
 		}
 
 		err = tk.Reset(tkeyclient.RstTypeStartClient, tkeyclient.NextAppData{})
 		if err != nil {
-			return fmt.Errorf("reset failed")
+			return errors.New("reset failed")
 		}
 
 		err := tk.WaitClosed()

@@ -4,6 +4,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/google/gousb"
@@ -72,7 +73,7 @@ func getTKeys(activeSerial string) (*usbDevice, *usbDevice, error) {
 	}
 
 	if len(devices) > 2 {
-		return nil, nil, fmt.Errorf("too many devices")
+		return nil, nil, errors.New("too many devices")
 	}
 
 	var vendorDev, verDev *usbDevice
@@ -90,7 +91,7 @@ func getTKeys(activeSerial string) (*usbDevice, *usbDevice, error) {
 	}
 
 	if verDev == nil {
-		return nil, nil, fmt.Errorf("no device under verification")
+		return nil, nil, errors.New("no device under verification")
 	}
 
 	return vendorDev, verDev, nil
