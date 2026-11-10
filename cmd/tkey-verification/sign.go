@@ -201,7 +201,6 @@ func findSubmitKey(confActiveKey string) (*sigsum.PubKey, error) {
 }
 
 type submitDevice struct {
-	device    *usbDevice
 	tk        *tkey.TKey
 	submitKey *sigsum.PubKey
 }
