@@ -45,20 +45,20 @@ type Log struct {
 }
 
 func (l *Log) String() string {
-	var output string
+	var output strings.Builder
 
-	output = "Logs:\n"
+	output.WriteString("Logs:\n")
 	for _, log := range l.Policy.GetLogsWithUrl() {
-		output += fmt.Sprintf("  - Key: %x\n", log.PublicKey)
-		output += fmt.Sprintf("    URL: %v\n\n", log.URL)
+		fmt.Fprintf(&output, "  - Key: %x\n", log.PublicKey)
+		fmt.Fprintf(&output, "    URL: %v\n\n", log.URL)
 	}
 
-	output += "Submit keys:\n"
+	output.WriteString("Submit keys:\n")
 	for _, key := range l.Keys {
-		output += fmt.Sprintf("  - %s", key)
+		fmt.Fprintf(&output, "  - %s", key)
 	}
 
-	return output
+	return output.String()
 }
 
 // FindSSHKey looks for a public key in SSH format and returns a sigsum.PubKey
