@@ -171,8 +171,10 @@ func ParseKeys(r io.Reader, appBins appbins.AppBins) (map[[ed25519.PublicKeySize
 	return pubKeys, nil
 }
 
-func (l *Log) FromEmbedded() error {
-	return l.FromString(data.SigsumConf, data.PolicyStr)
+func (l *Log) MustDecodeEmbedded() {
+	if err := l.FromString(data.SigsumConf, data.PolicyStr); err != nil {
+		panic(err)
+	}
 }
 
 func (l *Log) FromString(sigsumConf string, policyStr string) error {
