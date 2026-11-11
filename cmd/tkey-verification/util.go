@@ -23,16 +23,13 @@ func builtWith() {
 	}
 
 	var vendorKeys vendorkey.VendorKeys
-	if err = vendorKeys.FromEmbedded(appBins); err != nil {
+	if err := vendorKeys.FromEmbedded(appBins); err != nil {
 		le.Printf("Found no usable embedded vendor signing public key\n")
 		os.Exit(1)
 	}
 
 	var log sigsum.Log
-	if err = log.FromEmbedded(); err != nil {
-		le.Printf("Sigsum configuration missing")
-		os.Exit(1)
-	}
+	log.MustDecodeEmbedded()
 
 	firmwares, err := firmware.NewFirmwares()
 	if err != nil {

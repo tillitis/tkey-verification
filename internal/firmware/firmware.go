@@ -135,8 +135,8 @@ func (f *Firmwares) FromString(fwStr string) error {
 	return nil
 }
 
-func (f *Firmwares) MustDecodeString(s string) {
-	if err := f.FromString(s); err != nil {
+func (f *Firmwares) MustDecodeEmbedded() {
+	if err := f.FromString(data.FirmwaresConf); err != nil {
 		panic(err)
 	}
 }

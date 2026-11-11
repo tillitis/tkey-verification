@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/tillitis/tkey-verification/internal/appbins"
-	"github.com/tillitis/tkey-verification/internal/data"
 	"github.com/tillitis/tkey-verification/internal/firmware"
 	"github.com/tillitis/tkey-verification/internal/sigsum"
 	"github.com/tillitis/tkey-verification/internal/ssh"
@@ -57,19 +56,19 @@ func loadConfig(fn string) (Conf, error) {
 
 // sign is the main function of the "sign" command.
 //
-// It automatically detects the devices used: One submission device,
-// one device to assert.
+// sign automatically detects the devices used: One submission device,
+// one device to authenticate.
 //
 // The USB serial of the submission device needs to be in the
-// configuration to be found. The resulting public key of loading the
-// device app with the conf.AuthAppDigest needs to match the
-// conf.ActiveKey.
+// configuration conf.ActiveSerial. The resulting public key of
+// loading the device app with the conf.AuthAppDigest needs to match
+// the conf.ActiveKey.
 //
-// It loads the submission app into the submission device, then loads
-// the authentication app into the device to assert and requests its
-// public key. It challenges the latter to make it prove that it has
-// the corresponding private key, then builds a message to sign with
-// the submission device.
+// sign loads the submission app into the submission device, then
+// loads the authentication app into the device to authenticate and
+// requests its public key. It challenges the latter to make it prove
+// that it has the corresponding private key, then builds a message to
+// sign with the submission device.
 //
 // The message is then written into a Sigsum submission file.
 //
@@ -85,8 +84,8 @@ func sign(conf Conf, verbose bool) {
 	// Get our firmwares. Needed to be able find the current
 	// device's firmware and verify that it's known.
 	var firmwares firmware.Firmwares
-	// TODO could be like log's FromEmbedded()
-	firmwares.MustDecodeString(data.FirmwaresConf)
+
+	firmwares.MustDecodeEmbedded()
 
 	submitDev, err := newSubmitDevice(subDev.devPath, conf.ActiveKey)
 	if err != nil {
@@ -185,10 +184,8 @@ func createDeviceMessage(verDev *usbDevice, signingAppHash string, firmwares fir
 
 func findSubmitKey(confActiveKey string) (*sigsum.PubKey, error) {
 	var log sigsum.Log
-	if err := log.FromEmbedded(); err != nil {
-		le.Printf("Found no usable Sigsum configuration: %v\n", err)
-		os.Exit(1)
-	}
+
+	log.MustDecodeEmbedded()
 
 	// Check that the configured submit key is in the embedded
 	// data for the Sigsum log and convert it into a usable form.

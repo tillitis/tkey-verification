@@ -67,10 +67,7 @@ func main() {
 	}
 
 	var log sigsum.Log
-	err := log.FromEmbedded()
-	if err != nil {
-		le.Fatalf("Sigsum configuration missing")
-	}
+	log.MustDecodeEmbedded()
 
 	submit := SigsumSubmit{
 		submDir:     submissionsDir,
@@ -79,8 +76,7 @@ func main() {
 		log:         log,
 	}
 
-	err = submit.processSubmissions()
-	if err != nil {
+	if err := submit.processSubmissions(); err != nil {
 		le.Fatalf("Submission failed: %v", err)
 	}
 }
