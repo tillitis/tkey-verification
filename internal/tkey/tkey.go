@@ -93,6 +93,8 @@ func NewTKey(devPath string, speed int, verbose bool) (*TKey, error) {
 		verbose: verbose,
 	}
 
+	tkey.signer = tkeysign.New(&tkey.client)
+
 	if verbose {
 		le.Printf("Connecting to device on serial port %s ...\n", devPath)
 	}
@@ -158,24 +160,26 @@ func checkApp(t *TKey) (bool, *tkeyclient.NameVersion, []byte, error) {
 
 }
 
+// MaybeLoadSigner checks if the signer app is already loaded. Note
+// that no check of the version or the generated public is made. That
+// is the responsibility of the caller.
+func (t *TKey) MaybeLoadSigner(bin []byte) ([]byte, error) {
+	rightApp, _, pubKey, err := checkApp(t)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	if rightApp {
+		return pubKey, nil
+	}
+
+	return t.LoadSigner(bin)
+}
+
 // LoadSigner loads device app BIN without USS.
 //
 // Returns the public key and any error.
-func (t *TKey) LoadSigner(bin []byte, checkForApp bool) ([]byte, error) {
-	t.signer = tkeysign.New(&t.client)
-
-	// Check if a signer app is already loaded.
-	if checkForApp {
-		rightApp, _, pubKey, err := checkApp(t)
-		if err != nil {
-			return nil, fmt.Errorf("%w", err)
-		}
-
-		if rightApp {
-			return pubKey, nil
-		}
-	}
-
+func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 	if err := possiblyReset(t.client); err != nil {
 		fmt.Printf("strange: %v\n", err)
 		return nil, ErrNotFirmware
