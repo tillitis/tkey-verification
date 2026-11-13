@@ -36,7 +36,7 @@ func showPubkey(binPath string, dev Device, verbose bool) {
 
 	appHash := sha512.Sum512(content)
 
-	pubKey, err := tk.LoadSigner(content, false)
+	pubKey, err := tk.LoadSigner(content)
 	if err != nil {
 		le.Printf("LoadSigner: %v\n", err)
 		exit(1)

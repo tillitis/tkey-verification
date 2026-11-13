@@ -150,7 +150,7 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 		exit(1)
 	}
 
-	pubKey, err := tk.LoadSigner(appBin.Bin, false)
+	pubKey, err := tk.LoadSigner(appBin.Bin)
 	if err != nil {
 		commFailed(err.Error())
 		exit(1)
