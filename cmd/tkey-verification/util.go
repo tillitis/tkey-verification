@@ -23,16 +23,13 @@ func builtWith() {
 	}
 
 	var vendorKeys vendorkey.VendorKeys
-	if err = vendorKeys.FromEmbedded(appBins); err != nil {
+	if err := vendorKeys.FromEmbedded(appBins); err != nil {
 		le.Printf("Found no usable embedded vendor signing public key\n")
 		os.Exit(1)
 	}
 
 	var log sigsum.Log
-	if err = log.FromEmbedded(); err != nil {
-		le.Printf("Sigsum configuration missing")
-		os.Exit(1)
-	}
+	log.MustDecodeEmbedded()
 
 	firmwares, err := firmware.NewFirmwares()
 	if err != nil {
@@ -63,9 +60,7 @@ func usage() {
 	desc := fmt.Sprintf(`Usage: %s command [flags...]
 
 Commands:
-  serve-signer  Run the server that offers an API for creating vendor signatures.
-
-  remote-sign   Call the remote signing server to sign for a local TKey.
+  sign		Sign an assertion about a new device with a Sigsum submit key.
 
   show-pubkey	Prints the info needed for the embedded vendor pubkeys to stdout.
 		This includes public key, app tag, and app hash in the right format.

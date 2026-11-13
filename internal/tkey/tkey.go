@@ -22,6 +22,7 @@ package tkey
 import (
 	"crypto/ed25519"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -39,6 +40,36 @@ type TKey struct {
 	Udi     UDI
 	signer  tkeysign.Signer
 	verbose bool
+}
+
+func possiblyReset(tk tkeyclient.TillitisKey) error {
+	isFirmware, err := tk.FirmwareActive()
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	if !isFirmware {
+		if !tk.CanRemoteClose {
+			return errors.New("no reset support in device")
+		}
+
+		err = tk.Reset(tkeyclient.RstTypeStartClient, tkeyclient.NextAppData{})
+		if err != nil {
+			return errors.New("reset failed")
+		}
+
+		err := tk.WaitClosed()
+		if err != nil {
+			return fmt.Errorf("waiting for port close: %w", err)
+		}
+
+		err = tk.Reconnect()
+		if err != nil {
+			return fmt.Errorf("couldn't reconnect: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func NewTKey(devPath string, speed int, verbose bool) (*TKey, error) {
@@ -62,6 +93,8 @@ func NewTKey(devPath string, speed int, verbose bool) (*TKey, error) {
 		verbose: verbose,
 	}
 
+	tkey.signer = tkeysign.New(&tkey.client)
+
 	if verbose {
 		le.Printf("Connecting to device on serial port %s ...\n", devPath)
 	}
@@ -77,58 +110,105 @@ func NewTKey(devPath string, speed int, verbose bool) (*TKey, error) {
 		os.Exit(1)
 	}, os.Interrupt, syscall.SIGTERM)
 
-	nameVer, err := tkey.client.GetNameVersion()
-	if err != nil {
-		le.Printf("Please unplug the TKey and plug it in again to put it in firmware-mode.\n")
-		le.Printf("Either the device path (%s) is wrong, or the TKey is not in firmware-mode (already running an app).\n", devPath)
-		return nil, ErrNotFirmware
-	}
-
-	if verbose {
-		le.Printf("Firmware name0:'%s' name1:'%s' version:%d\n",
-			nameVer.Name0, nameVer.Name1, nameVer.Version)
-	}
-
-	tkUDI, err := tkey.client.GetUDI()
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	var udi UDI
-
-	if err = udi.fromRawLE(tkUDI.RawBytes()); err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	tkey.Udi = udi
-
 	return &tkey, nil
 }
 
 // GetUDI gets the UDI of a TKey
-func (t TKey) GetUDI() UDI {
-	return t.Udi
+func (t TKey) GetUDI() (UDI, error) {
+	var udi UDI
+
+	tkUDI, err := t.client.GetUDI()
+	if err != nil {
+		return udi, fmt.Errorf("%w", err)
+	}
+
+	if err = udi.fromRawLE(tkUDI.RawBytes()); err != nil {
+		return udi, fmt.Errorf("%w", err)
+	}
+
+	return udi, nil
 }
 
 func (t TKey) Close() {
 	t.client.Close()
 }
 
+func checkApp(t *TKey) (bool, *tkeyclient.NameVersion, []byte, error) {
+	isFirmware, err := t.client.FirmwareActive()
+	if err != nil {
+		return false, nil, nil, fmt.Errorf("%w", err)
+	}
+
+	if isFirmware {
+		return false, nil, nil, nil
+	}
+
+	nameVer, err := t.signer.GetAppNameVersion()
+	if err != nil {
+		return false, nameVer, nil, fmt.Errorf("%w", err)
+	}
+
+	le.Printf("App name0:'%s' name1:'%s' version:%d\n",
+		nameVer.Name0, nameVer.Name1, nameVer.Version)
+
+	pubKey, err := t.signer.GetPubkey()
+	if err != nil {
+		return false, nameVer, nil, fmt.Errorf("%w", err)
+	}
+
+	return true, nameVer, pubKey, nil
+
+}
+
+// MaybeLoadSigner checks if the signer app is already loaded. Note
+// that no check of the version or the generated public is made. That
+// is the responsibility of the caller.
+func (t *TKey) MaybeLoadSigner(bin []byte) ([]byte, error) {
+	rightApp, _, pubKey, err := checkApp(t)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	if rightApp {
+		return pubKey, nil
+	}
+
+	return t.LoadSigner(bin)
+}
+
 // LoadSigner loads device app BIN without USS.
 //
 // Returns the public key and any error.
 func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
-	var err error
+	if err := possiblyReset(t.client); err != nil {
+		fmt.Printf("strange: %v\n", err)
+		return nil, ErrNotFirmware
+	}
+
+	if udi, err := t.GetUDI(); err != nil {
+		return nil, fmt.Errorf("%w", err)
+	} else {
+		t.Udi = udi
+	}
 
 	// No USS.
-	if err = t.client.LoadApp(bin, []byte{}); err != nil {
+	if err := t.client.LoadApp(bin, []byte{}); err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
 	if t.verbose {
 		le.Printf("App loaded.\n")
 	}
 
-	t.signer = tkeysign.New(&t.client)
+	// Before the device app starts, all the USB endpoints are
+	// turned off, so we wait until the port is closed and open
+	// again.
+	if err := t.client.WaitClosed(); err != nil {
+		return nil, fmt.Errorf("expected port close: %w", err)
+	}
+
+	if err := t.client.Reconnect(); err != nil {
+		return nil, fmt.Errorf("couldn't reconnect: %w", err)
+	}
 
 	nameVer, err := t.signer.GetAppNameVersion()
 	if err != nil {

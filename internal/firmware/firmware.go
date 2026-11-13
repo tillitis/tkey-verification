@@ -63,7 +63,7 @@ func (f Firmwares) GetFirmware(udi tkey.UDI) (Firmware, error) {
 }
 
 func (f Firmwares) List() []string {
-	list := []string{}
+	list := make([]string, 0, len(f.firmwares))
 	for hw, fw := range f.firmwares {
 		list = append(list, fmt.Sprintf("VendorID:0x%04x ProductID:%d ProductRev:%d [0x%s] with size:%d hash:%0x…",
 			hw.VendorID, hw.ProductID, hw.ProductRev, hw.toUDI0BEhex(), fw.Size, fw.Hash[:16]))
@@ -135,8 +135,8 @@ func (f *Firmwares) FromString(fwStr string) error {
 	return nil
 }
 
-func (f *Firmwares) MustDecodeString(s string) {
-	if err := f.FromString(s); err != nil {
+func (f *Firmwares) MustDecodeEmbedded() {
+	if err := f.FromString(data.FirmwaresConf); err != nil {
 		panic(err)
 	}
 }
