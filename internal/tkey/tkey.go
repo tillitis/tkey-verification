@@ -180,19 +180,19 @@ func (t *TKey) MaybeLoadSigner(bin []byte) ([]byte, error) {
 //
 // Returns the public key and any error.
 func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
-	if err := possiblyReset(t.client); err != nil {
+	var err error
+
+	if err = possiblyReset(t.client); err != nil {
 		fmt.Printf("strange: %v\n", err)
 		return nil, ErrNotFirmware
 	}
 
-	if udi, err := t.GetUDI(); err != nil {
+	if t.Udi, err = t.GetUDI(); err != nil {
 		return nil, fmt.Errorf("%w", err)
-	} else {
-		t.Udi = udi
 	}
 
 	// No USS.
-	if err := t.client.LoadApp(bin, []byte{}); err != nil {
+	if err = t.client.LoadApp(bin, []byte{}); err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
 	if t.verbose {
@@ -202,15 +202,16 @@ func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 	// Before the device app starts, all the USB endpoints are
 	// turned off, so we wait until the port is closed and open
 	// again.
-	if err := t.client.WaitClosed(); err != nil {
+	if err = t.client.WaitClosed(); err != nil {
 		return nil, fmt.Errorf("expected port close: %w", err)
 	}
 
-	if err := t.client.Reconnect(); err != nil {
+	if err = t.client.Reconnect(); err != nil {
 		return nil, fmt.Errorf("couldn't reconnect: %w", err)
 	}
 
-	nameVer, err := t.signer.GetAppNameVersion()
+	var nameVer *tkeyclient.NameVersion
+	nameVer, err = t.signer.GetAppNameVersion()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -220,7 +221,8 @@ func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 			nameVer.Name0, nameVer.Name1, nameVer.Version)
 	}
 
-	pubKey, err := t.signer.GetPubkey()
+	var pubKey []byte
+	pubKey, err = t.signer.GetPubkey()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
