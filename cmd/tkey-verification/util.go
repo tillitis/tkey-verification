@@ -16,14 +16,17 @@ import (
 )
 
 func builtWith() {
-	appBins, err := appbins.NewAppBins()
+	var appBins appbins.AppBins
+	var err error
+
+	appBins, err = appbins.NewAppBins()
 	if err != nil {
 		fmt.Printf("Failed to init embedded device apps: %v\n", err)
 		os.Exit(1)
 	}
 
 	var vendorKeys vendorkey.VendorKeys
-	if err := vendorKeys.FromEmbedded(appBins); err != nil {
+	if err = vendorKeys.FromEmbedded(appBins); err != nil {
 		le.Printf("Found no usable embedded vendor signing public key\n")
 		os.Exit(1)
 	}
@@ -31,7 +34,8 @@ func builtWith() {
 	var log sigsum.Log
 	log.MustDecodeEmbedded()
 
-	firmwares, err := firmware.NewFirmwares()
+	var firmwares firmware.Firmwares
+	firmwares, err = firmware.NewFirmwares()
 	if err != nil {
 		le.Printf("Found no usable firmwares\n")
 		os.Exit(1)
