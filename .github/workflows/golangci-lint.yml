@@ -19,6 +19,8 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: stable
+      - name: Install libusb
+        run: sudo apt install -y libusb-1.0-0-dev
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
