@@ -1,4 +1,4 @@
-# Tillitis TKey Verification
+# Tillitis TKey Verification System
 
 `tkey-verification` and its associated programs are tools used for
 signing a TKey identity and verifying that the same TKey still has the
@@ -12,7 +12,7 @@ firmware.
 
 *Note well*: If your TKey wasn't provisioned by Tillitis, and instead
 by another "vendor" like your IT department, you will need to run
-their version of the `tkey-verification` program instead of this one.
+their version of the `tkey-verify` program instead of this one.
 
 ## Installation
 
@@ -22,16 +22,16 @@ on Tillitis' web.
 
 There are three programs:
 
-- tkey-verification: Used for provisioning by the vendor.
-- tkey-sigsum-submit: Used for submitting signed requests to a Sigsum
+- `tkey-verification`: Used during provisioning by the vendor.
+- `tkey-sigsum-submit`: Used for submitting signed requests to a Sigsum
   log by the vendor.
-- tkey-verify: Used to verify a Tillitis TKey.
+- `tkey-verify`: Used to verify a Tillitis TKey.
 
 You can download releases of the tools at:
 
 https://github.com/tillitis/tkey-verification/releases
 
-Or use `go install`. If you're and end user you probably only want
+Or use `go install`. If you're an end user you probably only want
 `tkey-verify`, like this:
 
 ```
@@ -78,12 +78,12 @@ https://tkey.tillitis.se/verify/0133708100000002
 
 ## Test setup
 
-You need two TKeys. They're autodetected using USB, so you need two
-physical TKeys. You can't use QEMU. One is used for Sigsum signing.
-The other is a TKey that you want to assert as genuine.
+You need two TKeys. They will be autodetected using USB, so you need
+two physical TKeys. You can't use QEMU. One is used for Sigsum
+signing. The other is a new TKey that you want to authenticate.
 
 ```
-./tkey-verification sign --config tkey-verification.yaml.example-sign
+./tkey-verification sign
 Loading device app built from tag:verisigner-v0.0.3 hash:f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142… ...
 Authenticating 68de5d27-e223-4874-bc76-a54d6e84068f on /dev/ttyACM1
 TKey UDI: 0x073570c004050607(BE) VendorID: 0x7357 ProductID: 3 ProductRev: 0
