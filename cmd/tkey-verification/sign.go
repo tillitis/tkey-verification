@@ -87,7 +87,7 @@ func sign(conf Conf, verbose bool) {
 
 	firmwares.MustDecodeEmbedded()
 
-	submitDev, err := newSubmitDevice(subDev.devPath, conf.ActiveKey)
+	submitDev, err := newSubmitDevice(subDev.DevPath, conf.ActiveKey)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
@@ -96,7 +96,7 @@ func sign(conf Conf, verbose bool) {
 	// Authenticate the new device by loading a signer app,
 	// getting its public key, and challenging it, thus proving
 	// that it contains the corresponding private key.
-	fmt.Printf("Authenticating %v on %v\n", assertDev.serial, assertDev.devPath)
+	fmt.Printf("Authenticating %v on %v\n", assertDev.SerialNumber, assertDev.DevPath)
 	message, appBin, err := createDeviceMessage(assertDev, conf.AuthAppDigest, firmwares, verbose)
 	if err != nil {
 		le.Printf("Couldn't authenticate device: %s\n", err)
@@ -160,7 +160,7 @@ func authDevice(dev Device, appBin appbins.AppBin, firmwares firmware.Firmwares,
 	return message, nil
 }
 
-func createDeviceMessage(verDev *usbDevice, signingAppHash string, firmwares firmware.Firmwares, verbose bool) (Message, appbins.AppBin, error) {
+func createDeviceMessage(verDev *tkeyclient.SerialPort, signingAppHash string, firmwares firmware.Firmwares, verbose bool) (Message, appbins.AppBin, error) {
 	// Find the app to use
 	var appHash [sha512.Size]byte
 
@@ -173,7 +173,7 @@ func createDeviceMessage(verDev *usbDevice, signingAppHash string, firmwares fir
 		return Message{}, appBin, fmt.Errorf("configured app %v not found", signingAppHash)
 	}
 
-	message, err := authDevice(Device{verDev.devPath, tkeyclient.SerialSpeed}, appBin, firmwares, verbose)
+	message, err := authDevice(Device{verDev.DevPath, tkeyclient.SerialSpeed}, appBin, firmwares, verbose)
 	if err != nil {
 		return Message{}, appBin, fmt.Errorf("authenticating device: %w", err)
 	}
@@ -297,6 +297,38 @@ func writeSubmissionFile(signaturesDir string, appBin appbins.AppBin, message Me
 	le.Printf("Wrote %s\n", fn)
 
 	return nil
+}
+
+// Find the submission TKey and the TKey to authenticate
+func getTKeys(activeSerial string) (*tkeyclient.SerialPort, *tkeyclient.SerialPort, error) {
+	devices, err := tkeyclient.GetSerialPorts()
+	if err != nil {
+		return nil, nil, fmt.Errorf("getting devices: %w", err)
+	}
+
+	if len(devices) > 2 {
+		return nil, nil, errors.New("too many devices")
+	}
+
+	var vendorDev, verDev *tkeyclient.SerialPort
+
+	for _, d := range devices {
+		if d.SerialNumber == activeSerial {
+			vendorDev = &d
+		} else {
+			verDev = &d
+		}
+	}
+
+	if vendorDev == nil {
+		return nil, nil, fmt.Errorf("no vendor device %v", activeSerial)
+	}
+
+	if verDev == nil {
+		return nil, nil, errors.New("no device under verification")
+	}
+
+	return vendorDev, verDev, nil
 }
 
 type TkeySigsumSigner struct {
