@@ -213,6 +213,14 @@ func copyFile(dstPath string, srcPath string) {
 		panic(msg)
 	}
 
+	if !strings.HasPrefix(dstPath, "/tmp") {
+		panic("unsafe input")
+	}
+
+	// Disable user-controlled path warning because 1) it isn't
+	// user-controlled (only used in these tests), and 2) we test
+	// that the destination is always in /tmp above.
+	//gosec:disable G703
 	err = os.WriteFile(dstPath, srcData, 0600)
 	if err != nil {
 		msg := fmt.Sprintf("Could not copy to file: %v", err)
