@@ -244,20 +244,20 @@ func (s *submitDevice) Sign(message Message) (requests.Leaf, error) {
 
 	byteMessage, err := util.BuildMessage(message.udi.Bytes, message.fw.Hash[:], message.pubKey)
 	if err != nil {
-		panic(err)
+		return requests.Leaf{}, fmt.Errorf("%w", err)
 	}
 
 	signer := TkeySigsumSigner{*s.tk}
 	sigsumMsg := sigsumcrypto.HashBytes(byteMessage)
 	signature, err := types.SignLeafMessage(signer, sigsumMsg[:])
 	if err != nil {
-		panic(ErrSignFailed)
+		return requests.Leaf{}, ErrSignFailed
 	}
 
 	leafReq := requests.Leaf{Message: sigsumMsg, Signature: signature, PublicKey: signer.Public()}
 	_, err = leafReq.Verify()
 	if err != nil {
-		panic(ErrVerificationFailed)
+		return leafReq, ErrVerificationFailed
 	}
 
 	return leafReq, nil
@@ -278,7 +278,7 @@ func writeSubmissionFile(signaturesDir string, appBin appbins.AppBin, message Me
 	if _, err := os.Stat(fn); err == nil || !errors.Is(err, os.ErrNotExist) {
 		le.Printf("Signature file %s already exists\n", fn)
 
-		panic(ErrSigExist)
+		return ErrSigExist
 	}
 
 	subm := submission.Submission{
@@ -291,7 +291,7 @@ func writeSubmissionFile(signaturesDir string, appBin appbins.AppBin, message Me
 	if err := subm.ToFile(fn); err != nil {
 		le.Printf("WriteFile %s failed: %v", fn, err)
 
-		panic(ErrInternal)
+		return ErrInternal
 	}
 
 	le.Printf("Wrote %s\n", fn)
