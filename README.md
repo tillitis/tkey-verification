@@ -76,6 +76,14 @@ like this:
 
 https://tkey.tillitis.se/verify/0133708100000002
 
+This diagram contains an overview of how data flows during provisioning at Tillitis:
+
+![Data flow during provisioning](signing-procedure.svg)
+
+**Note well**: The "Provisioning Station" and the "Signing Server" is
+now the same machine and even the same process, but conceptually the
+diagram is still correct.
+
 ## Test setup
 
 You need two TKeys. They will be autodetected using USB, so you need
