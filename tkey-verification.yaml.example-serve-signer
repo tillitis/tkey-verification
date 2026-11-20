@@ -1,7 +1,0 @@
----
-cacert: "certs/tillitis.crt"
-servercert: "certs/server.crt"
-serverkey: "certs/server.key"
-listen: "localhost:1337"
-
-activekey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDZoSX1HYX/ofsSARva4F054DzaKjXQ2vMHcHLaq7sQ sigsum key"

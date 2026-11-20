@@ -10,9 +10,13 @@ import (
 func TestParseEmbedded(t *testing.T) {
 	var s Log
 
-	if err := s.FromEmbedded(); err != nil {
-		t.Fatal(err)
-	}
+	defer func() {
+		if recover() != nil {
+			t.FailNow()
+		}
+	}()
+
+	s.MustDecodeEmbedded()
 }
 
 const sigsumConf = `tillitis-sigsum-test

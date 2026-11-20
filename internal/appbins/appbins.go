@@ -38,7 +38,7 @@ var binsFS embed.FS
 const binsDir = "bins"
 
 func (a AppBins) Tags() []string {
-	tags := []string{}
+	tags := make([]string, 0, len(a.Bins))
 
 	for _, appBin := range a.Bins {
 		tags = append(tags, appBin.Tag)

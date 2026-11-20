@@ -16,6 +16,14 @@ const VendorPubKeys = `14274d3570097aea209af1c23b64aa439a4d0d32c62735c5f6d6a2960
 /// Sigsum
 //////////////////////////////////////////////////////////////////////
 
+// The embedded Sigsum submit key configuration is made up:
+// - name of the submit key
+// - key in SSH form
+// - name and tag of submit signing app
+// - submit signing app SHA-256 digest
+// - start time
+// - end time
+
 // const SigsumConf = `
 // # This Sigsum submit key is the exact same key as the first vendor pubkey above
 // tillitis-sigsum1
@@ -24,10 +32,20 @@ const VendorPubKeys = `14274d3570097aea209af1c23b64aa439a4d0d32c62735c5f6d6a2960
 // f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142
 // `
 
-// Test Sigsum submit key corresponding to verisigner-0.3 running on QEMU with test UDS.
+// // Test Sigsum submit key corresponding to verisigner-0.3 running on QEMU with test UDS.
+// const SigsumConf = `
+// tillitis-sigsum-test
+// ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDZoSX1HYX/ofsSARva4F054DzaKjXQ2vMHcHLaq7sQ sigsum key
+// verisigner-v0.0.3
+// f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142
+// 2025-09-16T08:10:33+02:00
+// 2125-09-16T08:11:33+02:00
+// `
+
+// Test Sigsum submit key corresponding to verisigner-0.3 running on MC's TKey
 const SigsumConf = `
 tillitis-sigsum-test
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDZoSX1HYX/ofsSARva4F054DzaKjXQ2vMHcHLaq7sQ sigsum key
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILr61E/1ABXtB+gsEcGpn6kIQk9XxJwUpf5npZak3A8m sigsum key
 verisigner-v0.0.3
 f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142
 2025-09-16T08:10:33+02:00
@@ -52,6 +70,10 @@ const FirmwaresConf = `
 # TK1-24.03 (1c90b1aa3dbfb4e62039683ee6049ae8af608498)
 # UDI 00010203
 00010203 0010 8 3 4192 3769540390ee3d990ea3f9e4cc9a0d1af5bcaebb82218185a78c39c6bf01d9cdc305ba253a1fb9f3f9fcc63d97c8e5f34bbb1f7bec56a8f246f1d2239867b623
+
+# Firmware from main at
+# commit d989890601b749fbba780fcb24dc1d1d99dd7296
+073570c0 7357 3 0 7564 df1944097586096071220bb551a4e53dd4bd62662f3842514faba52919ca6dc3733d2f240415be6bdef81ac27e2070aee7a859f0edb6a2ed0469bff183e1ccb8
 
 # Firmware from main at
 # c126199a41149f6284aa9533e72395c978733b44

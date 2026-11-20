@@ -8,73 +8,36 @@ tkey-verification - sign the identity of a Tillitis TKey.
 
 *tkey-verification* -h/--help
 
-*tkey-verification* remote-sign [--port port] [--speed speed]
-
-*tkey-verification* serve-signer [--config path] [--check-config] [--port
-port] [--speed speed]
+*tkey-verification* sign
 
 *tkey-verification* show-pubkey [--port port] [--speed speed] --app path
 
 # DESCRIPTION
 
-*tkey-verification* signs the identity of a Tillitis TKey.
+*tkey-verification* cryptographically signs an assertion about the
+identity of a Tillitis TKey and produces a Sigsum log request for it.
+It is meant to be used with *tkey-sigsum-submit*(1) which will submit
+the requests to a Sigsum transparency log and produce a verification
+file.
 
-A typical end user will only be interested in the *tkey-verify*(1)
-command. *tkey-verification* is for the vendor.
+A typical end user will only be interested in the corresponding
+*tkey-verify*(1) command. *tkey-verification* is for the vendor.
 
 The commands are as follows:
 
-*remote-sign*
+*sign*
 
-	Request that the *tkey-verification* serve-signer sign the identity
-	of a TKey.
+	Automatically detect and sign a TKey using another TKey as the
+	vendor key.
 
-	To use, first insert a TKey and then run the command.
-
-	Options:
-
-	*--port* port
-
-		Path to the TKey device port. If not given, autodetection will be
-		attempted.
-
-	*--speed* speed
-
-		Speed in bit/s of the TKey device port.
-
-*serve-signer*
-
-	Provide a signing server with its own TKey, the vendor key.
-
-	When it receives a signing request from *remote-sign* it signs the
-	message and creates a new file with metadata and a Sigsum log
-	request. See FILES.
-
-	Options:
-
-	*--config* path
-
-		Path to the configuration file.
-
-	*--check-config*
-
-		Check if the configuration file is OK and exit.
-
-	*--port* port
-
-		Path to the TKey device port. If not given, autodetection will be
-		attempted.
-
-	*--speed* speed
-
-		Speed in bit/s of the TKey device port.
+	The device port is autodected.
 
 *show-pubkey*
 
 	Output public key data to populate the embedded vendor pubkeys
 	for building into *tkey-verification* to be able to use some other
 	commands. This is necessary in order to bootstrap *tkey-verification*
-	from scratch or to add another vendor signing key.
+	from scratch or to add a new vendor signing key.
 
 	The output includes public key, app tag, and app hash in the
 	right format for the file.
@@ -98,39 +61,24 @@ The commands are as follows:
 
 # FILES
 
-Both *remote-sign* and *serve-signer* has YAML configuration files.
-
-In the *remote-sign* configuration file you need to specify:
+*sign* has a YAML configuration file. The default name is `tkey-verification.yaml`.
 
 ```
 ---
-cacert: "path to the CA certificate"
-clientcert: "path to the client certificate used by remote-sign"
-clientkey: "path to the corresponding private key"
-server: "name:port of the server to contact"
+# SHA-512 digest of device app for device authentication of new device.
+# This is tag signer-tkey-verification-2
+authappdigest: "fd1bb113cad8373d3fef85ffbc5ff4bd2714fa471b2aa1c4cc8f707f61adb1157eda501fa46035545c256664f0f0ae3da2c56aa85dda9b99d6beebc41baadf6f"
 
-# Hash digest of active app to authenticate a TKey - has to be present
-# in internal/data/data.go
-signingapphash: "3493a20868b99897f0caff2f7b57b35ea3565c59f5ba353439d444cf8aac07e4899f260b98cb13f2fbb1bf6416ba8e2083d537391c1495ed1362c9008b7f8dff"
+# Sigsum submit public key
+activekey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILr61E/1ABXtB+gsEcGpn6kIQk9XxJwUpf5npZak3A8m sigsum key"
+
+# USB serial of TKey used for Sigsum submission
+activeserial: "8e7473ea-e464-45a4-8096-2e61ed0a748e"
 ```
 
-In the *serve-signer* configuration file you need to specify:
-
-```
----
-cacert: "path to the CA certificate"
-servercert: "path to the server certificate used by serve-signer"
-serverkey: "path to the corresponding private key"
-listen: "name:port to listen to for requests"
-
-# Current active Sigsum submit key - needs to occur in SigsumConf in internal/data/data.go
-activekey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFDZoSX1HYX/ofsSARva4F054DzaKjXQ2vMHcHLaq7sQ sigsum key"
-```
-
-The *serve-signer* command produces a submission file which is named
-after the Unique Device Identifier (in hexadecimal) for every
-signature made. An example filename would be
-"signatures/0133704100000015".
+The *sign* command produces a submission file which is named after the
+Unique Device Identifier (in hexadecimal) for every signature made. An
+example filename would be "signatures/0133704100000015".
 
 The file contains:
 
@@ -173,13 +121,7 @@ SSH version: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAOnvTvmfLRmhpkE7BS5l068xuWTq9x
 
 Tillitis AB, https://tillitis.se/
 
-# CAVEATS
-
-You can currently not use several TKeys on the same computer at the
-same time, which means you can't use *serve-signer* and the other
-commands on the same computer, unless you start them with *--port*.
-
 # SECURITY CONSIDERATIONS
 
-You probably shouldn't expose the computers running *serve-signer* or
-*remote-sign* on the Internet.
+You probably shouldn't expose a computers meant for running
+*tkey-verification* on the Internet.
