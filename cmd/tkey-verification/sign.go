@@ -190,8 +190,7 @@ func (s *submitDevice) Sign(message Message) (requests.Leaf, error) {
 // in Sigsum in the form of a leaf request.
 func writeSubmissionFile(signaturesDir string, appBin appbins.AppBin, message Message, leafReq requests.Leaf) error {
 	if err := os.MkdirAll(signaturesDir, 0o755); err != nil {
-		le.Printf("MkdirAll failed: %s\n", err)
-		os.Exit(1)
+		return fmt.Errorf("%w", err)
 	}
 
 	// File named after the UDIBE in hex

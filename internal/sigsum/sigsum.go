@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"time"
 
@@ -181,8 +180,7 @@ func (l *Log) FromString(sigsumConf string, policyStr string) error {
 	// Get all our embedded device apps used for vendor signing
 	appBins, err := appbins.NewAppBins()
 	if err != nil {
-		fmt.Printf("Failed to init embedded device apps: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to init embedded device apps: %w", err)
 	}
 
 	keys, err := ParseKeys(bytes.NewBufferString(sigsumConf), appBins)
