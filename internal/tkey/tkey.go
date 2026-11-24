@@ -88,7 +88,7 @@ func NewTKey(devPath string, speed int, verbose bool) (*TKey, error) {
 // when the device has been reset.
 //
 // It returns any errors.
-func (t TKey) MaybeResetToFW() error {
+func (t *TKey) MaybeResetToFW() error {
 	isFirmware, err := t.client.FirmwareActive()
 	if err != nil {
 		return fmt.Errorf("%w", err)
