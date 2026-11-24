@@ -92,14 +92,20 @@ func main() {
 			os.Exit(1)
 		}
 
-		sign(signConf, verbose)
+		if err = sign(signConf, verbose); err != nil {
+			le.Printf("Couldn't sign: %v\n", err)
+			os.Exit(1)
+		}
 
 	case "show-pubkey":
 		if binPath == "" {
 			le.Printf("Needs the path to an app, use `--app PATH`\n")
 			os.Exit(2)
 		}
-		showPubkey(binPath, dev, verbose)
+		if err := showPubkey(binPath, dev, verbose); err != nil {
+			le.Printf("Couldn't show public key: %v\n", err)
+			os.Exit(1)
+		}
 
 	default:
 		le.Printf("%s is not a valid command.\n", cmd)

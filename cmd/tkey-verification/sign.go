@@ -48,21 +48,20 @@ type Message struct {
 //
 // The message is then written into a Sigsum submission file.
 //
-// The functions logs and exits to OS itself.
+// The functions logs itself.
 func sign(conf Conf, verbose bool) error {
-	// Find the TKey serial ports to use, the submission port and
-	// the authenticate port.
+	// Find the TKey serial ports to use, the submission port and the authenticate port.
 	subPort, authPort, err := getTKeys(conf.ActiveSerial)
 	if err != nil {
-		fmt.Printf("%v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("%w", err)
 	}
 
 	submitDev, err := newSubmitDevice(subPort.DevPath, conf.SubmitKey)
 	if err != nil {
-		fmt.Printf("%v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("%w", err)
 	}
+
+	defer submitDev.tk.Close()
 
 	// Authenticate the new device by loading a signer app,
 	// getting its public key, and challenging it, thus proving
@@ -70,8 +69,7 @@ func sign(conf Conf, verbose bool) error {
 	fmt.Printf("Authenticating %v on %v\n", authPort.SerialNumber, authPort.DevPath)
 	message, err := authDevice(Device{authPort.DevPath, tkeyclient.SerialSpeed}, conf.AuthAppBin, conf.Firmwares, verbose)
 	if err != nil {
-		le.Printf("Couldn't authenticate device: %s\n", err)
-		os.Exit(1)
+		return fmt.Errorf("%w", err)
 	}
 
 	// Create a Sigsum submission file by signing the message with
@@ -81,17 +79,14 @@ func sign(conf Conf, verbose bool) error {
 
 	leafReq, err := submitDev.Sign(message)
 	if err != nil {
-		fmt.Printf("signing: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("%w", err)
 	}
-
-	// Don't need the submission device anymore.
-	submitDev.tk.Close()
 
 	if err := writeSubmissionFile(signaturesDir, conf.AuthAppBin, message, leafReq); err != nil {
-		fmt.Printf("writing submission file: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("writing submission file: %w", err)
 	}
+
+	return nil
 }
 
 func authDevice(dev Device, appBin appbins.AppBin, firmwares firmware.Firmwares, verbose bool) (Message, error) {
