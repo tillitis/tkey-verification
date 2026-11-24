@@ -32,6 +32,15 @@ type Message struct {
 
 // sign is the main function of the "sign" command.
 //
+// sign loads the submission app into the submission device, then
+// loads the authentication app into the device to authenticate and
+// requests its public key. It challenges the latter to make it prove
+// that it has the corresponding private key, then builds a message to
+// sign with the submission device.
+//
+// It then writes a file for later submission in the Sigsum
+// transparency log with the tkey-sigsum-submit command.
+//
 // sign automatically detects the devices used: One submission device,
 // one device to authenticate.
 //
@@ -39,16 +48,6 @@ type Message struct {
 // configuration conf.ActiveSerial. The resulting public key of
 // loading the device app conf.AuthAppBin needs to match
 // the public key in conf.SubmitKey.
-//
-// sign loads the submission app into the submission device, then
-// loads the authentication app into the device to authenticate and
-// requests its public key. It challenges the latter to make it prove
-// that it has the corresponding private key, then builds a message to
-// sign with the submission device.
-//
-// The message is then written into a Sigsum submission file.
-//
-// The functions logs itself.
 func sign(conf Conf, verbose bool) error {
 	// Find the TKey serial ports to use, the submission port and the authenticate port.
 	subPort, authPort, err := getTKeys(conf.ActiveSerial)
