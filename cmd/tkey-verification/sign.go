@@ -5,7 +5,6 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha512"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -20,38 +19,15 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 	"github.com/tillitis/tkey-verification/internal/util"
 	"github.com/tillitis/tkeyclient"
-	"gopkg.in/yaml.v2"
 	sigsumcrypto "sigsum.org/sigsum-go/pkg/crypto"
 	"sigsum.org/sigsum-go/pkg/requests"
 	"sigsum.org/sigsum-go/pkg/types"
 )
 
-type Conf struct {
-	AuthAppDigest string `yaml:"authappdigest"` // Digest of app for device authentication
-	ActiveKey     string `yaml:"activekey"`     // Submission public key - needs to be in data.go, too.
-	ActiveSerial  string `yaml:"activeserial"`  // Serial number of submission TKey
-}
-
 type Message struct {
 	udi    tkey.UDI
 	pubKey []byte
 	fw     firmware.Firmware
-}
-
-func loadConfig(fn string) (Conf, error) {
-	var conf Conf
-
-	rawConfig, err := os.ReadFile(fn)
-	if err != nil {
-		return conf, fmt.Errorf("couldn't read config file: %w", err)
-	}
-
-	err = yaml.Unmarshal(rawConfig, &conf)
-	if err != nil {
-		return conf, fmt.Errorf("parse error in config file: %w", err)
-	}
-
-	return conf, nil
 }
 
 // sign is the main function of the "sign" command.
@@ -61,8 +37,8 @@ func loadConfig(fn string) (Conf, error) {
 //
 // The USB serial of the submission device needs to be in the
 // configuration conf.ActiveSerial. The resulting public key of
-// loading the device app with the conf.AuthAppDigest needs to match
-// the conf.ActiveKey.
+// loading the device app conf.AuthAppBin needs to match
+// the public key in conf.SubmitKey.
 //
 // sign loads the submission app into the submission device, then
 // loads the authentication app into the device to authenticate and
@@ -73,21 +49,16 @@ func loadConfig(fn string) (Conf, error) {
 // The message is then written into a Sigsum submission file.
 //
 // The functions logs and exits to OS itself.
-func sign(conf Conf, verbose bool) {
-	// Find the devices to use.
-	subDev, assertDev, err := getTKeys(conf.ActiveSerial)
+func sign(conf Conf, verbose bool) error {
+	// Find the TKey serial ports to use, the submission port and
+	// the authenticate port.
+	subPort, authPort, err := getTKeys(conf.ActiveSerial)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
 
-	// Get our firmwares. Needed to be able find the current
-	// device's firmware and verify that it's known.
-	var firmwares firmware.Firmwares
-
-	firmwares.MustDecodeEmbedded()
-
-	submitDev, err := newSubmitDevice(subDev.DevPath, conf.ActiveKey)
+	submitDev, err := newSubmitDevice(subPort.DevPath, conf.SubmitKey)
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
@@ -96,16 +67,17 @@ func sign(conf Conf, verbose bool) {
 	// Authenticate the new device by loading a signer app,
 	// getting its public key, and challenging it, thus proving
 	// that it contains the corresponding private key.
-	fmt.Printf("Authenticating %v on %v\n", assertDev.SerialNumber, assertDev.DevPath)
-	message, appBin, err := createDeviceMessage(assertDev, conf.AuthAppDigest, firmwares, verbose)
+	fmt.Printf("Authenticating %v on %v\n", authPort.SerialNumber, authPort.DevPath)
+	message, err := authDevice(Device{authPort.DevPath, tkeyclient.SerialSpeed}, conf.AuthAppBin, conf.Firmwares, verbose)
 	if err != nil {
 		le.Printf("Couldn't authenticate device: %s\n", err)
 		os.Exit(1)
 	}
 
-	// Create a Sigsum submission file by signing the message.
-	h := appBin.Hash()
-	le.Printf("Going to sign for TKey with UDI:%s(BE) apptag:%s apphash:%0x…\n", hex.EncodeToString(message.udi.Bytes), appBin.Tag, h[:16])
+	// Create a Sigsum submission file by signing the message with
+	// the submit device.
+	h := conf.AuthAppBin.Hash()
+	le.Printf("Going to sign for TKey with UDI:%s(BE) apptag:%s apphash:%0x…\n", hex.EncodeToString(message.udi.Bytes), conf.AuthAppBin.Tag, h[:16])
 
 	leafReq, err := submitDev.Sign(message)
 	if err != nil {
@@ -116,8 +88,7 @@ func sign(conf Conf, verbose bool) {
 	// Don't need the submission device anymore.
 	submitDev.tk.Close()
 
-	// Write a Sigsum submission file.
-	if err := writeSubmissionFile(signaturesDir, appBin, message, leafReq); err != nil {
+	if err := writeSubmissionFile(signaturesDir, conf.AuthAppBin, message, leafReq); err != nil {
 		fmt.Printf("writing submission file: %v\n", err)
 		os.Exit(1)
 	}
@@ -160,57 +131,13 @@ func authDevice(dev Device, appBin appbins.AppBin, firmwares firmware.Firmwares,
 	return message, nil
 }
 
-func createDeviceMessage(verDev *tkeyclient.SerialPort, signingAppHash string, firmwares firmware.Firmwares, verbose bool) (Message, appbins.AppBin, error) {
-	// Find the app to use
-	var appHash [sha512.Size]byte
-
-	if err := util.DecodeHex(appHash[:], signingAppHash); err != nil {
-		return Message{}, appbins.AppBin{}, fmt.Errorf("couldn't decode signingapphash from config: %w", err)
-	}
-
-	appBin, ok := appbins.MustAppBins().Bins[appHash]
-	if !ok {
-		return Message{}, appBin, fmt.Errorf("configured app %v not found", signingAppHash)
-	}
-
-	message, err := authDevice(Device{verDev.DevPath, tkeyclient.SerialSpeed}, appBin, firmwares, verbose)
-	if err != nil {
-		return Message{}, appBin, fmt.Errorf("authenticating device: %w", err)
-	}
-
-	return message, appBin, nil
-
-}
-
-func findSubmitKey(confActiveKey string) (*sigsum.PubKey, error) {
-	var log sigsum.Log
-
-	log.MustDecodeEmbedded()
-
-	// Check that the configured submit key is in the embedded
-	// data for the Sigsum log and convert it into a usable form.
-	submitKey, err := log.FindSSHKey(confActiveKey)
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	return submitKey, nil
-}
-
 type submitDevice struct {
 	tk        *tkey.TKey
 	submitKey *sigsum.PubKey
 }
 
-func newSubmitDevice(path string, confActiveKey string) (*submitDevice, error) {
+func newSubmitDevice(path string, submitKey *sigsum.PubKey) (*submitDevice, error) {
 	var sDevice submitDevice
-
-	// Get our submission public key which also contains
-	// information about what device app to run on signing device.
-	submitKey, err := findSubmitKey(confActiveKey)
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
 
 	// Load the vendor signing app, if necessary.
 	le.Printf("Loading device app built from %s ...\n", submitKey.AppBin.String())
