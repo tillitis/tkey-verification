@@ -95,10 +95,21 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 		os.Exit(code)
 	}
 
+	// Possibly reset to firmware
+	if err = tk.MaybeResetToFW(); err != nil {
+		commFailed(err.Error())
+		os.Exit(1)
+	}
+
+	if tk.Udi, err = tk.GetUDI(); err != nil {
+		commFailed(err.Error())
+		os.Exit(1)
+	}
+
 	le.Printf("TKey UDI: %s\n", tk.Udi.String())
 
 	if tk.Udi.VendorID != vendorID {
-		le.Printf("Unknown Vendor ID")
+		le.Printf("Unknown Vendor ID: %s", tk.Udi.String())
 		exit(1)
 	}
 
