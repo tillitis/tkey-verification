@@ -122,9 +122,25 @@ $ ./tkey-sigsum-submit -m signatures -n processed-submissions -d verifications
 There should now be a verification file in the `verifications` directory.
 
 Before trying to verify you need to remove and re-insert the device
-under verification to get it back to firmware mode. Then run
-`tkey-verify -d verifications` to point to local verification files in
-a directory rather than requesting them over the Internet:
+under verification to get it back to firmware mode.
+
+Tillitis's own location for verification files and vendor ID are
+constants in `tkey-verify`:
+
+| *name*          | *value*                        |
+|-----------------|--------------------------------|
+| `verifyInfoURL` | https://www.tillitis.se/verify |
+| `vendorID`      | `0x1337`                       |
+
+See the top of `cmd/tkey-verify/verify.go`.
+
+If you're doing this in a test setup you should probably change this
+to something else: the URL to a web server you control (or use `-d`)
+and a vendor ID like `0x7357` like the default in `tillitis-key1`.
+
+You can also run `tkey-verify -d verifications` to point to local
+verification files in a directory rather than requesting them over the
+Internet, but you still have to change `vendorID`:
 
 ```
 $ ./tkey-verify -d verifications
