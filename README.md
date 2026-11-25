@@ -64,10 +64,10 @@ automatically detect the TKey to sign and the TKey to sign with. It
 will produce a submission file with a signed request to log to a
 Sigsum transparency log.
 
-Use `tkey-sigsum-request` to submit the submission files to the log,
+Use `tkey-sigsum-submit` to submit the submission files to the log,
 collect Sigsum proofs, and to produce verification files.
 
-Finally, publish the verification files in the URL `tkey-verify` uses.
+Finally, publish the verification files at the URL `tkey-verify` uses.
 For Tillitis, this is:
 
 https://tkey.tillitis.se/verify/UDI-in-hex
