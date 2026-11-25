@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2022 Tillitis AB <tillitis.se>
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Package tkey offers...
+// Package tkey offers helping functions for the tkey-verification
+// system.
 //
 // Start by
 //
@@ -15,7 +16,6 @@
 //
 //	sig, err := tk.Sign(message)
 //
-//	digest, err = tk.GetFirmwareHash(4711)
 //	tk.Close()
 package tkey
 
@@ -42,36 +42,6 @@ type TKey struct {
 	verbose bool
 }
 
-func possiblyReset(tk tkeyclient.TillitisKey) error {
-	isFirmware, err := tk.FirmwareActive()
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	if !isFirmware {
-		if !tk.CanRemoteClose {
-			return errors.New("no reset support in device")
-		}
-
-		err = tk.Reset(tkeyclient.RstTypeStartClient, tkeyclient.NextAppData{})
-		if err != nil {
-			return errors.New("reset failed")
-		}
-
-		err := tk.WaitClosed()
-		if err != nil {
-			return fmt.Errorf("waiting for port close: %w", err)
-		}
-
-		err = tk.Reconnect()
-		if err != nil {
-			return fmt.Errorf("couldn't reconnect: %w", err)
-		}
-	}
-
-	return nil
-}
-
 func NewTKey(devPath string, speed int, verbose bool) (*TKey, error) {
 	if !verbose {
 		tkeyclient.SilenceLogging()
@@ -86,8 +56,8 @@ func NewTKey(devPath string, speed int, verbose bool) (*TKey, error) {
 		}
 	}
 
-	// Initialize part of tkey - UDI is filled in later when we
-	// have a connection. See below.
+	// Initialize part of tkey - UDI can be filled in later when we
+	// have a connection by using GetUDI().
 	tkey := TKey{
 		client:  *tkeyclient.New(),
 		verbose: verbose,
@@ -113,7 +83,46 @@ func NewTKey(devPath string, speed int, verbose bool) (*TKey, error) {
 	return &tkey, nil
 }
 
-// GetUDI gets the UDI of a TKey
+// MaybeResetToFW probes for firmware. If firmware isn't found it
+// sends a reset request, if supported by hardware, and reconnects
+// when the device has been reset.
+//
+// It returns any errors.
+func (t TKey) MaybeResetToFW() error {
+	isFirmware, err := t.client.FirmwareActive()
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	if !isFirmware {
+		if !t.client.CanRemoteClose {
+			return errors.New("no reset support in device")
+		}
+
+		err = t.client.Reset(tkeyclient.RstTypeStartClient, tkeyclient.NextAppData{})
+		if err != nil {
+			return errors.New("reset failed")
+		}
+
+		err := t.client.WaitClosed()
+		if err != nil {
+			return fmt.Errorf("waiting for port close: %w", err)
+		}
+
+		err = t.client.Reconnect()
+		if err != nil {
+			return fmt.Errorf("couldn't reconnect: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// GetUDI gets the Unique Device Identification of a TKey. This
+// function can only be used if the device is running in firmware,
+// waiting for commands from the client (see MaybeResetToFW()).
+//
+// Returns the UDI or any errors.
 func (t TKey) GetUDI() (UDI, error) {
 	var udi UDI
 
@@ -182,7 +191,7 @@ func (t *TKey) MaybeLoadSigner(bin []byte) ([]byte, error) {
 func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 	var err error
 
-	if err = possiblyReset(t.client); err != nil {
+	if err = t.MaybeResetToFW(); err != nil {
 		fmt.Printf("strange: %v\n", err)
 		return nil, ErrNotFirmware
 	}
