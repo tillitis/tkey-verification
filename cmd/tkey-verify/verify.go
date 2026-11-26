@@ -11,7 +11,6 @@ import (
 	"path"
 
 	"github.com/tillitis/tkey-verification/internal/appbins"
-	"github.com/tillitis/tkey-verification/internal/data"
 	"github.com/tillitis/tkey-verification/internal/firmware"
 	"github.com/tillitis/tkey-verification/internal/sigsum"
 	"github.com/tillitis/tkey-verification/internal/ssh"
@@ -67,7 +66,7 @@ func verifyShowURL(dev Device, verifyBaseURL string) {
 func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useSigsum bool) {
 	var firmwares firmware.Firmwares
 
-	firmwares.MustDecodeString(data.FirmwaresConf)
+	firmwares.MustDecodeEmbedded()
 
 	appBins, err := appbins.NewAppBins()
 	if err != nil {
@@ -82,10 +81,7 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 	}
 
 	var log sigsum.Log
-	if err = log.FromEmbedded(); err != nil {
-		missing("Sigsum configuration missing")
-		os.Exit(1)
-	}
+	log.MustDecodeEmbedded()
 
 	// Connect to a TKey
 	tk, err := tkey.NewTKey(dev.Path, dev.Speed, verbose)
@@ -99,10 +95,21 @@ func verify(dev Device, verbose bool, baseDir string, verifyBaseURL string, useS
 		os.Exit(code)
 	}
 
+	// Possibly reset to firmware
+	if err = tk.MaybeResetToFW(); err != nil {
+		commFailed(err.Error())
+		os.Exit(1)
+	}
+
+	if tk.Udi, err = tk.GetUDI(); err != nil {
+		commFailed(err.Error())
+		os.Exit(1)
+	}
+
 	le.Printf("TKey UDI: %s\n", tk.Udi.String())
 
 	if tk.Udi.VendorID != vendorID {
-		le.Printf("Unknown Vendor ID")
+		le.Printf("Unknown Vendor ID: %s", tk.Udi.String())
 		exit(1)
 	}
 

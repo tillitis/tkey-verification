@@ -16,30 +16,24 @@ import (
 	"github.com/tillitis/tkey-verification/internal/tkey"
 )
 
-func showPubkey(binPath string, dev Device, verbose bool) {
+func showPubkey(binPath string, dev Device, verbose bool) error {
 	tk, err := tkey.NewTKey(dev.Path, dev.Speed, verbose)
 	if err != nil {
-		le.Printf("Couldn't connect to TKey: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("%w", err)
 	}
 
-	exit := func(code int) {
-		tk.Close()
-		os.Exit(code)
-	}
+	defer tk.Close()
 
 	content, err := os.ReadFile(binPath)
 	if err != nil {
-		le.Printf("ReadFile: %v", err)
-		exit(1)
+		return fmt.Errorf("%w", err)
 	}
 
 	appHash := sha512.Sum512(content)
 
 	pubKey, err := tk.LoadSigner(content)
 	if err != nil {
-		le.Printf("LoadSigner: %v\n", err)
-		exit(1)
+		return fmt.Errorf("%w", err)
 	}
 
 	tag := strings.TrimSuffix(filepath.Base(binPath), ".bin")
@@ -52,5 +46,5 @@ func showPubkey(binPath string, dev Device, verbose bool) {
 	copy(sshPubKey[:], pubKey)
 	fmt.Printf("SSH version: %v\n", ssh.FormatPublicEd25519(sshPubKey))
 
-	exit(0)
+	return nil
 }

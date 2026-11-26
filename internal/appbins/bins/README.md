@@ -3,6 +3,11 @@
 This file consists of a list of embedded binaries, the location of the
 source and the license.
 
+File signer-tkey-verification-2.bin
+Source: https://github.com/tillitis/tkey-device-signer
+License: BSD-2
+Tag: tkey-verification2
+
 File signer-tkey-verification-1.bin
 Source: https://github.com/tillitis/tkey-device-signer
 License: BSD-2

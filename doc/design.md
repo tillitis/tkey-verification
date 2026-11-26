@@ -223,14 +223,15 @@ providing it as an option for server use.
 - The distribution of the vendor's public key is sensitive. Since
   all trust is placed in the vendor's signature, all fails if the
   end user is tricked to use the wrong public key. It's right now
-  embedded in tkey-verification.
-- The distribution of the tkey-verification client app is sensitive,
+  embedded in `tkey-verification` and `tkey-verify`.
+- The distribution of the `tkey-verify` client app is sensitive,
   since if it is malicious it can just say "TKey is genuine!" without
   actually doing much else.
 
-  However, the build of tkey-verification is reproducible if using
-  pinned versions of tools (but currently not the macOS binary). The
-  same verification can also be done independently by other tools.
+  However, the build of `tkey-verify` is reproducible if using pinned
+  versions of tools (but currently not the macOS binary because of
+  shared libraries). The same verification can also be done
+  independently by other tools.
 
 ## Security Protocol
 

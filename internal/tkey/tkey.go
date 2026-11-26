@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2022 Tillitis AB <tillitis.se>
 // SPDX-License-Identifier: BSD-2-Clause
 
-// Package tkey offers...
+// Package tkey offers helping functions for the tkey-verification
+// system.
 //
 // Start by
 //
@@ -15,13 +16,13 @@
 //
 //	sig, err := tk.Sign(message)
 //
-//	digest, err = tk.GetFirmwareHash(4711)
 //	tk.Close()
 package tkey
 
 import (
 	"crypto/ed25519"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -55,12 +56,14 @@ func NewTKey(devPath string, speed int, verbose bool) (*TKey, error) {
 		}
 	}
 
-	// Initialize part of tkey - UDI is filled in later when we
-	// have a connection. See below.
+	// Initialize part of tkey - UDI can be filled in later when we
+	// have a connection by using GetUDI().
 	tkey := TKey{
 		client:  *tkeyclient.New(),
 		verbose: verbose,
 	}
+
+	tkey.signer = tkeysign.New(&tkey.client)
 
 	if verbose {
 		le.Printf("Connecting to device on serial port %s ...\n", devPath)
@@ -77,41 +80,109 @@ func NewTKey(devPath string, speed int, verbose bool) (*TKey, error) {
 		os.Exit(1)
 	}, os.Interrupt, syscall.SIGTERM)
 
-	nameVer, err := tkey.client.GetNameVersion()
-	if err != nil {
-		le.Printf("Please unplug the TKey and plug it in again to put it in firmware-mode.\n")
-		le.Printf("Either the device path (%s) is wrong, or the TKey is not in firmware-mode (already running an app).\n", devPath)
-		return nil, ErrNotFirmware
-	}
-
-	if verbose {
-		le.Printf("Firmware name0:'%s' name1:'%s' version:%d\n",
-			nameVer.Name0, nameVer.Name1, nameVer.Version)
-	}
-
-	tkUDI, err := tkey.client.GetUDI()
-	if err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	var udi UDI
-
-	if err = udi.fromRawLE(tkUDI.RawBytes()); err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	tkey.Udi = udi
-
 	return &tkey, nil
 }
 
-// GetUDI gets the UDI of a TKey
-func (t TKey) GetUDI() UDI {
-	return t.Udi
+// MaybeResetToFW probes for firmware. If firmware isn't found it
+// sends a reset request, if supported by hardware, and reconnects
+// when the device has been reset.
+//
+// It returns any errors.
+func (t *TKey) MaybeResetToFW() error {
+	isFirmware, err := t.client.FirmwareActive()
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	if !isFirmware {
+		if !t.client.CanRemoteClose {
+			return errors.New("no reset support in device")
+		}
+
+		err = t.client.Reset(tkeyclient.RstTypeStartClient, tkeyclient.NextAppData{})
+		if err != nil {
+			return errors.New("reset failed")
+		}
+
+		err := t.client.WaitClosed()
+		if err != nil {
+			return fmt.Errorf("waiting for port close: %w", err)
+		}
+
+		err = t.client.Reconnect()
+		if err != nil {
+			return fmt.Errorf("couldn't reconnect: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// GetUDI gets the Unique Device Identification of a TKey. This
+// function can only be used if the device is running in firmware,
+// waiting for commands from the client (see MaybeResetToFW()).
+//
+// Returns the UDI or any errors.
+func (t TKey) GetUDI() (UDI, error) {
+	var udi UDI
+
+	tkUDI, err := t.client.GetUDI()
+	if err != nil {
+		return udi, fmt.Errorf("%w", err)
+	}
+
+	if err = udi.fromRawLE(tkUDI.RawBytes()); err != nil {
+		return udi, fmt.Errorf("%w", err)
+	}
+
+	return udi, nil
 }
 
 func (t TKey) Close() {
 	t.client.Close()
+}
+
+func checkApp(t *TKey) (bool, *tkeyclient.NameVersion, []byte, error) {
+	isFirmware, err := t.client.FirmwareActive()
+	if err != nil {
+		return false, nil, nil, fmt.Errorf("%w", err)
+	}
+
+	if isFirmware {
+		return false, nil, nil, nil
+	}
+
+	nameVer, err := t.signer.GetAppNameVersion()
+	if err != nil {
+		return false, nameVer, nil, fmt.Errorf("%w", err)
+	}
+
+	le.Printf("App name0:'%s' name1:'%s' version:%d\n",
+		nameVer.Name0, nameVer.Name1, nameVer.Version)
+
+	pubKey, err := t.signer.GetPubkey()
+	if err != nil {
+		return false, nameVer, nil, fmt.Errorf("%w", err)
+	}
+
+	return true, nameVer, pubKey, nil
+
+}
+
+// MaybeLoadSigner checks if the signer app is already loaded. Note
+// that no check of the version or the generated public is made. That
+// is the responsibility of the caller.
+func (t *TKey) MaybeLoadSigner(bin []byte) ([]byte, error) {
+	rightApp, _, pubKey, err := checkApp(t)
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	if rightApp {
+		return pubKey, nil
+	}
+
+	return t.LoadSigner(bin)
 }
 
 // LoadSigner loads device app BIN without USS.
@@ -119,6 +190,15 @@ func (t TKey) Close() {
 // Returns the public key and any error.
 func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 	var err error
+
+	if err = t.MaybeResetToFW(); err != nil {
+		fmt.Printf("strange: %v\n", err)
+		return nil, ErrNotFirmware
+	}
+
+	if t.Udi, err = t.GetUDI(); err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
 
 	// No USS.
 	if err = t.client.LoadApp(bin, []byte{}); err != nil {
@@ -128,9 +208,19 @@ func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 		le.Printf("App loaded.\n")
 	}
 
-	t.signer = tkeysign.New(&t.client)
+	// Before the device app starts, all the USB endpoints are
+	// turned off, so we wait until the port is closed and open
+	// again.
+	if err = t.client.WaitClosed(); err != nil {
+		return nil, fmt.Errorf("expected port close: %w", err)
+	}
 
-	nameVer, err := t.signer.GetAppNameVersion()
+	if err = t.client.Reconnect(); err != nil {
+		return nil, fmt.Errorf("couldn't reconnect: %w", err)
+	}
+
+	var nameVer *tkeyclient.NameVersion
+	nameVer, err = t.signer.GetAppNameVersion()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -140,7 +230,8 @@ func (t *TKey) LoadSigner(bin []byte) ([]byte, error) {
 			nameVer.Name0, nameVer.Name1, nameVer.Version)
 	}
 
-	pubKey, err := t.signer.GetPubkey()
+	var pubKey []byte
+	pubKey, err = t.signer.GetPubkey()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}

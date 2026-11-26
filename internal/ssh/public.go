@@ -30,10 +30,14 @@ func serializeUint32(x uint32) []byte {
 
 func serializeString[T bytesOrString](s T) []byte {
 	slen := len(s)
-	if slen > math.MaxInt32 {
+	// We're going to convert slen to a uint32, so it needs to
+	// fit, and not be negative, which would confuse things.
+	if slen > math.MaxUint32 || slen < 0 {
 		log.Panicf("string too large for ssh, length %d", slen)
 	}
 	buffer := make([]byte, 4+slen)
+	// Turn off warning. We checked slen above.
+	//gosec:disable G115
 	binary.BigEndian.PutUint32(buffer, uint32(slen))
 	copy(buffer[4:], s)
 	return buffer

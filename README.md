@@ -1,4 +1,4 @@
-# Tillitis TKey Verification
+# Tillitis TKey Verification System
 
 `tkey-verification` and its associated programs are tools used for
 signing a TKey identity and verifying that the same TKey still has the
@@ -12,7 +12,7 @@ firmware.
 
 *Note well*: If your TKey wasn't provisioned by Tillitis, and instead
 by another "vendor" like your IT department, you will need to run
-their version of the `tkey-verification` program instead of this one.
+their version of the `tkey-verify` program instead of this one.
 
 ## Installation
 
@@ -22,16 +22,16 @@ on Tillitis' web.
 
 There are three programs:
 
-- tkey-verification: Used for provisioning by the vendor.
-- tkey-sigsum-submit: Used for submitting signed requests to a Sigsum
+- `tkey-verification`: Used during provisioning by the vendor.
+- `tkey-sigsum-submit`: Used for submitting signed requests to a Sigsum
   log by the vendor.
-- tkey-verify: Used to verify a Tillitis TKey.
+- `tkey-verify`: Used to verify a Tillitis TKey.
 
 You can download releases of the tools at:
 
 https://github.com/tillitis/tkey-verification/releases
 
-Or use `go install`. If you're and end user you probably only want
+Or use `go install`. If you're an end user you probably only want
 `tkey-verify`, like this:
 
 ```
@@ -59,17 +59,15 @@ For use during provisioning, use the `tkey-verification` and
 `tkey-sigsum-submit` programs. See the man pages in
 `doc/tkey-verification.1` and `doc/tkey-sigsum-submit.1` for details.
 
-Basically, `tkey-verification` has two sub-commands, *serve-signer*
-for use as a server on a HSM-like machine with a vendor TKey, and
-*remote-sign* for the provisioning station.
-
-The server produces submission files with a signed request to log to a
+`tkey-verification` can be used with the *sign* command. This will
+automatically detect the TKey to sign and the TKey to sign with. It
+will produce a submission file with a signed request to log to a
 Sigsum transparency log.
 
-Use `tkey-sigsum-request` to submit the submission files to the log,
+Use `tkey-sigsum-submit` to submit the submission files to the log,
 collect Sigsum proofs, and to produce verification files.
 
-Finally, publish the verification files in the URL `tkey-verify` uses.
+Finally, publish the verification files at the URL `tkey-verify` uses.
 For Tillitis, this is:
 
 https://tkey.tillitis.se/verify/UDI-in-hex
@@ -78,50 +76,35 @@ like this:
 
 https://tkey.tillitis.se/verify/0133708100000002
 
-This diagram contains an overview of how data flows during
-provisioning at Tillitis:
+This diagram contains an overview of how data flows during provisioning at Tillitis:
 
 ![Data flow during provisioning](signing-procedure.svg)
 
+**Note well**: The "Provisioning Station" and the "Signing Server" is
+now the same machine and even the same process, but conceptually the
+diagram is still correct.
+
 ## Test setup
 
-You need two TKeys. It might be easier to use one physical TKey and
-one emulated (see [QEMU chapter in Tillitis Developer
-Handbook](https://dev.tillitis.se/tools/#qemu-emulator). One is used
-for the vendor's signing TKey. The other is a TKey that you want to
-sign and then verify as genuine. You need to know the serial port
-device paths for both of them.
-
-Here we are using `run-tkey-qemu` from
-[tkey-devtools](https://github.com/tillitis/tkey-devtools) as the
-vendor TKey:
+You need two TKeys. They will be autodetected using USB, so you need
+two physical TKeys. You can't use QEMU. One is used for Sigsum
+signing. The other is a new TKey that you want to authenticate.
 
 ```
-$ run-tkey-qemu
-$ ./tkey-verification serve-signer --config tkey-verification.yaml.example-serve-signer --port ./tkey-qemu-pty
+./tkey-verification sign
+Loading device app built from tag:verisigner-v0.0.3 hash:f8ecdcda53a296636a0297c250b27fb649860645626cc8ad935eabb4c43ea3e1841c40300544fade4189aa4143c1ca8fe82361e3d874b42b0e2404793a170142… ...
+Authenticating 68de5d27-e223-4874-bc76-a54d6e84068f on /dev/ttyACM1
+TKey UDI: 0x073570c004050607(BE) VendorID: 0x7357 ProductID: 3 ProductRev: 0
+TKey firmware with size:7564 and verified hash:df1944097586096071220bb551a4e53d…
+Going to sign for TKey with UDI:073570c004050607(BE) apptag:signer-tkey-verification-2 apphash:fd1bb113cad8373d3fef85ffbc5ff4bd…
+Sigsum signing: tillitis-sigsum-test using app verisigner-v0.0.3: bafad44ff50015ed07e82c11c1a99fa908424f57c49c14a5fe67a596a4dc0f26
+  Valid: 2025-09-16T08:10:33+02:00 - 2125-09-16T08:11:33+02:00
 ```
 
-Insert the device under verification, the TKey to be signed by the
-vendor, then:
-
-```
-$ ./tkey-verification remote-sign --config tkey-verification.yaml.example-remote-sign
-Auto-detected serial port /dev/ttyACM0
-Connecting to device on serial port /dev/ttyACM0 ...
-Firmware name0:'tk1 ' name1:'mkdf' version:4
-Loading verisigner-app built from tag:verisigner-v0.0.1 hash:9598910ec9ebe2504a5f894de6f8e067… ...
-App loaded.
-App name0:'veri' name1:'sign' version:1
-TKey UDI: 0x0001020304050607(BE) VendorID: 0x0010 ProductID: 8 ProductRev: 3
-TKey firmware with size:3204 and verified hash:31accb1c40febc2bf02f48656a943336…
-Remote Sign was successful
-```
-
-The signing server should now have signed and saved a submit request
-file under `signatures` with a filename generated from the Unique
-Device Identifier, typically something like `0133704100000015` if from
-Tillitis, but `0001020304050607` if the bitstream has been built
-directly from
+The submit request file is now under `signatures` with a filename
+generated from the Unique Device Identifier, typically something like
+`0133704100000015` if from Tillitis, but `073570c004050607` if the
+bitstream has been built directly from
 [tillitis-key1](https://github.com/tillitis/tillitis-key1).
 
 To submit the TKey Identity using the submit request file, first
@@ -139,9 +122,25 @@ $ ./tkey-sigsum-submit -m signatures -n processed-submissions -d verifications
 There should now be a verification file in the `verifications` directory.
 
 Before trying to verify you need to remove and re-insert the device
-under verification to get it back to firmware mode. Then run
-`tkey-verify -d verifications` to point to local verification files in
-a directory rather than requesting them over the Internet:
+under verification to get it back to firmware mode.
+
+Tillitis's own location for verification files and vendor ID are
+constants in `tkey-verify`:
+
+| *name*          | *value*                        |
+|-----------------|--------------------------------|
+| `verifyInfoURL` | https://www.tillitis.se/verify |
+| `vendorID`      | `0x1337`                       |
+
+See the top of `cmd/tkey-verify/verify.go`.
+
+If you're doing this in a test setup you should probably change this
+to something else: the URL to a web server you control (or use `-d`)
+and a vendor ID like `0x7357` like the default in `tillitis-key1`.
+
+You can also run `tkey-verify -d verifications` to point to local
+verification files in a directory rather than requesting them over the
+Internet, but you still have to change `vendorID`:
 
 ```
 $ ./tkey-verify -d verifications
@@ -155,22 +154,6 @@ For the complete set of commands, see the manual pages
 [tkey-verify(1)](doc/tkey-verify.1) and
 [tkey-verification(1)](doc/tkey-verification.1)
 
-## Certificates
-
-For your testing convenience we include a test CA and some test
-certificates in `certs`. They expire 10 years after being generated.
-
-If you need to rebuild CA, server, and client certs you can use any
-ordinary X.509 certificate tools like GnuTLS's certtool or OpenSSL to
-generate your certificates.
-
-You can also install the small [certstrap
-tool](https://github.com/square/certstrap) and run:
-
-```
-$ make certs
-```
-
 ## Maintenance
 
 There are some compiled-in assets. Most of these are in
@@ -180,22 +163,21 @@ There are some compiled-in assets. Most of these are in
   and device authentication. See below how to maintain.
 
 - Vendor public keys: The public key from a vendor TKey used for
-  verification. Might be several, including historical keys. *No
-  longer* used for signing, but still used for verification. See the
-  constant `VendorPubKeys`.
+  verification. Might be several, including historical keys which are
+  *no longer* used for signing, but still used for verification. See
+  the constant `VendorPubKeys`.
 
 - Sigsum configuration including the Sigsum submit keys which replaces
   the old vendor public keys, see the `SigsumConf` and `PolicyStr`
-  constants.
+  constants. See [Creating the Sigsum keys](#creating-the-sigsum-keys).
 
 - Known firmwares: Expected firmwares for all known TKey models from
   the vendor (first half of the Unique Device Identifier). See the
   `FirmwaresConf` constant.
 
 Commands are responsible for initializing their own assets. For
-instance, `tkey-verify` needs all of the above, `remote-sign` needs
-the application binaries and the firmwares, `serve-signer` needs
-application binaries and the Sigsum configuration.
+instance, `tkey-verify` needs all of the above, `sign` needs the
+application binaries, the firmwares, and the Sigsum configuration.
 
 ## Included device app binaries
 
@@ -228,13 +210,12 @@ To start using a new device app:
 - Update the `README.md` in bins to document where this device app
   came from.
 
-Then, if this app is meant to be used for TKey authentication:
+Then, if this app is meant to be used for signing assertions about new
+device:
 
 - Set a new active device app for device authentication in the
-  `remote-sign` configuration file by setting the new app's hash in
-  `signingapphash`.
-
-If the app is meant to be used for the Sigsum submit key, see below.
+  `sign` configuration file by setting the new app's hash in
+  `authappdigest`.
 
 ## Creating the Sigsum keys
 
@@ -249,8 +230,8 @@ For each public key, provide, in this order:
   device running the device app mentioned below.
 - Tag of the app to run.
 - SHA-512 digest of the device app binary.
-- Start time of the key.
-- End time.
+- Start time of the key in ISO format like "2025-09-16T08:10:33+02:00".
+- End time in ISO formt.
 
 Note that the device app *must* be known. See [Included device app
 binaries](#included-device-app-binaries).
@@ -273,8 +254,7 @@ Enter the SSH key into `SigsumConf` in `internal/data/data.go`. Then
 build everything.
 
 To set this Sigsum key to be the active one used for vendor signing,
-change the configuration file for `serve-signer` and change
-`activekey`.
+change `activekey` in the configuration file.
 
 ## Example verification and submit request files
 
